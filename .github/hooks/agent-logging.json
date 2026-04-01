@@ -1,0 +1,52 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "type": "command",
+        "command": "powershell.exe -ExecutionPolicy Bypass -File \".github\\hooks\\log-hook.ps1\""
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "type": "command",
+        "command": "powershell.exe -ExecutionPolicy Bypass -File \".github\\hooks\\log-hook.ps1\""
+      }
+    ],
+    "PreToolUse": [
+      {
+        "type": "command",
+        "command": "powershell.exe -ExecutionPolicy Bypass -File \".github\\hooks\\log-hook.ps1\""
+      }
+    ],
+    "PostToolUse": [
+      {
+        "type": "command",
+        "command": "powershell.exe -ExecutionPolicy Bypass -File \".github\\hooks\\log-hook.ps1\""
+      }
+    ],
+    "PreCompact": [
+      {
+        "type": "command",
+        "command": "powershell.exe -ExecutionPolicy Bypass -File \".github\\hooks\\log-hook.ps1\""
+      }
+    ],
+    "SubagentStart": [
+      {
+        "type": "command",
+        "command": "powershell.exe -ExecutionPolicy Bypass -File \".github\\hooks\\log-hook.ps1\""
+      }
+    ],
+    "SubagentStop": [
+      {
+        "type": "command",
+        "command": "powershell.exe -ExecutionPolicy Bypass -File \".github\\hooks\\log-hook.ps1\""
+      }
+    ],
+    "Stop": [
+      {
+        "type": "command",
+        "command": "powershell.exe -ExecutionPolicy Bypass -File \".github\\hooks\\log-hook.ps1\""
+      }
+    ]
+  }
+}

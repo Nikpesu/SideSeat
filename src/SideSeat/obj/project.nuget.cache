@@ -1,0 +1,10 @@
+{
+  "version": 2,
+  "dgSpecHash": "5hTFQW1Dupc=",
+  "success": true,
+  "projectFilePath": "C:\\Users\\nikpe\\Documents\\GitHub\\SideSeat\\src\\SideSeat\\SideSeat.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\nikpe\\.nuget\\packages\\microsoft.visualstudio.azure.containers.tools.targets\\1.23.0\\microsoft.visualstudio.azure.containers.tools.targets.1.23.0.nupkg.sha512"
+  ],
+  "logs": []
+}
