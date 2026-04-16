@@ -1,0 +1,73 @@
+@model SideSeat.Models.Korisnik
+@{
+    ViewData["Title"] = "Detalji korisnika";
+}
+
+<section class="ss-page">
+    <nav class="ss-breadcrumb" aria-label="Breadcrumb">
+        <a asp-controller="Home" asp-action="Index">Dashboard</a>
+        <span class="ss-breadcrumb-sep">/</span>
+        <a asp-controller="Korisnik" asp-action="Index">Korisnici</a>
+        <span class="ss-breadcrumb-sep">/</span>
+        <span class="current" aria-current="page">@Model.Ime @Model.Prezime</span>
+    </nav>
+
+    <div class="ss-page-head">
+        <h1>Detalji korisnika</h1>
+        <p>Profil, status i povezani podaci korisnika.</p>
+    </div>
+
+    <div class="ss-detail-card">
+        <dl class="ss-detail-grid">
+            <div>
+                <dt>ID</dt>
+                <dd>@Model.Id</dd>
+            </div>
+            <div>
+                <dt>Ime i prezime</dt>
+                <dd>@Model.Ime @Model.Prezime</dd>
+            </div>
+            <div>
+                <dt>Tip korisnika</dt>
+                <dd>@Model.Tip</dd>
+            </div>
+            <div>
+                <dt>Status</dt>
+                <dd>
+                    <span class="ss-badge @(Model.JeAktivan ? "is-ok" : "is-off")">
+                        @(Model.JeAktivan ? "Aktivan" : "Neaktivan")
+                    </span>
+                </dd>
+            </div>
+            <div>
+                <dt>Email</dt>
+                <dd>@Model.Email</dd>
+            </div>
+            <div>
+                <dt>Broj mobitela</dt>
+                <dd>@Model.BrojMobitela</dd>
+            </div>
+            <div>
+                <dt>Datum registracije</dt>
+                <dd>@Model.DatumRegistracije.ToString("dd.MM.yyyy")</dd>
+            </div>
+            <div>
+                <dt>Vozilo</dt>
+                <dd>@(Model.Vozilo is null ? "Nema povezano vozilo" : $"{Model.Vozilo.Marka} {Model.Vozilo.Model}")</dd>
+            </div>
+            <div>
+                <dt>Kreirane voznje</dt>
+                <dd>@(Model.KreiraneVoznje?.Count ?? 0)</dd>
+            </div>
+            <div>
+                <dt>Rezervacije</dt>
+                <dd>@(Model.Rezervacije?.Count ?? 0)</dd>
+            </div>
+        </dl>
+
+        <div class="ss-actions">
+            <a class="ss-btn ss-btn-secondary" asp-controller="Korisnik" asp-action="Index">Natrag na korisnike</a>
+            <a class="ss-btn" asp-controller="Home" asp-action="Index">Dashboard</a>
+        </div>
+    </div>
+</section>

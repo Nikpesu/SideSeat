@@ -1,0 +1,65 @@
+@model SideSeat.Models.Placanje
+@{
+    ViewData["Title"] = "Detalji placanja";
+}
+
+<section class="ss-page">
+    <nav class="ss-breadcrumb" aria-label="Breadcrumb">
+        <a asp-controller="Home" asp-action="Index">Dashboard</a>
+        <span class="ss-breadcrumb-sep">/</span>
+        <a asp-controller="Placanje" asp-action="Index">Placanja</a>
+        <span class="ss-breadcrumb-sep">/</span>
+        <span class="current" aria-current="page">Placanje #@Model.Id</span>
+    </nav>
+
+    <div class="ss-page-head">
+        <h1>Detalji placanja</h1>
+        <p>Povezana rezervacija, iznos i status transakcije.</p>
+    </div>
+
+    <div class="ss-detail-card">
+        <dl class="ss-detail-grid">
+            <div>
+                <dt>ID</dt>
+                <dd>@Model.Id</dd>
+            </div>
+            <div>
+                <dt>Status</dt>
+                <dd>
+                    <span class="ss-badge @(Model.Uspjesno ? "is-ok" : "is-off")">
+                        @(Model.Uspjesno ? "Uspjesno" : "Neuspjesno")
+                    </span>
+                </dd>
+            </div>
+            <div>
+                <dt>Rezervacija</dt>
+                <dd>#@Model.RezervacijaId</dd>
+            </div>
+            <div>
+                <dt>Putnik</dt>
+                <dd>@Model.Rezervacija?.Putnik?.Ime @Model.Rezervacija?.Putnik?.Prezime</dd>
+            </div>
+            <div>
+                <dt>Iznos</dt>
+                <dd>@Model.Iznos.ToString("0.00") EUR</dd>
+            </div>
+            <div>
+                <dt>Vrijeme placanja</dt>
+                <dd>@Model.VrijemePlacanja.ToString("dd.MM.yyyy HH:mm")</dd>
+            </div>
+            <div>
+                <dt>Nacin placanja</dt>
+                <dd>@Model.NacinPlacanja</dd>
+            </div>
+            <div>
+                <dt>Relacija voznje</dt>
+                <dd>@Model.Rezervacija?.Voznja?.PolazniGrad?.Naziv -> @Model.Rezervacija?.Voznja?.OdredisniGrad?.Naziv</dd>
+            </div>
+        </dl>
+
+        <div class="ss-actions">
+            <a class="ss-btn ss-btn-secondary" asp-controller="Placanje" asp-action="Index">Natrag na placanja</a>
+            <a class="ss-btn" asp-controller="Home" asp-action="Index">Dashboard</a>
+        </div>
+    </div>
+</section>

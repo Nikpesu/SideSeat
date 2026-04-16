@@ -1,8 +1,62 @@
-﻿@{
-    ViewData["Title"] = "Home Page";
+﻿@model SideSeat.Models.Lab2.Lab2DashboardViewModel
+@{
+    ViewData["Title"] = "Dashboard";
 }
 
-<div class="text-center">
-    <h1 class="display-4">Pozz, za vj1 je ispis u CMD-u</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
-</div>
+<section class="ss-page">
+    <nav class="ss-breadcrumb" aria-label="Breadcrumb">
+        <span class="current" aria-current="page">Dashboard</span>
+    </nav>
+
+    <div class="ss-hero">
+        <h1>SideSeat Lab 2 Dashboard</h1>
+        <p>
+            Brzi pregled svih osnovnih entiteta i ulazna tocka za Index/Details stranice.
+            Svaka kartica vodi na odgovarajuci popis.
+        </p>
+    </div>
+
+    <div class="ss-home-grid" aria-label="Lab 2 sekcije">
+        <a class="ss-home-card" asp-controller="Grad" asp-action="Index">
+            <span class="ss-home-label">Gradovi</span>
+            <strong class="ss-home-count">@Model.BrojGradova</strong>
+            <span class="ss-home-hint">Otvori listu gradova</span>
+        </a>
+
+        <a class="ss-home-card" asp-controller="Korisnik" asp-action="Index">
+            <span class="ss-home-label">Korisnici</span>
+            <strong class="ss-home-count">@Model.BrojKorisnika</strong>
+            <span class="ss-home-hint">Pogledaj profile i statuse</span>
+        </a>
+
+        <a class="ss-home-card" asp-controller="Vozilo" asp-action="Index">
+            <span class="ss-home-label">Vozila</span>
+            <strong class="ss-home-count">@Model.BrojVozila</strong>
+            <span class="ss-home-hint">Provjeri vozni park</span>
+        </a>
+
+        <a class="ss-home-card" asp-controller="Voznja" asp-action="Index">
+            <span class="ss-home-label">Voznje</span>
+            <strong class="ss-home-count">@Model.BrojVoznji</strong>
+            <span class="ss-home-hint">Planirane i zavrsene voznje</span>
+        </a>
+
+        <a class="ss-home-card" asp-controller="Rezervacija" asp-action="Index">
+            <span class="ss-home-label">Rezervacije</span>
+            <strong class="ss-home-count">@Model.BrojRezervacija</strong>
+            <span class="ss-home-hint">Pregled svih rezervacija</span>
+        </a>
+
+        <a class="ss-home-card" asp-controller="Placanje" asp-action="Index">
+            <span class="ss-home-label">Placanja</span>
+            <strong class="ss-home-count">@Model.BrojPlacanja</strong>
+            <span class="ss-home-hint">Status uplata i nacini</span>
+        </a>
+
+        <a class="ss-home-card" asp-controller="Ocjena" asp-action="Index">
+            <span class="ss-home-label">Ocjene</span>
+            <strong class="ss-home-count">@Model.BrojOcjena</strong>
+            <span class="ss-home-hint">Komentari i zvjezdice</span>
+        </a>
+    </div>
+</section>

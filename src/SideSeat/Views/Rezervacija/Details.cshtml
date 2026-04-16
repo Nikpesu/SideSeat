@@ -1,0 +1,66 @@
+@model SideSeat.Models.Rezervacija
+@{
+	ViewData["Title"] = "Detalji rezervacije";
+	var statusClass = Model.Status == SideSeat.Models.StatusRezervacije.Potvrdena
+		? "is-ok"
+		: Model.Status == SideSeat.Models.StatusRezervacije.Aktivna
+			? "is-alert"
+			: "is-off";
+}
+
+<section class="ss-page">
+	<nav class="ss-breadcrumb" aria-label="Breadcrumb">
+		<a asp-controller="Home" asp-action="Index">Dashboard</a>
+		<span class="ss-breadcrumb-sep">/</span>
+		<a asp-controller="Rezervacija" asp-action="Index">Rezervacije</a>
+		<span class="ss-breadcrumb-sep">/</span>
+		<span class="current" aria-current="page">Rezervacija #@Model.Id</span>
+	</nav>
+
+	<div class="ss-page-head">
+		<h1>Detalji rezervacije</h1>
+		<p>Podaci o rezervaciji, putniku i pripadajucoj voznji.</p>
+	</div>
+
+	<div class="ss-detail-card">
+		<dl class="ss-detail-grid">
+			<div>
+				<dt>ID</dt>
+				<dd>@Model.Id</dd>
+			</div>
+			<div>
+				<dt>Status</dt>
+				<dd><span class="ss-badge @statusClass">@Model.Status</span></dd>
+			</div>
+			<div>
+				<dt>Putnik</dt>
+				<dd>@Model.Putnik?.Ime @Model.Putnik?.Prezime</dd>
+			</div>
+			<div>
+				<dt>Voznja</dt>
+				<dd>@Model.Voznja?.PolazniGrad?.Naziv -> @Model.Voznja?.OdredisniGrad?.Naziv</dd>
+			</div>
+			<div>
+				<dt>Broj mjesta</dt>
+				<dd>@Model.BrojMjesta</dd>
+			</div>
+			<div>
+				<dt>Ukupna cijena</dt>
+				<dd>@Model.CijenaUkupno.ToString("0.00") EUR</dd>
+			</div>
+			<div>
+				<dt>Vrijeme rezervacije</dt>
+				<dd>@Model.VrijemeRezervacije.ToString("dd.MM.yyyy HH:mm")</dd>
+			</div>
+			<div>
+				<dt>Napomena</dt>
+				<dd>@(string.IsNullOrWhiteSpace(Model.Napomena) ? "Nema napomene." : Model.Napomena)</dd>
+			</div>
+		</dl>
+
+		<div class="ss-actions">
+			<a class="ss-btn ss-btn-secondary" asp-controller="Rezervacija" asp-action="Index">Natrag na rezervacije</a>
+			<a class="ss-btn" asp-controller="Home" asp-action="Index">Dashboard</a>
+		</div>
+	</div>
+</section>

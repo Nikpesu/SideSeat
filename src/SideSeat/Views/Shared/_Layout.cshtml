@@ -1,47 +1,84 @@
-﻿<!DOCTYPE html>
-<html lang="en">
+﻿@{
+    var currentController = (ViewContext.RouteData.Values["controller"]?.ToString() ?? string.Empty).ToLowerInvariant();
+    var currentAction = (ViewContext.RouteData.Values["action"]?.ToString() ?? string.Empty).ToLowerInvariant();
+}
+<!DOCTYPE html>
+<html lang="hr">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"] - SideSeat</title>
     <script type="importmap"></script>
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
-    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/SideSeat.styles.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
 </head>
 <body>
-    <header>
-        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
-            <div class="container-fluid">
-                <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">SideSeat</a>
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
-                        aria-expanded="false" aria-label="Toggle navigation">
-                    <span class="navbar-toggler-icon"></span>
+    <header class="ss-header">
+        <nav class="navbar navbar-expand-lg ss-nav" aria-label="Glavna navigacija">
+            <div class="container-fluid ss-shell">
+                <a class="ss-brand" asp-area="" asp-controller="Home" asp-action="Index">SideSeat Lab 2</a>
+                <button class="navbar-toggler ss-nav-toggle" type="button" data-bs-toggle="collapse" data-bs-target="#mainNavigation"
+                        aria-controls="mainNavigation" aria-expanded="false" aria-label="Prikazi ili sakrij navigaciju">
+                    <span class="ss-nav-toggle-text">Meni</span>
                 </button>
-                <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
-                    <ul class="navbar-nav flex-grow-1">
+                <div class="collapse navbar-collapse" id="mainNavigation">
+                    <ul class="navbar-nav ms-lg-3 ss-nav-list">
                         <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Index">Home</a>
+                            <a class="ss-nav-link @((currentController == "home" && currentAction == "index") ? "active" : string.Empty)"
+                               asp-area="" asp-controller="Home" asp-action="Index">Dashboard</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
+                            <a class="ss-nav-link @(currentController == "grad" ? "active" : string.Empty)"
+                               asp-area="" asp-controller="Grad" asp-action="Index">Gradovi</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="ss-nav-link @(currentController == "korisnik" ? "active" : string.Empty)"
+                               asp-area="" asp-controller="Korisnik" asp-action="Index">Korisnici</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="ss-nav-link @(currentController == "vozilo" ? "active" : string.Empty)"
+                               asp-area="" asp-controller="Vozilo" asp-action="Index">Vozila</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="ss-nav-link @(currentController == "voznja" ? "active" : string.Empty)"
+                               asp-area="" asp-controller="Voznja" asp-action="Index">Voznje</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="ss-nav-link @(currentController == "rezervacija" ? "active" : string.Empty)"
+                               asp-area="" asp-controller="Rezervacija" asp-action="Index">Rezervacije</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="ss-nav-link @(currentController == "placanje" ? "active" : string.Empty)"
+                               asp-area="" asp-controller="Placanje" asp-action="Index">Placanja</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="ss-nav-link @(currentController == "ocjena" ? "active" : string.Empty)"
+                               asp-area="" asp-controller="Ocjena" asp-action="Index">Ocjene</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="ss-nav-link @((currentController == "home" && currentAction == "privacy") ? "active" : string.Empty)"
+                               asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
                         </li>
                     </ul>
                 </div>
             </div>
         </nav>
     </header>
-    <div class="container">
-        <main role="main" class="pb-3">
+
+    <div class="ss-shell">
+        <main role="main" class="ss-main">
             @RenderBody()
         </main>
     </div>
 
-    <footer class="border-top footer text-muted">
-        <div class="container">
-            &copy; 2026 - SideSeat - <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
+    <footer class="ss-footer">
+        <div class="ss-shell ss-footer-inner">
+            <span>&copy; 2026 SideSeat</span>
+            <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
         </div>
     </footer>
+
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>

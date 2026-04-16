@@ -1,0 +1,64 @@
+@model IReadOnlyList<SideSeat.Models.Rezervacija>
+@{
+    ViewData["Title"] = "Rezervacije";
+}
+
+<section class="ss-page">
+    <nav class="ss-breadcrumb" aria-label="Breadcrumb">
+        <a asp-controller="Home" asp-action="Index">Dashboard</a>
+        <span class="ss-breadcrumb-sep">/</span>
+        <span class="current" aria-current="page">Rezervacije</span>
+    </nav>
+
+    <div class="ss-page-head">
+        <h1>Rezervacije</h1>
+        <p>Aktivne, potvrdjene i otkazane rezervacije.</p>
+    </div>
+
+    @if (Model.Count == 0)
+    {
+        <p class="ss-empty">Nema unesenih rezervacija.</p>
+    }
+    else
+    {
+        <div class="ss-table-shell" role="region" aria-label="Lista rezervacija" tabindex="0">
+            <table class="ss-table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Putnik</th>
+                        <th>Voznja</th>
+                        <th>Mjesta</th>
+                        <th>Cijena</th>
+                        <th>Vrijeme rezervacije</th>
+                        <th>Status</th>
+                        <th>Akcija</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var rezervacija in Model)
+                    {
+                        var statusClass = rezervacija.Status == SideSeat.Models.StatusRezervacije.Potvrdena
+                            ? "is-ok"
+                            : rezervacija.Status == SideSeat.Models.StatusRezervacije.Aktivna
+                                ? "is-alert"
+                                : "is-off";
+
+                        <tr>
+                            <td>@rezervacija.Id</td>
+                            <td>@rezervacija.Putnik?.Ime @rezervacija.Putnik?.Prezime</td>
+                            <td>@rezervacija.Voznja?.PolazniGrad?.Naziv -> @rezervacija.Voznja?.OdredisniGrad?.Naziv</td>
+                            <td>@rezervacija.BrojMjesta</td>
+                            <td>@rezervacija.CijenaUkupno.ToString("0.00") EUR</td>
+                            <td>@rezervacija.VrijemeRezervacije.ToString("dd.MM.yyyy HH:mm")</td>
+                            <td><span class="ss-badge @statusClass">@rezervacija.Status</span></td>
+                            <td>
+                                <a class="ss-btn" asp-controller="Rezervacija" asp-action="Details" asp-route-id="@rezervacija.Id">Detalji</a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</section>

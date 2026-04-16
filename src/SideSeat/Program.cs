@@ -8,6 +8,7 @@ namespace SideSeat
 
             // Add services to the container.
             builder.Services.AddControllersWithViews();
+            builder.Services.AddSingleton<SideSeat.Repositories.LabMockRepository>();
 
             var app = builder.Build();
 

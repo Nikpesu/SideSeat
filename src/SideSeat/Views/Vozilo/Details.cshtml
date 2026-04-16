@@ -1,0 +1,61 @@
+@model SideSeat.Models.Vozilo
+@{
+	ViewData["Title"] = "Detalji vozila";
+}
+
+<section class="ss-page">
+	<nav class="ss-breadcrumb" aria-label="Breadcrumb">
+		<a asp-controller="Home" asp-action="Index">Dashboard</a>
+		<span class="ss-breadcrumb-sep">/</span>
+		<a asp-controller="Vozilo" asp-action="Index">Vozila</a>
+		<span class="ss-breadcrumb-sep">/</span>
+		<span class="current" aria-current="page">@Model.Marka @Model.Model</span>
+	</nav>
+
+	<div class="ss-page-head">
+		<h1>Detalji vozila</h1>
+		<p>Tehnicki podaci i informacije o vlasniku.</p>
+	</div>
+
+	<div class="ss-detail-card">
+		<dl class="ss-detail-grid">
+			<div>
+				<dt>ID</dt>
+				<dd>@Model.Id</dd>
+			</div>
+			<div>
+				<dt>Marka i model</dt>
+				<dd>@Model.Marka @Model.Model</dd>
+			</div>
+			<div>
+				<dt>Registracija</dt>
+				<dd>@Model.Registracija</dd>
+			</div>
+			<div>
+				<dt>Godina proizvodnje</dt>
+				<dd>@Model.GodinaProizvodnje</dd>
+			</div>
+			<div>
+				<dt>Broj sjedala</dt>
+				<dd>@Model.BrojSjedala</dd>
+			</div>
+			<div>
+				<dt>Boja</dt>
+				<dd>@Model.Boja</dd>
+			</div>
+			<div>
+				<dt>Prosjecna potrosnja</dt>
+				<dd>@Model.ProsjecnaPotrosnja.ToString("0.0") l / 100 km</dd>
+			</div>
+			<div>
+				<dt>Vlasnik</dt>
+				<dd>@(Model.Vlasnik is null ? "Nije dodijeljen" : $"{Model.Vlasnik.Ime} {Model.Vlasnik.Prezime}")</dd>
+			</div>
+		</dl>
+
+		<div class="ss-actions">
+			<a class="ss-btn ss-btn-secondary" asp-controller="Vozilo" asp-action="Index">Natrag na vozila</a>
+			<a class="ss-btn" asp-controller="Home" asp-action="Index">Dashboard</a>
+		</div>
+	</div>
+</section>

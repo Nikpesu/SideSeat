@@ -18,7 +18,7 @@ public static class Lab1Demo
         await IspisiAsyncAwaitPrimjerAsync(podaci);
     }
 
-    private static Lab1Podaci KreirajPodatke()
+    public static Lab1Podaci KreirajPodatke()
     {
         // Korijenski objekt koji drzi sve kolekcije za demo.
         var podaci = new Lab1Podaci();
@@ -313,7 +313,7 @@ public static class Lab1Demo
             .OrderBy(v => v.Polazak)
             .ToList();
 
-        Console.WriteLine("Dostupne planirane voznje:");
+        Console.WriteLine("1)Dostupne planirane voznje:");
         foreach (var v in dostupneVoznje)
         {
             Console.WriteLine($"- {v.PolazniGrad.Naziv} -> {v.OdredisniGrad.Naziv}, polazak {v.Polazak:dd.MM.yyyy HH:mm}, slobodno mjesta: {v.SlobodnaMjesta}");
@@ -332,7 +332,7 @@ public static class Lab1Demo
             .OrderByDescending(x => x.BrojAktivnihRezervacija)
             .ToList();
 
-        Console.WriteLine("Vozaci poredani po broju rezervacija:");
+        Console.WriteLine("2)Vozaci poredani po broju rezervacija:");
         foreach (var x in vozaciPoRezervacijama)
         {
             Console.WriteLine($"- {x.Vozac.Ime} {x.Vozac.Prezime}: {x.BrojAktivnihRezervacija} rezervacija");
@@ -345,7 +345,7 @@ public static class Lab1Demo
             .Where(k => k.Rezervacije.Any(r => r.Voznja.Polazak <= granica && r.Status != StatusRezervacije.Otkazana))
             .ToList();
 
-        Console.WriteLine("Putnici koji imaju voznju unutar 7 dana:");
+        Console.WriteLine("3)Putnici koji imaju voznju unutar 7 dana:");
         foreach (var p in putniciOVomTjednu)
         {
             Console.WriteLine($"- {p.Ime} {p.Prezime}");
@@ -363,7 +363,7 @@ public static class Lab1Demo
             .OrderByDescending(x => x.Prihod)
             .ToList();
 
-        Console.WriteLine("Prihod po voznji:");
+        Console.WriteLine("4)Prihod po voznji:");
         foreach (var p in prihodPoVoznji)
         {
             Console.WriteLine($"- Voznja #{p.VoznjaId}: {p.Prihod:0.00} EUR");
@@ -387,14 +387,14 @@ public static class Lab1Demo
         var potvrdene = await potvrdeneTask;
 
         Console.WriteLine($"Aktivnih rezervacija: {aktivne.Count}");
-        Console.WriteLine($"Potvrdenih rezervacija: {potvrdene.Count}");
+        Console.WriteLine($"Potvrdenih rezervacija: {potvrdene.Count}"); 
     }
 
     private static async Task<List<Rezervacija>> DohvatiRezervacijePoStatusuAsync(
         IEnumerable<Rezervacija> rezervacije,
         StatusRezervacije status)
     {
-        // Simulacija IO latencije (npr. baza ili vanjski API).
+        // Simulacija IO latencije (npr. baza ili vanjski API). (pametan li je ovaj đipiti)
         await Task.Delay(150);
 
         // Filtriranje i materijalizacija rezultata u listu.

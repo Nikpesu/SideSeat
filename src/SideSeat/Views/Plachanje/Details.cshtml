@@ -1,0 +1,45 @@
+@model SideSeat.Models.Placanje
+@{
+    ViewBag.Title = "Detalji plaćanja";
+}
+
+<div class="page-header">
+    <a asp-controller="Plachanje" asp-action="Index" class="breadcrumb-link">Plaćanja</a>
+    <span class="breadcrumb-sep"> / </span>
+    <span class="breadcrumb-current">Plaćanje #@Model.Id</span>
+</div>
+
+<div class="content-area">
+    <div class="details-card">
+        <h2>Plaćanje #@Model.Id</h2>
+        
+        <div class="detail-row">
+            <label>Iznos:</label>
+            <span>@Model.Iznos €</span>
+        </div>
+
+        <div class="detail-row">
+            <label>Rezervacija:</label>
+            <span>#@Model.RezervacijaId</span>
+        </div>
+
+        <div class="detail-row">
+            <label>Vrijeme:</label>
+            <span>@Model.VrijemePlacanja.ToString("dd.MM.yyyy HH:mm")</span>
+        </div>
+
+        <div class="detail-row">
+            <label>Način plaćanja:</label>
+            <span>@Model.NacinPlacanja</span>
+        </div>
+
+        <div class="detail-row">
+            <label>Status:</label>
+            <span>@(Model.Uspjesno ? "Uspješno" : "Neuspješno")</span>
+        </div>
+
+        <div class="action-buttons">
+            <a asp-controller="Plachanje" asp-action="Index" class="btn-back">Natrag na listu</a>
+        </div>
+    </div>
+</div>

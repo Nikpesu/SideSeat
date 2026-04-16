@@ -1,0 +1,60 @@
+@model IReadOnlyList<SideSeat.Models.Korisnik>
+@{
+	ViewData["Title"] = "Korisnici";
+}
+
+<section class="ss-page">
+	<nav class="ss-breadcrumb" aria-label="Breadcrumb">
+		<a asp-controller="Home" asp-action="Index">Dashboard</a>
+		<span class="ss-breadcrumb-sep">/</span>
+		<span class="current" aria-current="page">Korisnici</span>
+	</nav>
+
+	<div class="ss-page-head">
+		<h1>Korisnici</h1>
+		<p>Pregled registriranih korisnika i njihovog statusa.</p>
+	</div>
+
+	@if (Model.Count == 0)
+	{
+		<p class="ss-empty">Nema unesenih korisnika.</p>
+	}
+	else
+	{
+		<div class="ss-table-shell" role="region" aria-label="Lista korisnika" tabindex="0">
+			<table class="ss-table">
+				<thead>
+					<tr>
+						<th>ID</th>
+						<th>Ime i prezime</th>
+						<th>Tip</th>
+						<th>Email</th>
+						<th>Mobitel</th>
+						<th>Status</th>
+						<th>Akcija</th>
+					</tr>
+				</thead>
+				<tbody>
+					@foreach (var korisnik in Model)
+					{
+						<tr>
+							<td>@korisnik.Id</td>
+							<td>@korisnik.Ime @korisnik.Prezime</td>
+							<td>@korisnik.Tip</td>
+							<td>@korisnik.Email</td>
+							<td>@korisnik.BrojMobitela</td>
+							<td>
+								<span class="ss-badge @(korisnik.JeAktivan ? "is-ok" : "is-off")">
+									@(korisnik.JeAktivan ? "Aktivan" : "Neaktivan")
+								</span>
+							</td>
+							<td>
+								<a class="ss-btn" asp-controller="Korisnik" asp-action="Details" asp-route-id="@korisnik.Id">Detalji</a>
+							</td>
+						</tr>
+					}
+				</tbody>
+			</table>
+		</div>
+	}
+</section>

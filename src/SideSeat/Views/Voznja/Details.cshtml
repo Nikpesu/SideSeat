@@ -1,0 +1,74 @@
+@model SideSeat.Models.Voznja
+@{
+	ViewData["Title"] = "Detalji voznje";
+	var statusClass = Model.Status == SideSeat.Models.StatusVoznje.Planirana
+		? "is-ok"
+		: Model.Status == SideSeat.Models.StatusVoznje.Zavrsena
+			? "is-alert"
+			: "is-off";
+}
+
+<section class="ss-page">
+	<nav class="ss-breadcrumb" aria-label="Breadcrumb">
+		<a asp-controller="Home" asp-action="Index">Dashboard</a>
+		<span class="ss-breadcrumb-sep">/</span>
+		<a asp-controller="Voznja" asp-action="Index">Voznje</a>
+		<span class="ss-breadcrumb-sep">/</span>
+		<span class="current" aria-current="page">Voznja #@Model.Id</span>
+	</nav>
+
+	<div class="ss-page-head">
+		<h1>Detalji voznje</h1>
+		<p>Ruta, raspored, cijena i broj rezerviranih mjesta.</p>
+	</div>
+
+	<div class="ss-detail-card">
+		<dl class="ss-detail-grid">
+			<div>
+				<dt>ID</dt>
+				<dd>@Model.Id</dd>
+			</div>
+			<div>
+				<dt>Status</dt>
+				<dd><span class="ss-badge @statusClass">@Model.Status</span></dd>
+			</div>
+			<div>
+				<dt>Vozac</dt>
+				<dd>@Model.Vozac?.Ime @Model.Vozac?.Prezime</dd>
+			</div>
+			<div>
+				<dt>Ruta</dt>
+				<dd>@Model.PolazniGrad?.Naziv -> @Model.OdredisniGrad?.Naziv</dd>
+			</div>
+			<div>
+				<dt>Polazak</dt>
+				<dd>@Model.Polazak.ToString("dd.MM.yyyy HH:mm")</dd>
+			</div>
+			<div>
+				<dt>Ocekivani dolazak</dt>
+				<dd>@Model.OcekivaniDolazak.ToString("dd.MM.yyyy HH:mm")</dd>
+			</div>
+			<div>
+				<dt>Cijena po mjestu</dt>
+				<dd>@Model.CijenaPoMjestu.ToString("0.00") EUR</dd>
+			</div>
+			<div>
+				<dt>Mjesta</dt>
+				<dd>@Model.SlobodnaMjesta slobodno od @Model.UkupnoMjesta</dd>
+			</div>
+			<div>
+				<dt>Broj rezervacija</dt>
+				<dd>@(Model.Rezervacije?.Count ?? 0)</dd>
+			</div>
+			<div>
+				<dt>Opis</dt>
+				<dd>@(string.IsNullOrWhiteSpace(Model.Opis) ? "Bez dodatne napomene." : Model.Opis)</dd>
+			</div>
+		</dl>
+
+		<div class="ss-actions">
+			<a class="ss-btn ss-btn-secondary" asp-controller="Voznja" asp-action="Index">Natrag na voznje</a>
+			<a class="ss-btn" asp-controller="Home" asp-action="Index">Dashboard</a>
+		</div>
+	</div>
+</section>

@@ -22,7 +22,6 @@ C:\Users\nikpe\Documents\GitHub\SideSeat\src\SideSeat\obj\Debug\net10.0\rjsmcsht
 C:\Users\nikpe\Documents\GitHub\SideSeat\src\SideSeat\obj\Debug\net10.0\scopedcss\Views\Shared\_Layout.cshtml.rz.scp.css
 C:\Users\nikpe\Documents\GitHub\SideSeat\src\SideSeat\obj\Debug\net10.0\scopedcss\bundle\SideSeat.styles.css
 C:\Users\nikpe\Documents\GitHub\SideSeat\src\SideSeat\obj\Debug\net10.0\scopedcss\projectbundle\SideSeat.bundle.scp.css
-C:\Users\nikpe\Documents\GitHub\SideSeat\src\SideSeat\obj\Debug\net10.0\compressed\panfg2bemx-{0}-b9sayid5wm-b9sayid5wm.gz
 C:\Users\nikpe\Documents\GitHub\SideSeat\src\SideSeat\obj\Debug\net10.0\compressed\enqnzennzg-{0}-61n19gt1b8-61n19gt1b8.gz
 C:\Users\nikpe\Documents\GitHub\SideSeat\src\SideSeat\obj\Debug\net10.0\compressed\2jeb1sp3qf-{0}-xtxxf3hu2r-xtxxf3hu2r.gz
 C:\Users\nikpe\Documents\GitHub\SideSeat\src\SideSeat\obj\Debug\net10.0\compressed\vfg2n6iihd-{0}-bqjiyaj88i-bqjiyaj88i.gz
@@ -96,4 +95,5 @@ C:\Users\nikpe\Documents\GitHub\SideSeat\src\SideSeat\obj\Debug\net10.0\refint\S
 C:\Users\nikpe\Documents\GitHub\SideSeat\src\SideSeat\obj\Debug\net10.0\SideSeat.pdb
 C:\Users\nikpe\Documents\GitHub\SideSeat\src\SideSeat\obj\Debug\net10.0\SideSeat.genruntimeconfig.cache
 C:\Users\nikpe\Documents\GitHub\SideSeat\src\SideSeat\obj\Debug\net10.0\ref\SideSeat.dll
+C:\Users\nikpe\Documents\GitHub\SideSeat\src\SideSeat\obj\Debug\net10.0\compressed\panfg2bemx-{0}-51di3tk2yk-51di3tk2yk.gz
 C:\Users\nikpe\Documents\GitHub\SideSeat\src\SideSeat\obj\Debug\net10.0\staticwebassets.upToDateCheck.txt

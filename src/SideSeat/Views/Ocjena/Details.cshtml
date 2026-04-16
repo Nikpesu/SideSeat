@@ -1,0 +1,53 @@
+@model SideSeat.Models.OcjenaVoznje
+@{
+    ViewData["Title"] = "Detalji ocjene";
+}
+
+<section class="ss-page">
+    <nav class="ss-breadcrumb" aria-label="Breadcrumb">
+        <a asp-controller="Home" asp-action="Index">Dashboard</a>
+        <span class="ss-breadcrumb-sep">/</span>
+        <a asp-controller="Ocjena" asp-action="Index">Ocjene</a>
+        <span class="ss-breadcrumb-sep">/</span>
+        <span class="current" aria-current="page">Ocjena #@Model.Id</span>
+    </nav>
+
+    <div class="ss-page-head">
+        <h1>Detalji ocjene</h1>
+        <p>Ocjena putnika i komentar za povezanu rezervaciju.</p>
+    </div>
+
+    <div class="ss-detail-card">
+        <dl class="ss-detail-grid">
+            <div>
+                <dt>ID</dt>
+                <dd>@Model.Id</dd>
+            </div>
+            <div>
+                <dt>Autor</dt>
+                <dd>@Model.Autor?.Ime @Model.Autor?.Prezime</dd>
+            </div>
+            <div>
+                <dt>Rezervacija</dt>
+                <dd>#@Model.RezervacijaId</dd>
+            </div>
+            <div>
+                <dt>Zvjezdice</dt>
+                <dd>@(new string('*', Model.BrojZvjezdica)) (@Model.BrojZvjezdica/5)</dd>
+            </div>
+            <div>
+                <dt>Komentar</dt>
+                <dd>@Model.Komentar</dd>
+            </div>
+            <div>
+                <dt>Kreirano</dt>
+                <dd>@Model.Kreirano.ToString("dd.MM.yyyy HH:mm")</dd>
+            </div>
+        </dl>
+
+        <div class="ss-actions">
+            <a class="ss-btn ss-btn-secondary" asp-controller="Ocjena" asp-action="Index">Natrag na ocjene</a>
+            <a class="ss-btn" asp-controller="Home" asp-action="Index">Dashboard</a>
+        </div>
+    </div>
+</section>

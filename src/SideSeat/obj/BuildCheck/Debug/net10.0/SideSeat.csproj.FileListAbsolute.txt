@@ -1,0 +1,9 @@
+C:\Users\nikpe\Documents\GitHub\SideSeat\src\SideSeat\obj\BuildCheck\Debug\net10.0\rpswa.dswa.cache.json
+C:\Users\nikpe\Documents\GitHub\SideSeat\src\SideSeat\obj\BuildCheck\Debug\net10.0\SideSeat.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\nikpe\Documents\GitHub\SideSeat\src\SideSeat\obj\BuildCheck\Debug\net10.0\SideSeat.AssemblyInfoInputs.cache
+C:\Users\nikpe\Documents\GitHub\SideSeat\src\SideSeat\obj\BuildCheck\Debug\net10.0\SideSeat.AssemblyInfo.cs
+C:\Users\nikpe\Documents\GitHub\SideSeat\src\SideSeat\obj\BuildCheck\Debug\net10.0\SideSeat.csproj.CoreCompileInputs.cache
+C:\Users\nikpe\Documents\GitHub\SideSeat\src\SideSeat\obj\BuildCheck\Debug\net10.0\SideSeat.MvcApplicationPartsAssemblyInfo.cache
+C:\Users\nikpe\Documents\GitHub\SideSeat\src\SideSeat\obj\BuildCheck\Debug\net10.0\SideSeat.RazorAssemblyInfo.cache
+C:\Users\nikpe\Documents\GitHub\SideSeat\src\SideSeat\obj\BuildCheck\Debug\net10.0\SideSeat.RazorAssemblyInfo.cs
+C:\Users\nikpe\Documents\GitHub\SideSeat\src\SideSeat\obj\BuildCheck\Debug\net10.0\SideSeat.sourcelink.json
