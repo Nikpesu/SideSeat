@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("SideSeat")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+bdfb0c9c2382f29579c8294d2f193605f157b7c2")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+de345047354a9c2e0bf46f75fbc432310d925192")]
 [assembly: System.Reflection.AssemblyProductAttribute("SideSeat")]
 [assembly: System.Reflection.AssemblyTitleAttribute("SideSeat")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

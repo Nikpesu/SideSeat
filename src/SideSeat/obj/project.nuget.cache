@@ -1,10 +1,20 @@
 {
   "version": 2,
-  "dgSpecHash": "3OLRxB4Qr0s=",
+  "dgSpecHash": "5hTFQW1Dupc=",
   "success": true,
   "projectFilePath": "C:\\Users\\nikpe\\Documents\\GitHub\\SideSeat\\src\\SideSeat\\SideSeat.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\nikpe\\.nuget\\packages\\microsoft.visualstudio.azure.containers.tools.targets\\1.23.0\\microsoft.visualstudio.azure.containers.tools.targets.1.23.0.nupkg.sha512"
   ],
-  "logs": []
+  "logs": [
+    {
+      "code": "NU1900",
+      "level": "Warning",
+      "message": "Error occurred while getting package vulnerability data: Unable to load the service index for source https://api.nuget.org/v3/index.json.",
+      "projectPath": "C:\\Users\\nikpe\\Documents\\GitHub\\SideSeat\\src\\SideSeat\\SideSeat.csproj",
+      "warningLevel": 1,
+      "filePath": "C:\\Users\\nikpe\\Documents\\GitHub\\SideSeat\\src\\SideSeat\\SideSeat.csproj",
+      "targetGraphs": []
+    }
+  ]
 }
