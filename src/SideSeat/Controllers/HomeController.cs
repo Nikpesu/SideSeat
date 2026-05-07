@@ -11,9 +11,9 @@ namespace SideSeat.Controllers
     /// </summary>
     public class HomeController : Controller
     {
-        private readonly LabMockRepository _repository;
+        private readonly SideSeatEfRepository _repository;
 
-        public HomeController(LabMockRepository repository)
+        public HomeController(SideSeatEfRepository repository)
         {
             _repository = repository;
         }

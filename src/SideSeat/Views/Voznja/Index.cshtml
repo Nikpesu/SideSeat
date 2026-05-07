@@ -13,6 +13,10 @@
 	<div class="ss-page-head">
 		<h1>Voznje</h1>
 		<p>Pregled svih voznji, ruta i slobodnih mjesta.</p>
+		<div class="ss-actions">
+			<a class="ss-btn ss-btn-secondary" asp-controller="Voznja" asp-action="Active">Aktivne voznje</a>
+			<a class="ss-btn" asp-controller="Voznja" asp-action="Create">Nova voznja</a>
+		</div>
 	</div>
 
 	@if (Model.Count == 0)
@@ -56,6 +60,7 @@
 							<td><span class="ss-badge @statusClass">@voznja.Status</span></td>
 							<td>
 								<a class="ss-btn" asp-controller="Voznja" asp-action="Details" asp-route-id="@voznja.Id">Detalji</a>
+								<a class="ss-btn ss-btn-secondary" asp-controller="Voznja" asp-action="Edit" asp-route-id="@voznja.Id">Uredi</a>
 							</td>
 						</tr>
 					}

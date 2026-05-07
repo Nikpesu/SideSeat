@@ -1,12 +1,20 @@
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+
 namespace SideSeat.Models;
 
 public class OcjenaVoznje
 {
+    [Key]
     public int Id { get; set; }
+
+    [ForeignKey(nameof(Rezervacija))]
     public int RezervacijaId { get; set; }
-    public Rezervacija Rezervacija { get; set; } = null!;
+    public virtual Rezervacija Rezervacija { get; set; } = null!;
+
+    [ForeignKey(nameof(Autor))]
     public int AutorId { get; set; }
-    public Korisnik Autor { get; set; } = null!;
+    public virtual Korisnik Autor { get; set; } = null!;
     public int BrojZvjezdica { get; set; }
     public string Komentar { get; set; } = string.Empty;
     public DateTime Kreirano { get; set; }

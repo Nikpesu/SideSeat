@@ -8,9 +8,9 @@ namespace SideSeat.Controllers;
 /// </summary>
 public class KorisnikController : Controller
 {
-    private readonly LabMockRepository _repository;
+    private readonly SideSeatEfRepository _repository;
 
-    public KorisnikController(LabMockRepository repository)
+    public KorisnikController(SideSeatEfRepository repository)
     {
         _repository = repository;
     }

@@ -1,14 +1,24 @@
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+
 namespace SideSeat.Models;
 
 public class Voznja
 {
+    [Key]
     public int Id { get; set; }
+
+    [ForeignKey(nameof(Vozac))]
     public int VozacId { get; set; }
-    public Korisnik Vozac { get; set; } = null!;
+    public virtual Korisnik Vozac { get; set; } = null!;
+
+    [ForeignKey(nameof(PolazniGrad))]
     public int PolazniGradId { get; set; }
-    public Grad PolazniGrad { get; set; } = null!;
+    public virtual Grad PolazniGrad { get; set; } = null!;
+
+    [ForeignKey(nameof(OdredisniGrad))]
     public int OdredisniGradId { get; set; }
-    public Grad OdredisniGrad { get; set; } = null!;
+    public virtual Grad OdredisniGrad { get; set; } = null!;
     public DateTime Polazak { get; set; }
     public DateTime OcekivaniDolazak { get; set; }
     public decimal CijenaPoMjestu { get; set; }
@@ -16,5 +26,5 @@ public class Voznja
     public int SlobodnaMjesta { get; set; }
     public string Opis { get; set; } = string.Empty;
     public StatusVoznje Status { get; set; }
-    public List<Rezervacija> Rezervacije { get; set; } = new();
+    public virtual ICollection<Rezervacija> Rezervacije { get; set; } = new List<Rezervacija>();
 }

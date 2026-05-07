@@ -1,0 +1,30 @@
+@model SideSeat.Models.Lab3.VoznjaFormViewModel
+@{
+    ViewData["Title"] = "Nova voznja";
+}
+
+<section class="ss-page">
+    <nav class="ss-breadcrumb" aria-label="Breadcrumb">
+        <a asp-controller="Home" asp-action="Index">Dashboard</a>
+        <span class="ss-breadcrumb-sep">/</span>
+        <a asp-controller="Voznja" asp-action="Index">Voznje</a>
+        <span class="ss-breadcrumb-sep">/</span>
+        <span class="current" aria-current="page">Nova voznja</span>
+    </nav>
+
+    <div class="ss-page-head">
+        <h1>Nova voznja</h1>
+        <p>Unesite podatke o novoj ruti i raspolozivim mjestima.</p>
+    </div>
+
+    <form asp-action="Create" method="post">
+        @Html.AntiForgeryToken()
+        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+        <partial name="_Form" model="Model" />
+
+        <div class="ss-actions">
+            <button type="submit" class="ss-btn">Spremi</button>
+            <a class="ss-btn ss-btn-secondary" asp-controller="Voznja" asp-action="Index">Odustani</a>
+        </div>
+    </form>
+</section>

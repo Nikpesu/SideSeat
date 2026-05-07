@@ -185,7 +185,8 @@ public static class Lab1Demo
         };
 
         podaci.Voznje.AddRange([voznja1, voznja2, voznja3]);
-        vozac1.KreiraneVoznje.AddRange([voznja1, voznja3]);
+        vozac1.KreiraneVoznje.Add(voznja1);
+        vozac1.KreiraneVoznje.Add(voznja3);
         vozac2.KreiraneVoznje.Add(voznja2);
 
         // Rezervacije povezuju putnika i voznju (N-N preko entiteta Rezervacija).

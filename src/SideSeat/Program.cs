@@ -1,3 +1,7 @@
+using Microsoft.EntityFrameworkCore;
+using SideSeat.Data;
+using SideSeat.Repositories;
+
 namespace SideSeat
 {
     public class Program
@@ -8,7 +12,9 @@ namespace SideSeat
 
             // Add services to the container.
             builder.Services.AddControllersWithViews();
-            builder.Services.AddSingleton<SideSeat.Repositories.LabMockRepository>();
+            builder.Services.AddDbContext<SideSeatDbContext>(options =>
+                options.UseSqlServer(builder.Configuration.GetConnectionString("SideSeatDbContext")));
+            builder.Services.AddScoped<SideSeatEfRepository>();
 
             var app = builder.Build();
 
@@ -26,6 +32,26 @@ namespace SideSeat
             app.UseAuthorization();
 
             app.MapStaticAssets();
+            app.MapControllerRoute(
+                name: "gradovi-list",
+                pattern: "gradovi",
+                defaults: new { controller = "Grad", action = "Index" });
+
+            app.MapControllerRoute(
+                name: "gradovi-detalji",
+                pattern: "gradovi/{id:int}",
+                defaults: new { controller = "Grad", action = "Details" });
+
+            app.MapControllerRoute(
+                name: "voznje-aktivne",
+                pattern: "voznje/aktivne",
+                defaults: new { controller = "Voznja", action = "Active" });
+
+            app.MapControllerRoute(
+                name: "korisnici-profil",
+                pattern: "korisnici/{id:int}/profil",
+                defaults: new { controller = "Korisnik", action = "Details" });
+
             app.MapControllerRoute(
                 name: "default",
                 pattern: "{controller=Home}/{action=Index}/{id?}")

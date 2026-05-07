@@ -1,0 +1,67 @@
+@model SideSeat.Models.Lab3.VoznjaFormViewModel
+
+<div class="ss-detail-card">
+    <div class="mb-3">
+        <label asp-for="VozacId" class="form-label"></label>
+        <select asp-for="VozacId" asp-items="Model.Vozaci" class="form-select"></select>
+        <span asp-validation-for="VozacId" class="text-danger"></span>
+    </div>
+
+    <div class="row g-3">
+        <div class="col-md-6">
+            <label asp-for="PolazniGradId" class="form-label"></label>
+            <select asp-for="PolazniGradId" asp-items="Model.Gradovi" class="form-select"></select>
+            <span asp-validation-for="PolazniGradId" class="text-danger"></span>
+        </div>
+        <div class="col-md-6">
+            <label asp-for="OdredisniGradId" class="form-label"></label>
+            <select asp-for="OdredisniGradId" asp-items="Model.Gradovi" class="form-select"></select>
+            <span asp-validation-for="OdredisniGradId" class="text-danger"></span>
+        </div>
+    </div>
+
+    <div class="row g-3 mt-1">
+        <div class="col-md-6">
+            <label asp-for="Polazak" class="form-label"></label>
+            <input asp-for="Polazak" class="form-control" type="datetime-local" />
+            <span asp-validation-for="Polazak" class="text-danger"></span>
+        </div>
+        <div class="col-md-6">
+            <label asp-for="OcekivaniDolazak" class="form-label"></label>
+            <input asp-for="OcekivaniDolazak" class="form-control" type="datetime-local" />
+            <span asp-validation-for="OcekivaniDolazak" class="text-danger"></span>
+        </div>
+    </div>
+
+    <div class="row g-3 mt-1">
+        <div class="col-md-4">
+            <label asp-for="CijenaPoMjestu" class="form-label"></label>
+            <input asp-for="CijenaPoMjestu" class="form-control" />
+            <span asp-validation-for="CijenaPoMjestu" class="text-danger"></span>
+        </div>
+        <div class="col-md-4">
+            <label asp-for="UkupnoMjesta" class="form-label"></label>
+            <input asp-for="UkupnoMjesta" class="form-control" />
+            <span asp-validation-for="UkupnoMjesta" class="text-danger"></span>
+        </div>
+        <div class="col-md-4">
+            <label asp-for="SlobodnaMjesta" class="form-label"></label>
+            <input asp-for="SlobodnaMjesta" class="form-control" />
+            <span asp-validation-for="SlobodnaMjesta" class="text-danger"></span>
+        </div>
+    </div>
+
+    <div class="row g-3 mt-1">
+        <div class="col-md-6">
+            <label asp-for="Status" class="form-label"></label>
+            <select asp-for="Status" class="form-select" asp-items="Html.GetEnumSelectList<SideSeat.Models.StatusVoznje>()"></select>
+            <span asp-validation-for="Status" class="text-danger"></span>
+        </div>
+    </div>
+
+    <div class="mt-3">
+        <label asp-for="Opis" class="form-label"></label>
+        <textarea asp-for="Opis" class="form-control" rows="4"></textarea>
+        <span asp-validation-for="Opis" class="text-danger"></span>
+    </div>
+</div>

@@ -8,9 +8,9 @@ namespace SideSeat.Controllers;
 /// </summary>
 public class RezervacijaController : Controller
 {
-    private readonly LabMockRepository _repository;
+    private readonly SideSeatEfRepository _repository;
 
-    public RezervacijaController(LabMockRepository repository)
+    public RezervacijaController(SideSeatEfRepository repository)
     {
         _repository = repository;
     }
