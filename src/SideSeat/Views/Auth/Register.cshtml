@@ -1,0 +1,49 @@
+@model SideSeat.Models.Auth.RegisterViewModel
+@{
+    ViewData["Title"] = "Registracija";
+}
+
+<section class="ss-page">
+    <div class="ss-page-head">
+        <h1>Registracija korisnika</h1>
+        <p>Za pocetak unesi email, lozinku i adresu.</p>
+    </div>
+
+    <form asp-action="Register" method="post" class="ss-detail-card">
+        @Html.AntiForgeryToken()
+        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+        <div class="mb-3">
+            <label asp-for="Email" class="form-label"></label>
+            <input asp-for="Email" class="form-control" />
+            <span asp-validation-for="Email" class="text-danger"></span>
+        </div>
+
+        <div class="mb-3">
+            <label asp-for="Address" class="form-label"></label>
+            <input asp-for="Address" class="form-control" />
+            <span asp-validation-for="Address" class="text-danger"></span>
+        </div>
+
+        <div class="mb-3">
+            <label asp-for="Password" class="form-label"></label>
+            <input asp-for="Password" class="form-control" />
+            <span asp-validation-for="Password" class="text-danger"></span>
+        </div>
+
+        <div class="mb-3">
+            <label asp-for="ConfirmPassword" class="form-label"></label>
+            <input asp-for="ConfirmPassword" class="form-control" />
+            <span asp-validation-for="ConfirmPassword" class="text-danger"></span>
+        </div>
+
+        <div class="ss-actions">
+            <button class="ss-btn" type="submit">Kreiraj racun</button>
+            <a class="ss-btn ss-btn-secondary" asp-action="Login">Natrag na prijavu</a>
+        </div>
+    </form>
+</section>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

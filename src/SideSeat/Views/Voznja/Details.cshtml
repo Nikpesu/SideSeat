@@ -1,6 +1,9 @@
 @model SideSeat.Models.Voznja
 @{
 	ViewData["Title"] = "Detalji voznje";
+	var currentUserId = int.TryParse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value, out var idValue) ? idValue : 0;
+	var canEdit = User.IsInRole("Admin") || Model.VozacId == currentUserId;
+	var canBook = !canEdit && Model.Status == SideSeat.Models.StatusVoznje.Planirana && Model.SlobodnaMjesta > 0;
 	var statusClass = Model.Status == SideSeat.Models.StatusVoznje.Planirana
 		? "is-ok"
 		: Model.Status == SideSeat.Models.StatusVoznje.Zavrsena
@@ -67,6 +70,14 @@
 		</dl>
 
 		<div class="ss-actions">
+			@if (canBook)
+			{
+				<a class="ss-btn" asp-controller="Rezervacija" asp-action="Create" asp-route-voznjaId="@Model.Id">Rezerviraj voznju</a>
+			}
+			@if (canEdit)
+			{
+				<a class="ss-btn" asp-controller="Voznja" asp-action="Edit" asp-route-id="@Model.Id">Uredi voznju</a>
+			}
 			<a class="ss-btn ss-btn-secondary" asp-controller="Voznja" asp-action="Index">Natrag na voznje</a>
 			<a class="ss-btn" asp-controller="Home" asp-action="Index">Dashboard</a>
 		</div>

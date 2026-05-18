@@ -1,0 +1,37 @@
+@model SideSeat.Models.Rezervacija
+@{
+    ViewData["Title"] = "Potvrda rezervacije";
+}
+
+<section class="ss-page">
+    <div class="ss-page-head">
+        <h1>Rezervacija uspjesno kreirana</h1>
+        <p>Rezervacija #@Model.Id je zaprimljena.</p>
+    </div>
+
+    <div class="ss-detail-card">
+        <dl class="ss-detail-grid">
+            <div>
+                <dt>Ruta</dt>
+                <dd>@Model.Voznja?.PolazniGrad?.Naziv -> @Model.Voznja?.OdredisniGrad?.Naziv</dd>
+            </div>
+            <div>
+                <dt>Broj mjesta</dt>
+                <dd>@Model.BrojMjesta</dd>
+            </div>
+            <div>
+                <dt>Cijena</dt>
+                <dd>@Model.CijenaUkupno.ToString("0.00") EUR</dd>
+            </div>
+            <div>
+                <dt>Status</dt>
+                <dd>@Model.Status</dd>
+            </div>
+        </dl>
+
+        <div class="ss-actions">
+            <a class="ss-btn" asp-controller="Rezervacija" asp-action="Details" asp-route-id="@Model.Id">Detalji rezervacije</a>
+            <a class="ss-btn ss-btn-secondary" asp-controller="Rezervacija" asp-action="Index">Moje rezervacije</a>
+        </div>
+    </div>
+</section>

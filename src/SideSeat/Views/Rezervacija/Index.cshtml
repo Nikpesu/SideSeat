@@ -13,6 +13,9 @@
     <div class="ss-page-head">
         <h1>Rezervacije</h1>
         <p>Aktivne, potvrdjene i otkazane rezervacije.</p>
+        <div class="ss-actions">
+            <a class="ss-btn ss-btn-secondary" asp-controller="Voznja" asp-action="Active">Nova rezervacija</a>
+        </div>
     </div>
 
     @if (Model.Count == 0)

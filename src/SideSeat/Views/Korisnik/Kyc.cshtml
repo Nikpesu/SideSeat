@@ -1,0 +1,57 @@
+@model SideSeat.Models.Auth.DriverKycViewModel
+@{
+    ViewData["Title"] = "KYC obrazac";
+}
+
+<section class="ss-page">
+    <nav class="ss-breadcrumb" aria-label="Breadcrumb">
+        <a asp-controller="Home" asp-action="Index">Dashboard</a>
+        <span class="ss-breadcrumb-sep">/</span>
+        <a asp-controller="Korisnik" asp-action="Settings">Postavke</a>
+        <span class="ss-breadcrumb-sep">/</span>
+        <span class="current" aria-current="page">KYC</span>
+    </nav>
+
+    <div class="ss-page-head">
+        <h1>KYC za vozaca</h1>
+        <p>Prvi put prije aktivacije vozacke uloge morate unijeti identifikacijske podatke.</p>
+    </div>
+
+    <form asp-action="Kyc" method="post" class="ss-detail-card">
+        @Html.AntiForgeryToken()
+        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+        <div class="mb-3">
+            <label asp-for="Oib" class="form-label"></label>
+            <input asp-for="Oib" class="form-control" />
+            <span asp-validation-for="Oib" class="text-danger"></span>
+        </div>
+
+        <div class="mb-3">
+            <label asp-for="BrojOsobne" class="form-label"></label>
+            <input asp-for="BrojOsobne" class="form-control" />
+            <span asp-validation-for="BrojOsobne" class="text-danger"></span>
+        </div>
+
+        <div class="mb-3">
+            <label asp-for="BrojVozacke" class="form-label"></label>
+            <input asp-for="BrojVozacke" class="form-control" />
+            <span asp-validation-for="BrojVozacke" class="text-danger"></span>
+        </div>
+
+        <div class="mb-3">
+            <label asp-for="DatumRodenja" class="form-label"></label>
+            <input asp-for="DatumRodenja" class="form-control" type="date" />
+            <span asp-validation-for="DatumRodenja" class="text-danger"></span>
+        </div>
+
+        <div class="ss-actions">
+            <button type="submit" class="ss-btn">Spremi KYC</button>
+            <a class="ss-btn ss-btn-secondary" asp-action="Settings">Odustani</a>
+        </div>
+    </form>
+</section>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

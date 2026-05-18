@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SideSeat.Repositories;
 
@@ -6,6 +7,7 @@ namespace SideSeat.Controllers;
 /// <summary>
 /// Prikazuje sva vozila i detalje pojedinog vozila.
 /// </summary>
+[Authorize(Roles = "Admin")]
 public class VoziloController : Controller
 {
     private readonly SideSeatEfRepository _repository;

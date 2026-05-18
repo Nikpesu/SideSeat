@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SideSeat.Repositories;
 
@@ -6,6 +7,7 @@ namespace SideSeat.Controllers;
 /// <summary>
 /// Prikazuje listu gradova i detalje pojedinog grada iz mock podataka.
 /// </summary>
+[Authorize(Roles = "Admin")]
 public class GradController : Controller
 {
 	private readonly SideSeatEfRepository _repository;

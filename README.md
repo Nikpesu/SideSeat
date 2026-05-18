@@ -6,8 +6,9 @@ Ovaj README prati stvarni tok vjezbi (Lab 1 i Lab 2), a ne dugorocni roadmap pro
 ## Trenutni status
 
 - Projekt je aktivno implementiran kroz Labski tok.
-- Podaci su trenutno mock/static (bez baze podataka).
-- Fokus je na MVC obrascu, navigaciji, razor view-ovima i razumijevanju koda.
+- Podaci su na EF Core + SQL Server bazi (`SideSeatDbContext` + migracije).
+- Implementirani su login/registracija, korisnicke postavke, KYC za vozaca te role-based pristup.
+- Admin ima pristup svim tablicama/formama, korisnik vidi svoje voznje i rezervacije.
 
 ## Tok vjezbe
 
@@ -58,6 +59,12 @@ Sto je napravljeno u projektu:
 - Glavna navigacija i layout: `src/SideSeat/Views/Shared/_Layout.cshtml`.
 - Custom styling i responzivnost: `src/SideSeat/wwwroot/css/site.css`.
 - UX sub-agent konfiguracija: `.github/agents/ux-lab.agent.md`.
+- Login/registracija i cookie auth: `src/SideSeat/Controllers/AuthController.cs`.
+- KYC i user settings flow: `src/SideSeat/Controllers/KorisnikController.cs`.
+- Forme za kreiranje voznje i rezervacije + confirmation stranice:
+    - `src/SideSeat/Controllers/VoznjaController.cs`
+    - `src/SideSeat/Controllers/RezervacijaController.cs`
+    - `src/SideSeat/Controllers/ConfirmationController.cs`
 
 ## Brzi pregled napretka
 
@@ -88,6 +95,19 @@ Build provjera:
 cd src/SideSeat
 dotnet build
 ```
+
+Migracije i baza:
+
+```bash
+cd src/SideSeat
+dotnet ef database update
+```
+
+Demo korisnici:
+
+- Admin: `admin@example.com` / `Admin123!`
+- Vozac: `marko@example.com` / `User123!`
+- Putnik: `ivana@example.com` / `User123!`
 
 ## Struktura repozitorija (bitno za predaju)
 

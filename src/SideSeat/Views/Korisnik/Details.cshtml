@@ -44,6 +44,10 @@
                 <dd>@Model.Email</dd>
             </div>
             <div>
+                <dt>Adresa</dt>
+                <dd>@Model.Adresa</dd>
+            </div>
+            <div>
                 <dt>Broj mobitela</dt>
                 <dd>@Model.BrojMobitela</dd>
             </div>
@@ -54,6 +58,10 @@
             <div>
                 <dt>Vozilo</dt>
                 <dd>@(Model.Vozilo is null ? "Nema povezano vozilo" : $"{Model.Vozilo.Marka} {Model.Vozilo.Model}")</dd>
+            </div>
+            <div>
+                <dt>KYC status</dt>
+                <dd>@(Model.KycPodnesen ? "Ispunjen" : "Nije ispunjen")</dd>
             </div>
             <div>
                 <dt>Kreirane voznje</dt>
