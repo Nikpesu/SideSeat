@@ -58,6 +58,8 @@ Sto je napravljeno u projektu:
 - Glavna navigacija i layout: `src/SideSeat/Views/Shared/_Layout.cshtml`.
 - Custom styling i responzivnost: `src/SideSeat/wwwroot/css/site.css`.
 - UX sub-agent konfiguracija: `.github/agents/ux-lab.agent.md`.
+- Futuristic UI agent: `.github/agents/futuristic-ui-lab.agent.md`.
+- Futuristic UI skill: `.github/skills/futuristic-ui-design/SKILL.md`.
 
 ## Brzi pregled napretka
 

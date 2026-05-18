@@ -17,7 +17,7 @@
     <header class="ss-header">
         <nav class="navbar navbar-expand-lg ss-nav" aria-label="Glavna navigacija">
             <div class="container-fluid ss-shell">
-                <a class="ss-brand" asp-area="" asp-controller="Home" asp-action="Index">SideSeat Lab 2</a>
+                <a class="ss-brand" asp-area="" asp-controller="Home" asp-action="Index">SideSeat Transit</a>
                 <button class="navbar-toggler ss-nav-toggle" type="button" data-bs-toggle="collapse" data-bs-target="#mainNavigation"
                         aria-controls="mainNavigation" aria-expanded="false" aria-label="Prikazi ili sakrij navigaciju">
                     <span class="ss-nav-toggle-text">Meni</span>
@@ -26,7 +26,7 @@
                     <ul class="navbar-nav ms-lg-3 ss-nav-list">
                         <li class="nav-item">
                             <a class="ss-nav-link @((currentController == "home" && currentAction == "index") ? "active" : string.Empty)"
-                               asp-area="" asp-controller="Home" asp-action="Index">Dashboard</a>
+                               asp-area="" asp-controller="Home" asp-action="Index">Pocetna</a>
                         </li>
                         <li class="nav-item">
                             <a class="ss-nav-link @(currentController == "grad" ? "active" : string.Empty)"
@@ -61,6 +61,9 @@
                                asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
                         </li>
                     </ul>
+                    <div class="ss-nav-actions">
+                        <button type="button" class="ss-theme-toggle" id="ss-theme-toggle" aria-label="Promijeni temu">Tema: Auto</button>
+                    </div>
                 </div>
             </div>
         </nav>
