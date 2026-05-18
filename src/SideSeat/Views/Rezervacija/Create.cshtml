@@ -1,0 +1,50 @@
+@model SideSeat.Models.Lab3.RezervacijaFormViewModel
+@{
+    ViewData["Title"] = "Nova rezervacija";
+    var voznja = ViewBag.Voznja as SideSeat.Models.Voznja;
+}
+
+<section class="ss-page">
+    <nav class="ss-breadcrumb" aria-label="Breadcrumb">
+        <a asp-controller="Home" asp-action="Index">Dashboard</a>
+        <span class="ss-breadcrumb-sep">/</span>
+        <a asp-controller="Voznja" asp-action="Active">Aktivne voznje</a>
+        <span class="ss-breadcrumb-sep">/</span>
+        <span class="current" aria-current="page">Nova rezervacija</span>
+    </nav>
+
+    <div class="ss-page-head">
+        <h1>Rezervacija voznje</h1>
+        @if (voznja is not null)
+        {
+            <p>Ruta: @voznja.PolazniGrad?.Naziv -> @voznja.OdredisniGrad?.Naziv | Slobodna mjesta: @voznja.SlobodnaMjesta | Cijena: @voznja.CijenaPoMjestu.ToString("0.00") EUR</p>
+        }
+    </div>
+
+    <form asp-action="Create" method="post" class="ss-detail-card">
+        @Html.AntiForgeryToken()
+        <input type="hidden" asp-for="VoznjaId" />
+        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+        <div class="mb-3">
+            <label asp-for="BrojMjesta" class="form-label"></label>
+            <input asp-for="BrojMjesta" class="form-control" />
+            <span asp-validation-for="BrojMjesta" class="text-danger"></span>
+        </div>
+
+        <div class="mb-3">
+            <label asp-for="Napomena" class="form-label"></label>
+            <textarea asp-for="Napomena" class="form-control" rows="4"></textarea>
+            <span asp-validation-for="Napomena" class="text-danger"></span>
+        </div>
+
+        <div class="ss-actions">
+            <button type="submit" class="ss-btn">Potvrdi rezervaciju</button>
+            <a class="ss-btn ss-btn-secondary" asp-controller="Voznja" asp-action="Details" asp-route-id="@Model.VoznjaId">Odustani</a>
+        </div>
+    </form>
+</section>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

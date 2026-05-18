@@ -48,4 +48,5 @@ public class VoznjaFormViewModel
 
     public List<SelectListItem> Vozaci { get; set; } = new();
     public List<SelectListItem> Gradovi { get; set; } = new();
+    public bool CanSelectDriver { get; set; }
 }

@@ -63,10 +63,17 @@ public class SideSeatDbContext : DbContext
                 Ime = "Marko",
                 Prezime = "Maric",
                 Email = "marko@example.com",
+                LozinkaHash = "WjgcARlXlANvPrwzymGupw==.mAJGLSfwA1qBVtNB5RA7flpqKTF6m4GaYykrX7DvfRM=",
+                Adresa = "Ilica 10, Zagreb",
                 BrojMobitela = "0911111111",
                 DatumRegistracije = new DateTime(2026, 5, 1, 8, 0, 0),
                 Tip = TipKorisnika.Vozac,
                 JeAktivan = true,
+                KycPodnesen = true,
+                KycOib = "12345678901",
+                KycBrojOsobne = "12345678",
+                KycBrojVozacke = "HR-VOZ-001",
+                KycDatumRodenja = new DateTime(1990, 4, 12),
                 VoziloId = null
             },
             new Korisnik
@@ -75,10 +82,13 @@ public class SideSeatDbContext : DbContext
                 Ime = "Ivana",
                 Prezime = "Ivic",
                 Email = "ivana@example.com",
+                LozinkaHash = "d+Ekke4YV8yR6E71CavL1w==.emo+8SBlglGcaUZ6zdYXv/sWOHz95xzNsKI3rkmB8os=",
+                Adresa = "Marmontova 21, Split",
                 BrojMobitela = "0922222222",
                 DatumRegistracije = new DateTime(2026, 5, 1, 9, 0, 0),
                 Tip = TipKorisnika.Putnik,
                 JeAktivan = true,
+                KycPodnesen = false,
                 VoziloId = null
             },
             new Korisnik
@@ -87,10 +97,13 @@ public class SideSeatDbContext : DbContext
                 Ime = "Ana",
                 Prezime = "Admin",
                 Email = "admin@example.com",
+                LozinkaHash = "UJon3KrOrz+TJuEAH49PBA==.mtr30yYsJ5J4MS/edvNKLbZ/aOhiZ+W0gPp24rGz0JY=",
+                Adresa = "Savska 100, Zagreb",
                 BrojMobitela = "0933333333",
                 DatumRegistracije = new DateTime(2026, 5, 1, 10, 0, 0),
                 Tip = TipKorisnika.Admin,
                 JeAktivan = true,
+                KycPodnesen = true,
                 VoziloId = null
             }
         );

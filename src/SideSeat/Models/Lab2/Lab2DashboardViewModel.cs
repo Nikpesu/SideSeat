@@ -5,6 +5,7 @@ namespace SideSeat.Models.Lab2;
 /// </summary>
 public class Lab2DashboardViewModel
 {
+    public bool IsAdmin { get; set; }
     public int BrojGradova { get; set; }
     public int BrojKorisnika { get; set; }
     public int BrojVozila { get; set; }
@@ -12,4 +13,7 @@ public class Lab2DashboardViewModel
     public int BrojRezervacija { get; set; }
     public int BrojPlacanja { get; set; }
     public int BrojOcjena { get; set; }
+    public int BrojMojihVoznji { get; set; }
+    public int BrojMojihRezervacija { get; set; }
+    public int BrojAktivnihVoznji { get; set; }
 }

@@ -1,0 +1,37 @@
+@model SideSeat.Models.Voznja
+@{
+    ViewData["Title"] = "Potvrda voznje";
+}
+
+<section class="ss-page">
+    <div class="ss-page-head">
+        <h1>Voznja uspjesno kreirana</h1>
+        <p>Voznja #@Model.Id je spremljena i vidljiva na listi voznji.</p>
+    </div>
+
+    <div class="ss-detail-card">
+        <dl class="ss-detail-grid">
+            <div>
+                <dt>Ruta</dt>
+                <dd>@Model.PolazniGrad?.Naziv -> @Model.OdredisniGrad?.Naziv</dd>
+            </div>
+            <div>
+                <dt>Polazak</dt>
+                <dd>@Model.Polazak.ToString("dd.MM.yyyy HH:mm")</dd>
+            </div>
+            <div>
+                <dt>Mjesta</dt>
+                <dd>@Model.SlobodnaMjesta / @Model.UkupnoMjesta</dd>
+            </div>
+            <div>
+                <dt>Cijena po mjestu</dt>
+                <dd>@Model.CijenaPoMjestu.ToString("0.00") EUR</dd>
+            </div>
+        </dl>
+
+        <div class="ss-actions">
+            <a class="ss-btn" asp-controller="Voznja" asp-action="Details" asp-route-id="@Model.Id">Detalji voznje</a>
+            <a class="ss-btn ss-btn-secondary" asp-controller="Voznja" asp-action="Index">Moje voznje</a>
+        </div>
+    </div>
+</section>

@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using SideSeat.Data;
 
@@ -11,9 +12,11 @@ using SideSeat.Data;
 namespace SideSeat.Migrations
 {
     [DbContext(typeof(SideSeatDbContext))]
-    partial class SideSeatDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260518011012_UserAuthAndKycFlows")]
+    partial class UserAuthAndKycFlows
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

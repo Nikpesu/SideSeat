@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SideSeat.Repositories;
 
@@ -6,6 +7,7 @@ namespace SideSeat.Controllers;
 /// <summary>
 /// Prikazuje popis placanja i detalje odabranog placanja.
 /// </summary>
+[Authorize(Roles = "Admin")]
 public class PlacanjeController : Controller
 {
     private readonly SideSeatEfRepository _repository;

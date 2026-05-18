@@ -1,6 +1,8 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using SideSeat.Data;
 using SideSeat.Repositories;
+using SideSeat.Services;
 
 namespace SideSeat
 {
@@ -15,6 +17,14 @@ namespace SideSeat
             builder.Services.AddDbContext<SideSeatDbContext>(options =>
                 options.UseSqlServer(builder.Configuration.GetConnectionString("SideSeatDbContext")));
             builder.Services.AddScoped<SideSeatEfRepository>();
+            builder.Services.AddScoped<IPasswordHashingService, PasswordHashingService>();
+            builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+                .AddCookie(options =>
+                {
+                    options.LoginPath = "/Auth/Login";
+                    options.AccessDeniedPath = "/Auth/AccessDenied";
+                });
+            builder.Services.AddAuthorization();
 
             var app = builder.Build();
 
@@ -29,6 +39,7 @@ namespace SideSeat
             app.UseHttpsRedirection();
             app.UseRouting();
 
+            app.UseAuthentication();
             app.UseAuthorization();
 
             app.MapStaticAssets();

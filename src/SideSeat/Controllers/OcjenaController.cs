@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SideSeat.Repositories;
 
@@ -6,6 +7,7 @@ namespace SideSeat.Controllers;
 /// <summary>
 /// Prikazuje sve ocjene voznji i detalje pojedine ocjene.
 /// </summary>
+[Authorize(Roles = "Admin")]
 public class OcjenaController : Controller
 {
     private readonly SideSeatEfRepository _repository;

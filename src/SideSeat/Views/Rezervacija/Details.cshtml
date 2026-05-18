@@ -1,6 +1,8 @@
 @model SideSeat.Models.Rezervacija
 @{
 	ViewData["Title"] = "Detalji rezervacije";
+	var currentUserId = int.TryParse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value, out var idValue) ? idValue : 0;
+	var canConfirm = User.IsInRole("Admin") || Model.Voznja?.VozacId == currentUserId;
 	var statusClass = Model.Status == SideSeat.Models.StatusRezervacije.Potvrdena
 		? "is-ok"
 		: Model.Status == SideSeat.Models.StatusRezervacije.Aktivna
@@ -59,6 +61,14 @@
 		</dl>
 
 		<div class="ss-actions">
+			@if (canConfirm && Model.Status == SideSeat.Models.StatusRezervacije.Aktivna)
+			{
+				<form asp-action="Confirm" method="post">
+					@Html.AntiForgeryToken()
+					<input type="hidden" name="id" value="@Model.Id" />
+					<button type="submit" class="ss-btn">Potvrdi rezervaciju</button>
+				</form>
+			}
 			<a class="ss-btn ss-btn-secondary" asp-controller="Rezervacija" asp-action="Index">Natrag na rezervacije</a>
 			<a class="ss-btn" asp-controller="Home" asp-action="Index">Dashboard</a>
 		</div>

@@ -1,0 +1,68 @@
+@model SideSeat.Models.Auth.UserSettingsViewModel
+@{
+    ViewData["Title"] = "Postavke korisnika";
+    var kycRequired = TempData["KycRequired"] as string;
+    var settingsSaved = TempData["SettingsSaved"] as string;
+}
+
+<section class="ss-page">
+    <nav class="ss-breadcrumb" aria-label="Breadcrumb">
+        <a asp-controller="Home" asp-action="Index">Dashboard</a>
+        <span class="ss-breadcrumb-sep">/</span>
+        <span class="current" aria-current="page">Postavke</span>
+    </nav>
+
+    <div class="ss-page-head">
+        <h1>Postavke korisnika</h1>
+        <p>Upravljaj adresom i statusom vozac/putnik.</p>
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(kycRequired))
+    {
+        <div class="alert alert-warning" role="alert">@kycRequired</div>
+    }
+    @if (!string.IsNullOrWhiteSpace(settingsSaved))
+    {
+        <div class="alert alert-success" role="alert">@settingsSaved</div>
+    }
+
+    <form asp-action="Settings" method="post" class="ss-detail-card">
+        @Html.AntiForgeryToken()
+        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+        <div class="mb-3">
+            <label asp-for="Address" class="form-label"></label>
+            <input asp-for="Address" class="form-control" />
+            <span asp-validation-for="Address" class="text-danger"></span>
+        </div>
+
+        <div class="form-check mb-2">
+            <input asp-for="IsRider" class="form-check-input" />
+            <label asp-for="IsRider" class="form-check-label"></label>
+        </div>
+
+        <div class="form-check mb-3">
+            <input asp-for="IsDriver" class="form-check-input" />
+            <label asp-for="IsDriver" class="form-check-label"></label>
+        </div>
+
+        <div class="mb-3">
+            <span class="ss-badge @(Model.KycPodnesen ? "is-ok" : "is-alert")">
+                KYC: @(Model.KycPodnesen ? "ispunjen" : "nije ispunjen")
+            </span>
+            @if (!Model.KycPodnesen)
+            {
+                <a class="ss-btn ss-btn-secondary ms-2" asp-action="Kyc">Ispuni KYC</a>
+            }
+        </div>
+
+        <div class="ss-actions">
+            <button type="submit" class="ss-btn">Spremi postavke</button>
+            <a class="ss-btn ss-btn-secondary" asp-controller="Home" asp-action="Index">Odustani</a>
+        </div>
+    </form>
+</section>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

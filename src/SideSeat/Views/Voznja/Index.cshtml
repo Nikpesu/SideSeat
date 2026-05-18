@@ -1,6 +1,8 @@
 @model IReadOnlyList<SideSeat.Models.Voznja>
 @{
 	ViewData["Title"] = "Voznje";
+	var currentUserId = int.TryParse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value, out var idValue) ? idValue : 0;
+	var isAdmin = User.IsInRole("Admin");
 }
 
 <section class="ss-page">
@@ -60,7 +62,10 @@
 							<td><span class="ss-badge @statusClass">@voznja.Status</span></td>
 							<td>
 								<a class="ss-btn" asp-controller="Voznja" asp-action="Details" asp-route-id="@voznja.Id">Detalji</a>
-								<a class="ss-btn ss-btn-secondary" asp-controller="Voznja" asp-action="Edit" asp-route-id="@voznja.Id">Uredi</a>
+								@if (isAdmin || voznja.VozacId == currentUserId)
+								{
+									<a class="ss-btn ss-btn-secondary" asp-controller="Voznja" asp-action="Edit" asp-route-id="@voznja.Id">Uredi</a>
+								}
 							</td>
 						</tr>
 					}
