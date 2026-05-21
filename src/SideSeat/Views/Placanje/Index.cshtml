@@ -1,9 +1,20 @@
 @model IReadOnlyList<SideSeat.Models.Placanje>
+@using SideSeat.Models.ViewModels
 @{
     ViewData["Title"] = "Placanja";
+    var search = ViewBag.Search as string ?? string.Empty;
+    var selectedDate = ViewBag.Date as DateTime?;
+    var dateFilter = new DateTimeInputViewModel
+    {
+        Name = "date",
+        Label = "Datum",
+        Value = selectedDate,
+        DateOnly = true
+    };
+    var isAdmin = User.IsInRole("Admin");
 }
 
-<section class="ss-page">
+<section class="ss-page" data-ss-list-page>
     <nav class="ss-breadcrumb" aria-label="Breadcrumb">
         <a asp-controller="Home" asp-action="Index">Dashboard</a>
         <span class="ss-breadcrumb-sep">/</span>
@@ -13,6 +24,32 @@
     <div class="ss-page-head">
         <h1>Placanja</h1>
         <p>Pregled transakcija, nacina placanja i statusa.</p>
+        <div class="ss-list-toolbar">
+            <div class="ss-list-search">
+                <label class="form-label" for="placanja-search">Pretraga</label>
+                <input id="placanja-search" class="form-control" type="search" value="@search" placeholder="Rezervacija, putnik, nacin ili status" data-ss-list-search />
+            </div>
+            <div class="ss-list-pagesize">
+                <label class="form-label" for="placanja-pagesize">Prikaži</label>
+                @{ var _ps = ViewBag.PageSize as int?; }
+                <select id="placanja-pagesize" class="form-select" data-ss-list-pagesize>
+                    @if (_ps == 10) { <text><option value="10" selected>10</option></text> } else { <text><option value="10">10</option></text> }
+                    @if (_ps == null || _ps == 25) { <text><option value="25" selected>25</option></text> } else { <text><option value="25">25</option></text> }
+                    @if (_ps == 50) { <text><option value="50" selected>50</option></text> } else { <text><option value="50">50</option></text> }
+                    @if (_ps == 100) { <text><option value="100" selected>100</option></text> } else { <text><option value="100">100</option></text> }
+                    @if (_ps == 0) { <text><option value="0" selected>∞</option></text> } else { <text><option value="0">∞</option></text> }
+                </select>
+            </div>
+            <div class="ss-list-date">
+                <partial name="_DateTimeInput" model="dateFilter" />
+            </div>
+        </div>
+        @if (isAdmin)
+        {
+            <div class="ss-actions">
+                <a class="ss-btn" asp-action="Create">Novo placanje</a>
+            </div>
+        }
     </div>
 
     @if (Model.Count == 0)
@@ -21,7 +58,7 @@
     }
     else
     {
-        <div class="ss-table-shell" role="region" aria-label="Lista placanja" tabindex="0">
+        <div class="ss-table-shell" role="region" aria-label="Lista placanja" tabindex="0" data-ss-list-content>
             <table class="ss-table">
                 <thead>
                     <tr>
@@ -52,6 +89,11 @@
                             </td>
                             <td>
                                 <a class="ss-btn" asp-controller="Placanje" asp-action="Details" asp-route-id="@placanje.Id">Detalji</a>
+                                @if (isAdmin)
+                                {
+                                    <a class="ss-btn ss-btn-secondary" asp-controller="Placanje" asp-action="Edit" asp-route-id="@placanje.Id">Uredi</a>
+                                    <a class="ss-btn ss-btn-secondary" asp-controller="Placanje" asp-action="Delete" asp-route-id="@placanje.Id">Obrisi</a>
+                                }
                             </td>
                         </tr>
                     }

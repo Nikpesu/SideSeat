@@ -1,56 +1,149 @@
-@model IReadOnlyList<SideSeat.Models.OcjenaVoznje>
+@model SideSeat.Models.Ocjena.OcjenaTabViewModel
 @{
-	ViewData["Title"] = "Ocjene";
+    ViewData["Title"] = "Ocjene";
 }
 
 <section class="ss-page">
-	<nav class="ss-breadcrumb" aria-label="Breadcrumb">
-		<a asp-controller="Home" asp-action="Index">Dashboard</a>
-		<span class="ss-breadcrumb-sep">/</span>
-		<span class="current" aria-current="page">Ocjene</span>
-	</nav>
+    <nav class="ss-breadcrumb" aria-label="Breadcrumb">
+        <a asp-controller="Home" asp-action="Index">Dashboard</a>
+        <span class="ss-breadcrumb-sep">/</span>
+        <span class="current" aria-current="page">Ocjene</span>
+    </nav>
 
-	<div class="ss-page-head">
-		<h1>Ocjene voznji</h1>
-		<p>Pregled ocjena koje su korisnici ostavili nakon voznje.</p>
-	</div>
+    <div class="ss-page-head">
+        <h1>Moje ocjene</h1>
+        <p>Ocijeni odvozene voznje i prati dane/primljene ocjene.</p>
+    </div>
 
-	@if (Model.Count == 0)
-	{
-		<p class="ss-empty">Nema unesenih ocjena.</p>
-	}
-	else
-	{
-		<div class="ss-table-shell" role="region" aria-label="Lista ocjena" tabindex="0">
-			<table class="ss-table">
-				<thead>
-					<tr>
-						<th>ID</th>
-						<th>Autor</th>
-						<th>Rezervacija</th>
-						<th>Zvjezdice</th>
-						<th>Komentar</th>
-						<th>Kreirano</th>
-						<th>Akcija</th>
-					</tr>
-				</thead>
-				<tbody>
-					@foreach (var ocjena in Model)
-					{
-						<tr>
-							<td>@ocjena.Id</td>
-							<td>@ocjena.Autor?.Ime @ocjena.Autor?.Prezime</td>
-							<td>#@ocjena.RezervacijaId</td>
-							<td>@(new string('*', ocjena.BrojZvjezdica)) (@ocjena.BrojZvjezdica/5)</td>
-							<td>@ocjena.Komentar</td>
-							<td>@ocjena.Kreirano.ToString("dd.MM.yyyy HH:mm")</td>
-							<td>
-								<a class="ss-btn" asp-controller="Ocjena" asp-action="Details" asp-route-id="@ocjena.Id">Detalji</a>
-							</td>
-						</tr>
-					}
-				</tbody>
-			</table>
-		</div>
-	}
+    <div class="ss-detail-card mb-4">
+        <h2 class="h5">Prosjeci</h2>
+        <dl class="ss-detail-grid">
+            <div>
+                <dt>Dane ocjene (prosjek)</dt>
+                <dd>@(Model.Given.Count == 0 ? "Nema ocjena" : Model.GivenAverage.ToString("0.0"))</dd>
+            </div>
+            <div>
+                <dt>Primljene ocjene (prosjek)</dt>
+                <dd>@(Model.Received.Count == 0 ? "Nema ocjena" : Model.ReceivedAverage.ToString("0.0"))</dd>
+            </div>
+        </dl>
+    </div>
+
+    <div class="ss-detail-card mb-4">
+        <h2 class="h5">Odvozene voznje bez moje ocjene</h2>
+        @if (Model.Pending.Count == 0)
+        {
+            <p class="ss-empty">Nema voznji koje jos mozes ocijeniti.</p>
+        }
+        else
+        {
+            <div class="ss-table-shell" role="region" aria-label="Voznje za ocjenjivanje" tabindex="0">
+                <table class="ss-table">
+                    <thead>
+                        <tr>
+                            <th>Rezervacija</th>
+                            <th>Ruta</th>
+                            <th>Datum voznje</th>
+                            <th>Ocijeniti</th>
+                            <th>Akcija</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    @foreach (var row in Model.Pending)
+                    {
+                        <tr>
+                            <td>#@row.RezervacijaId</td>
+                            <td>@row.RouteLabel</td>
+                            <td>@row.RideDate.ToString("dd.MM.yyyy HH:mm")</td>
+                            <td>@row.TargetName</td>
+                            <td>
+                                <a class="ss-btn" asp-controller="Ocjena" asp-action="Create" asp-route-rezervacijaId="@row.RezervacijaId">Dodaj ocjenu</a>
+                            </td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+
+    <div class="ss-detail-card mb-4">
+        <h2 class="h5">Ocjene koje sam dao</h2>
+        @if (Model.Given.Count == 0)
+        {
+            <p class="ss-empty">Jos nisi dao nijednu ocjenu.</p>
+        }
+        else
+        {
+            <div class="ss-table-shell" role="region" aria-label="Dane ocjene" tabindex="0">
+                <table class="ss-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Rezervacija</th>
+                            <th>Ruta</th>
+                            <th>Primatelj</th>
+                            <th>Zvjezdice</th>
+                            <th>Komentar</th>
+                            <th>Datum</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    @foreach (var row in Model.Given)
+                    {
+                        <tr>
+                            <td>@row.OcjenaId</td>
+                            <td>#@row.RezervacijaId</td>
+                            <td>@row.RouteLabel</td>
+                            <td>@row.TargetName</td>
+                            <td>@row.BrojZvjezdica/5</td>
+                            <td>@row.Komentar</td>
+                            <td>@row.Kreirano.ToString("dd.MM.yyyy HH:mm")</td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+
+    <div class="ss-detail-card">
+        <h2 class="h5">Ocjene koje sam dobio</h2>
+        @if (Model.Received.Count == 0)
+        {
+            <p class="ss-empty">Jos nemas primljenih ocjena.</p>
+        }
+        else
+        {
+            <div class="ss-table-shell" role="region" aria-label="Primljene ocjene" tabindex="0">
+                <table class="ss-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Rezervacija</th>
+                            <th>Ruta</th>
+                            <th>Autor</th>
+                            <th>Zvjezdice</th>
+                            <th>Komentar</th>
+                            <th>Datum</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    @foreach (var row in Model.Received)
+                    {
+                        <tr>
+                            <td>@row.OcjenaId</td>
+                            <td>#@row.RezervacijaId</td>
+                            <td>@row.RouteLabel</td>
+                            <td>@row.AuthorName</td>
+                            <td>@row.BrojZvjezdica/5</td>
+                            <td>@row.Komentar</td>
+                            <td>@row.Kreirano.ToString("dd.MM.yyyy HH:mm")</td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
 </section>

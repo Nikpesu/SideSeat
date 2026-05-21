@@ -1,0 +1,35 @@
+@model SideSeat.Models.ViewModels.DateTimeInputViewModel
+@{
+    var inputId = $"{Model.Name}-datetime";
+    var visibleValue = Model.Value.HasValue
+        ? Model.DateOnly
+            ? Model.Value.Value.ToString("dd.MM.yyyy.")
+            : Model.Value.Value.ToString("dd.MM.yyyy HH:mm")
+        : string.Empty;
+    var hiddenValue = Model.Value.HasValue
+        ? Model.DateOnly
+            ? Model.Value.Value.ToString("yyyy-MM-dd")
+            : Model.Value.Value.ToString("yyyy-MM-ddTHH:mm")
+        : string.Empty;
+}
+
+<div class="ss-datetime-field" data-ss-datetime data-date-only="@(Model.DateOnly ? "true" : "false")">
+    <label class="form-label" for="@inputId">@Model.Label</label>
+    <input type="hidden" name="@Model.Name" value="@hiddenValue" data-ss-datetime-hidden />
+    <div class="ss-datetime-input-wrap">
+        <input id="@inputId"
+               type="text"
+               class="form-control"
+               value="@visibleValue"
+               autocomplete="off"
+               placeholder="@(Model.DateOnly ? "dd.MM.yyyy." : "dd.MM.yyyy. HH:mm")"
+               data-ss-datetime-input
+               @(Model.Required ? "required" : null) />
+        <button type="button" class="ss-datetime-toggle" data-ss-datetime-toggle aria-label="Otvori kalendar">📅</button>
+    </div>
+    <div class="ss-datetime-picker" data-ss-datetime-picker hidden></div>
+    @if (!string.IsNullOrWhiteSpace(Model.HelpText))
+    {
+        <small class="ss-datetime-help">@Model.HelpText</small>
+    }
+</div>

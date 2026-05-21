@@ -1,107 +1,218 @@
-﻿@model SideSeat.Models.Lab2.Lab2DashboardViewModel
+@model SideSeat.Models.Home.HomeDashboardViewModel
+@using SideSeat.Models.ViewModels
 @{
     ViewData["Title"] = "Pocetna";
+    var isAuthenticated = Model.IsAuthenticated;
+    var fromLookup = new AutocompleteLookupViewModel
+    {
+        Name = "from",
+        Label = "Polaziste",
+        Endpoint = Url.Action("SearchRouteLocations", "Home") ?? string.Empty,
+        SelectedId = Model.SearchFrom?.ToString() ?? string.Empty,
+        SelectedText = Model.SearchFromText,
+        Placeholder = "Odaberi polaziste...",
+        HelpText = "Prikazuju se samo gradovi s dostupnim voznjama.",
+        MinimumLength = 0,
+        RouteMode = "from",
+        RoutePeerName = "to"
+    };
+    var toLookup = new AutocompleteLookupViewModel
+    {
+        Name = "to",
+        Label = "Odrediste",
+        Endpoint = Url.Action("SearchRouteLocations", "Home") ?? string.Empty,
+        SelectedId = Model.SearchTo?.ToString() ?? string.Empty,
+        SelectedText = Model.SearchToText,
+        Placeholder = "Odaberi odrediste...",
+        HelpText = "Lista odredista se suzava prema polazistu.",
+        MinimumLength = 0,
+        RouteMode = "to",
+        RoutePeerName = "from"
+    };
+    var searchDateInput = new DateTimeInputViewModel
+    {
+        Name = "date",
+        Label = "Datum",
+        Value = Model.SearchDate,
+        DateOnly = true
+    };
 }
 
 <section class="ss-page ss-home-hub">
-    <nav class="ss-breadcrumb" aria-label="Breadcrumb">
-        <span class="current" aria-current="page">Pocetna</span>
-    </nav>
+    <div class="ss-home-bg" aria-hidden="true">
+        <span class="ss-route-line is-one"></span>
+        <span class="ss-route-line is-two"></span>
+        <span class="ss-route-line is-three"></span>
+        <span class="ss-route-car ss-car-green"></span>
+        <span class="ss-route-car ss-car-blue"></span>
+        <span class="ss-route-car ss-car-orange"></span>
+        <span class="ss-route-car ss-car-pink"></span>
+    </div>
 
-    <div class="ss-hero ss-hero-home">
-        <span class="ss-hero-kicker">BlaBlaCar inspired flow</span>
-        <h1>Putuj ili vozi bez kompliciranja</h1>
-        <p>
-            Jedan profil, dvije uloge: kao putnik pronadi voznju, a kao vozac objavi svoju rutu.
-            Ispod je command deck za sve operativne stranice aplikacije.
-        </p>
-        <div class="ss-actions">
-            <a class="ss-btn" asp-controller="Voznja" asp-action="Active">Pronadi voznju</a>
-            <a class="ss-btn ss-btn-secondary" asp-controller="Voznja" asp-action="Create">Objavi voznju</a>
+    <div class="ss-home-content">
+        <nav class="ss-breadcrumb" aria-label="Breadcrumb">
+            <span class="current" aria-current="page">Pocetna</span>
+        </nav>
+
+        <div class="ss-hero ss-holo-hero">
+            <div class="ss-holo-copy">
+                <span class="ss-hero-kicker">Holografski vozni red</span>
+                <h1>Upravljaj voznjama kao kontrolni toranj za mobilnost.</h1>
+                <p>
+                    SideSeat spaja vozace i putnike u realnom vremenu. Prati slobodna mjesta,
+                    potvrdi rezervacije i drzi ritam s planom voznji bez tablica i kaosa.
+                </p>
+                <form class="ss-search" method="get" asp-controller="Home" asp-action="Index" aria-label="Pretrazi voznje" data-ss-ajax-form data-ss-ajax-target="[data-ss-home-search-results]">
+                    <div class="ss-search-grid">
+                        <div>
+                            <partial name="_AutocompleteLookup" model="fromLookup" />
+                        </div>
+                        <div>
+                            <partial name="_AutocompleteLookup" model="toLookup" />
+                        </div>
+                        <div>
+                            <partial name="_DateTimeInput" model="searchDateInput" />
+                        </div>
+                        <div class="ss-search-cta">
+                            <button class="ss-btn" type="submit">Pretrazi</button>
+                        </div>
+                    </div>
+                </form>
+                <div class="ss-actions">
+                    <a class="ss-btn" asp-controller="Voznja" asp-action="Active">Pronadi voznju</a>
+                    @if (isAuthenticated)
+                    {
+                        <a class="ss-btn ss-btn-secondary" asp-controller="Voznja" asp-action="Create">Objavi voznju</a>
+                    }
+                    else
+                    {
+                        <button class="ss-btn ss-btn-ghost" type="button" data-bs-toggle="modal" data-bs-target="#authModal" data-auth-open="login">
+                            Prijava
+                        </button>
+                        <button class="ss-btn ss-btn-ghost" type="button" data-bs-toggle="modal" data-bs-target="#authModal" data-auth-open="register">
+                            Registracija
+                        </button>
+                    }
+                </div>
+                <div class="ss-hero-meta">
+                    <div class="ss-hero-metric">
+                        <span class="ss-hero-label">Aktivne voznje</span>
+                        <span class="ss-hero-value">@Model.BrojAktivnihVoznji</span>
+                    </div>
+                    <div class="ss-hero-metric">
+                        <span class="ss-hero-label">Rezervacije</span>
+                        <span class="ss-hero-value">@Model.BrojRezervacija</span>
+                    </div>
+                    <div class="ss-hero-metric">
+                        <span class="ss-hero-label">Ocjene</span>
+                        <span class="ss-hero-value">@Model.BrojOcjena</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="ss-holo-board" aria-hidden="true">
+                @if (Model.NadolazeceVoznje.Count == 0)
+                {
+                    <div class="ss-holo-row">
+                        <span class="ss-holo-time">--:--</span>
+                        <span class="ss-holo-route">Nema planiranih voznji</span>
+                        <span class="ss-holo-status">Idle</span>
+                    </div>
+                }
+                else
+                {
+                    foreach (var voznja in Model.NadolazeceVoznje)
+                    {
+                        <div class="ss-holo-row">
+                            <span class="ss-holo-time">@voznja.Polazak.ToLocalTime().ToString("HH:mm")</span>
+                            <span class="ss-holo-route">@voznja.PolazniGrad - @voznja.OdredisniGrad</span>
+                            <span class="ss-holo-status is-live">Planirana</span>
+                        </div>
+                    }
+                }
+                <div class="ss-holo-pulse"></div>
+            </div>
+        </div>
+
+        <div class="ss-search-results" aria-live="polite" data-ss-home-search-results>
+            <div class="ss-search-head">
+                <h2>Vozni red</h2>
+                <span>@Model.SearchResults.Count prikazanih voznji</span>
+            </div>
+
+            @if (Model.SearchResults.Count == 0)
+            {
+                <div class="ss-empty">Jos nema rezultata. Unesi polaziste, odrediste ili datum.</div>
+            }
+            else
+            {
+                <div class="ss-ride-grid">
+                    @foreach (var voznja in Model.SearchResults)
+                    {
+                        <article class="ss-ride-card">
+                            <div class="ss-ride-route">
+                                <span>@voznja.PolazniGrad</span>
+                                <span class="ss-ride-arrow">→</span>
+                                <span>@voznja.OdredisniGrad</span>
+                            </div>
+                            <div class="ss-ride-meta">
+                                <span>@voznja.Polazak.ToLocalTime().ToString("dd.MM. HH:mm")</span>
+                                <span>@voznja.SlobodnaMjesta mjesta</span>
+                                <span>@voznja.CijenaPoMjestu.ToString("0.00") €</span>
+                            </div>
+                            <div class="ss-ride-driver">@voznja.Vozac</div>
+                            <a class="ss-btn ss-btn-secondary" asp-controller="Voznja" asp-action="Details" asp-route-id="@voznja.Id">Detalji</a>
+                        </article>
+                    }
+                </div>
+            }
+        </div>
+
+        <div class="ss-home-capabilities" aria-label="Mogucnosti aplikacije">
+            <article class="ss-cap-card">
+                <h2>Planiranje i objava</h2>
+                <p>Definiraj rutu, cijenu i broj mjesta, a aplikacija automatski vodi evidenciju dostupnosti.</p>
+                @if (isAuthenticated)
+                {
+                    <a class="ss-link" asp-controller="Voznja" asp-action="Create">Objavi novu voznju</a>
+                }
+            </article>
+            <article class="ss-cap-card">
+                <h2>Rezervacije u letu</h2>
+                <p>Putnici vide aktivne rute, potvrduju mjesto i primaju azuriranja bez dodatnih poziva.</p>
+                <a class="ss-link" asp-controller="Rezervacija" asp-action="Index">Upravljaj rezervacijama</a>
+            </article>
+            <article class="ss-cap-card">
+                <h2>Ocjene i povjerenje</h2>
+                <p>Ocjene voznji i korisnika stvaraju transparentnu mrezu pouzdanih voznji.</p>
+                <a class="ss-link" asp-controller="Ocjena" asp-action="Index">Pogledaj ocjene</a>
+            </article>
+        </div>
+
+        <div class="ss-home-flow" aria-label="Kako radi">
+            <div class="ss-flow-step">
+                <span class="ss-flow-index">01</span>
+                <div>
+                    <h3>Odaberi ulogu</h3>
+                    <p>Putnik ili vozac, SideSeat prilagodava prikaz za tvoju rutinu.</p>
+                </div>
+            </div>
+            <div class="ss-flow-step">
+                <span class="ss-flow-index">02</span>
+                <div>
+                    <h3>Prati hologram</h3>
+                    <p>Vizualni raspored prikazuje raspolozive voznje, mjesta i status u realnom vremenu.</p>
+                </div>
+            </div>
+            <div class="ss-flow-step">
+                <span class="ss-flow-index">03</span>
+                <div>
+                    <h3>Rezerviraj ili potvrdi</h3>
+                    <p>Brza potvrda rezervacija i placanja bez napustanja platforme.</p>
+                </div>
+            </div>
         </div>
     </div>
 
-    <div class="ss-role-grid" aria-label="Uloge korisnika">
-        <article class="ss-role-card">
-            <div class="ss-role-head">
-                <span class="ss-role-tag">Putnik mode</span>
-                <h2>Trebas prijevoz?</h2>
-            </div>
-            <p>Fokus na brzo pronalazenje aktivnih voznji i rezervaciju mjesta.</p>
-            <ul class="ss-role-list">
-                <li>Pregledaj rute i vremena polaska.</li>
-                <li>Provjeri slobodna mjesta i cijene.</li>
-                <li>Upravljaj svojim rezervacijama i placanjima.</li>
-            </ul>
-            <div class="ss-actions">
-                <a class="ss-btn" asp-controller="Voznja" asp-action="Active">Aktivne voznje</a>
-                <a class="ss-btn ss-btn-secondary" asp-controller="Rezervacija" asp-action="Index">Moje rezervacije</a>
-            </div>
-        </article>
-
-        <article class="ss-role-card">
-            <div class="ss-role-head">
-                <span class="ss-role-tag">Vozac mode</span>
-                <h2>Nudis prijevoz?</h2>
-            </div>
-            <p>Fokus na objavu voznje, popunjavanje mjesta i pracenje izvedbe voznji.</p>
-            <ul class="ss-role-list">
-                <li>Kreiraj novu voznju i definiraj cijenu.</li>
-                <li>Prati status voznji i rezervirana mjesta.</li>
-                <li>Azuriraj rutu i vrijeme kad se plan promijeni.</li>
-            </ul>
-            <div class="ss-actions">
-                <a class="ss-btn" asp-controller="Voznja" asp-action="Create">Nova voznja</a>
-                <a class="ss-btn ss-btn-secondary" asp-controller="Voznja" asp-action="Index">Upravljanje voznjama</a>
-            </div>
-        </article>
-    </div>
-
-    <div class="ss-page-head">
-        <h2>Transit command deck</h2>
-        <p>Operativni pregled svih glavnih sekcija i direktni ulaz na Index/Details tokove.</p>
-    </div>
-
-    <div class="ss-home-grid" aria-label="Lab 2 sekcije">
-        <a class="ss-home-card" asp-controller="Voznja" asp-action="Index">
-            <span class="ss-home-label">Voznje</span>
-            <strong class="ss-home-count">@Model.BrojVoznji</strong>
-            <span class="ss-home-hint">Kontrola ruta, statusa i slobodnih mjesta</span>
-        </a>
-        <a class="ss-home-card" asp-controller="Voznja" asp-action="Active">
-            <span class="ss-home-label">Aktivne voznje</span>
-            <strong class="ss-home-count">@Model.BrojVoznji</strong>
-            <span class="ss-home-hint">Filtriraj i otvori detalje aktivnih polazaka</span>
-        </a>
-        <a class="ss-home-card" asp-controller="Rezervacija" asp-action="Index">
-            <span class="ss-home-label">Rezervacije</span>
-            <strong class="ss-home-count">@Model.BrojRezervacija</strong>
-            <span class="ss-home-hint">Potvrde, statusi i broj mjesta po rezervaciji</span>
-        </a>
-        <a class="ss-home-card" asp-controller="Placanje" asp-action="Index">
-            <span class="ss-home-label">Placanja</span>
-            <strong class="ss-home-count">@Model.BrojPlacanja</strong>
-            <span class="ss-home-hint">Status uplata i nacini placanja po rezervaciji</span>
-        </a>
-        <a class="ss-home-card" asp-controller="Ocjena" asp-action="Index">
-            <span class="ss-home-label">Ocjene</span>
-            <strong class="ss-home-count">@Model.BrojOcjena</strong>
-            <span class="ss-home-hint">Povratne informacije nakon voznje</span>
-        </a>
-        <a class="ss-home-card" asp-controller="Korisnik" asp-action="Index">
-            <span class="ss-home-label">Korisnici</span>
-            <strong class="ss-home-count">@Model.BrojKorisnika</strong>
-            <span class="ss-home-hint">Profili putnika i vozaca te njihov status</span>
-        </a>
-        <a class="ss-home-card" asp-controller="Vozilo" asp-action="Index">
-            <span class="ss-home-label">Vozila</span>
-            <strong class="ss-home-count">@Model.BrojVozila</strong>
-            <span class="ss-home-hint">Vozni park i povezana vozaceva vozila</span>
-        </a>
-        <a class="ss-home-card" asp-controller="Grad" asp-action="Index">
-            <span class="ss-home-label">Gradovi</span>
-            <strong class="ss-home-count">@Model.BrojGradova</strong>
-            <span class="ss-home-hint">Polazne i odredisne tocke svih ruta</span>
-        </a>
-    </div>
 </section>
+

@@ -1,12 +1,13 @@
-@model SideSeat.Models.Voznja
+@model SideSeat.Models.Rides.VoznjaDetailsViewModel
 @{
 	ViewData["Title"] = "Detalji voznje";
 	var currentUserId = int.TryParse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value, out var idValue) ? idValue : 0;
-	var canEdit = User.IsInRole("Admin") || Model.VozacId == currentUserId;
-	var canBook = !canEdit && Model.Status == SideSeat.Models.StatusVoznje.Planirana && Model.SlobodnaMjesta > 0;
-	var statusClass = Model.Status == SideSeat.Models.StatusVoznje.Planirana
+	var voznja = Model.Voznja;
+	var canEdit = User.IsInRole("Admin") || voznja.VozacId == currentUserId;
+	var canBook = !canEdit && voznja.Status == SideSeat.Models.StatusVoznje.Planirana && voznja.SlobodnaMjesta > 0;
+	var statusClass = voznja.Status == SideSeat.Models.StatusVoznje.Planirana
 		? "is-ok"
-		: Model.Status == SideSeat.Models.StatusVoznje.Zavrsena
+		: voznja.Status == SideSeat.Models.StatusVoznje.Zavrsena
 			? "is-alert"
 			: "is-off";
 }
@@ -17,7 +18,7 @@
 		<span class="ss-breadcrumb-sep">/</span>
 		<a asp-controller="Voznja" asp-action="Index">Voznje</a>
 		<span class="ss-breadcrumb-sep">/</span>
-		<span class="current" aria-current="page">Voznja #@Model.Id</span>
+		<span class="current" aria-current="page">Voznja #@voznja.Id</span>
 	</nav>
 
 	<div class="ss-page-head">
@@ -29,54 +30,171 @@
 		<dl class="ss-detail-grid">
 			<div>
 				<dt>ID</dt>
-				<dd>@Model.Id</dd>
+				<dd>@voznja.Id</dd>
 			</div>
 			<div>
 				<dt>Status</dt>
-				<dd><span class="ss-badge @statusClass">@Model.Status</span></dd>
+				<dd><span class="ss-badge @statusClass">@voznja.Status</span></dd>
 			</div>
 			<div>
 				<dt>Vozac</dt>
-				<dd>@Model.Vozac?.Ime @Model.Vozac?.Prezime</dd>
+				<dd>@voznja.Vozac?.Ime @voznja.Vozac?.Prezime</dd>
 			</div>
 			<div>
 				<dt>Ruta</dt>
-				<dd>@Model.PolazniGrad?.Naziv -> @Model.OdredisniGrad?.Naziv</dd>
+				<dd>@voznja.PolazniGrad?.Naziv -> @voznja.OdredisniGrad?.Naziv</dd>
 			</div>
 			<div>
 				<dt>Polazak</dt>
-				<dd>@Model.Polazak.ToString("dd.MM.yyyy HH:mm")</dd>
+				<dd>@voznja.Polazak.ToString("dd.MM.yyyy HH:mm")</dd>
 			</div>
 			<div>
 				<dt>Ocekivani dolazak</dt>
-				<dd>@Model.OcekivaniDolazak.ToString("dd.MM.yyyy HH:mm")</dd>
+				<dd>@voznja.OcekivaniDolazak.ToString("dd.MM.yyyy HH:mm")</dd>
 			</div>
 			<div>
 				<dt>Cijena po mjestu</dt>
-				<dd>@Model.CijenaPoMjestu.ToString("0.00") EUR</dd>
+				<dd>@voznja.CijenaPoMjestu.ToString("0.00") EUR</dd>
 			</div>
 			<div>
 				<dt>Mjesta</dt>
-				<dd>@Model.SlobodnaMjesta slobodno od @Model.UkupnoMjesta</dd>
+				<dd>@voznja.SlobodnaMjesta slobodno od @voznja.UkupnoMjesta</dd>
 			</div>
 			<div>
 				<dt>Broj rezervacija</dt>
-				<dd>@(Model.Rezervacije?.Count ?? 0)</dd>
+				<dd>@Model.Putnici.Count</dd>
+			</div>
+			<div>
+				<dt>Prosjek ocjena voznje</dt>
+				<dd>@(Model.BrojOcjenaVoznje == 0 ? "Nema ocjena" : Model.ProsjecnaOcjenaVoznje.ToString("0.0"))</dd>
+			</div>
+			<div>
+				<dt>Prosjek ocjena vozaca</dt>
+				<dd>@(Model.BrojOcjenaVozaca == 0 ? "Nema ocjena" : Model.ProsjecnaOcjenaVozaca.ToString("0.0"))</dd>
 			</div>
 			<div>
 				<dt>Opis</dt>
-				<dd>@(string.IsNullOrWhiteSpace(Model.Opis) ? "Bez dodatne napomene." : Model.Opis)</dd>
+				<dd>@(string.IsNullOrWhiteSpace(voznja.Opis) ? "Bez dodatne napomene." : voznja.Opis)</dd>
 			</div>
 		</dl>
+
+		<h2 class="h5 mt-4">Putnici na voznji</h2>
+		@if (Model.Putnici.Count == 0)
+		{
+			<p class="ss-empty">Za ovu voznju jos nema rezervacija.</p>
+		}
+		else
+		{
+			<div class="ss-table-shell" role="region" aria-label="Putnici voznje" tabindex="0">
+				<table class="ss-table">
+					<thead>
+						<tr>
+							<th>Rezervacija</th>
+							<th>Putnik</th>
+							<th>Status</th>
+							<th>Mjesta</th>
+							<th>Ocjena putnika</th>
+							<th>Ocjena vozaca</th>
+						</tr>
+					</thead>
+					<tbody>
+					@foreach (var putnik in Model.Putnici)
+					{
+						<tr>
+							<td>#@putnik.RezervacijaId</td>
+							<td>
+								<a asp-controller="Korisnik" asp-action="Details" asp-route-id="@putnik.PutnikId">@putnik.PutnikIme</a>
+							</td>
+							<td>@putnik.Status</td>
+							<td>@putnik.BrojMjesta</td>
+							<td>@(putnik.PutnikJeOcijenio ? "Da" : "Ne")</td>
+							<td>@(putnik.VozacJeOcijenio ? "Da" : "Ne")</td>
+						</tr>
+					}
+					</tbody>
+				</table>
+			</div>
+		}
+
+		<h2 class="h5 mt-4">Ocjene ove voznje</h2>
+		@if (Model.OcjeneVoznje.Count == 0)
+		{
+			<p class="ss-empty">Za ovu voznju jos nema ocjena.</p>
+		}
+		else
+		{
+			<div class="ss-table-shell" role="region" aria-label="Ocjene voznje" tabindex="0">
+				<table class="ss-table">
+					<thead>
+						<tr>
+							<th>Ocjena</th>
+							<th>Rezervacija</th>
+							<th>Autor</th>
+							<th>Primatelj</th>
+							<th>Zvjezdice</th>
+							<th>Komentar</th>
+						</tr>
+					</thead>
+					<tbody>
+					@foreach (var ocjena in Model.OcjeneVoznje)
+					{
+						<tr>
+							<td>#@ocjena.OcjenaId</td>
+							<td>#@ocjena.RezervacijaId</td>
+							<td>@ocjena.AutorIme</td>
+							<td>@ocjena.PrimateljIme</td>
+							<td>@ocjena.BrojZvjezdica</td>
+							<td>@ocjena.Komentar</td>
+						</tr>
+					}
+					</tbody>
+				</table>
+			</div>
+		}
+
+		<h2 class="h5 mt-4">Ocjene vozaca (@voznja.Vozac?.Ime @voznja.Vozac?.Prezime)</h2>
+		@if (Model.OcjeneVozaca.Count == 0)
+		{
+			<p class="ss-empty">Vozac jos nema zaprimljenih ocjena.</p>
+		}
+		else
+		{
+			<div class="ss-table-shell" role="region" aria-label="Ocjene vozaca" tabindex="0">
+				<table class="ss-table">
+					<thead>
+						<tr>
+							<th>Ocjena</th>
+							<th>Rezervacija</th>
+							<th>Autor</th>
+							<th>Zvjezdice</th>
+							<th>Komentar</th>
+						</tr>
+					</thead>
+					<tbody>
+					@foreach (var ocjena in Model.OcjeneVozaca)
+					{
+						<tr>
+							<td>#@ocjena.OcjenaId</td>
+							<td>#@ocjena.RezervacijaId</td>
+							<td>@ocjena.AutorIme</td>
+							<td>@ocjena.BrojZvjezdica</td>
+							<td>@ocjena.Komentar</td>
+						</tr>
+					}
+					</tbody>
+				</table>
+			</div>
+		}
 
 		<div class="ss-actions">
 			@if (canBook)
 			{
-				<a class="ss-btn" asp-controller="Rezervacija" asp-action="Create" asp-route-voznjaId="@Model.Id">Rezerviraj voznju</a>
+				<a class="ss-btn" asp-controller="Rezervacija" asp-action="Create" asp-route-voznjaId="@voznja.Id">Rezerviraj voznju</a>
 			}
 			@if (canEdit)
 			{
-				<a class="ss-btn" asp-controller="Voznja" asp-action="Edit" asp-route-id="@Model.Id">Uredi voznju</a>
+				<a class="ss-btn" asp-controller="Voznja" asp-action="Edit" asp-route-id="@voznja.Id">Uredi voznju</a>
+				<a class="ss-btn ss-btn-secondary" asp-controller="Voznja" asp-action="Delete" asp-route-id="@voznja.Id">Obrisi voznju</a>
 			}
 			<a class="ss-btn ss-btn-secondary" asp-controller="Voznja" asp-action="Index">Natrag na voznje</a>
 			<a class="ss-btn" asp-controller="Home" asp-action="Index">Dashboard</a>

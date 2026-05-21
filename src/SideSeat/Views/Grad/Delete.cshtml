@@ -1,0 +1,46 @@
+@model SideSeat.Models.Grad
+@{
+    ViewData["Title"] = "Brisanje grada";
+}
+
+<section class="ss-page">
+    <nav class="ss-breadcrumb" aria-label="Breadcrumb">
+        <a asp-controller="Home" asp-action="Index">Dashboard</a>
+        <span class="ss-breadcrumb-sep">/</span>
+        <a asp-controller="Grad" asp-action="Index">Gradovi</a>
+        <span class="ss-breadcrumb-sep">/</span>
+        <span class="current" aria-current="page">Brisanje</span>
+    </nav>
+
+    <div class="ss-page-head">
+        <h1>Brisanje grada</h1>
+        <p>Provjerite podatke prije trajnog uklanjanja zapisa.</p>
+    </div>
+
+    <div class="ss-detail-card">
+        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+        <dl class="ss-detail-grid">
+            <div>
+                <dt>Naziv</dt>
+                <dd>@Model.Naziv</dd>
+            </div>
+            <div>
+                <dt>Drzava</dt>
+                <dd>@Model.Drzava</dd>
+            </div>
+            <div>
+                <dt>Postanski broj</dt>
+                <dd>@Model.PostanskiBroj</dd>
+            </div>
+        </dl>
+
+        <form asp-action="Delete" method="post">
+            @Html.AntiForgeryToken()
+            <input type="hidden" asp-for="Id" />
+            <div class="ss-actions">
+                <button type="submit" class="ss-btn">Obrisi</button>
+                <a class="ss-btn ss-btn-secondary" asp-action="Details" asp-route-id="@Model.Id">Odustani</a>
+            </div>
+        </form>
+    </div>
+</section>

@@ -11,6 +11,7 @@ public class Korisnik
     public string Prezime { get; set; } = string.Empty;
     public string Email { get; set; } = string.Empty;
     public string LozinkaHash { get; set; } = string.Empty;
+    public decimal Saldo { get; set; }
     public string Adresa { get; set; } = string.Empty;
     public string BrojMobitela { get; set; } = string.Empty;
     public DateTime DatumRegistracije { get; set; }
@@ -27,4 +28,5 @@ public class Korisnik
     public virtual Vozilo? Vozilo { get; set; }
     public virtual ICollection<Voznja> KreiraneVoznje { get; set; } = new List<Voznja>();
     public virtual ICollection<Rezervacija> Rezervacije { get; set; } = new List<Rezervacija>();
+    public virtual ICollection<SaldoTransakcija> SaldoTransakcije { get; set; } = new List<SaldoTransakcija>();
 }

@@ -3,6 +3,7 @@
 	ViewData["Title"] = "Detalji rezervacije";
 	var currentUserId = int.TryParse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value, out var idValue) ? idValue : 0;
 	var canConfirm = User.IsInRole("Admin") || Model.Voznja?.VozacId == currentUserId;
+	var isAdmin = User.IsInRole("Admin");
 	var statusClass = Model.Status == SideSeat.Models.StatusRezervacije.Potvrdena
 		? "is-ok"
 		: Model.Status == SideSeat.Models.StatusRezervacije.Aktivna
@@ -68,6 +69,11 @@
 					<input type="hidden" name="id" value="@Model.Id" />
 					<button type="submit" class="ss-btn">Potvrdi rezervaciju</button>
 				</form>
+			}
+			@if (isAdmin)
+			{
+				<a class="ss-btn" asp-action="AdminEdit" asp-route-id="@Model.Id">Uredi rezervaciju</a>
+				<a class="ss-btn ss-btn-secondary" asp-action="AdminDelete" asp-route-id="@Model.Id">Obrisi rezervaciju</a>
 			}
 			<a class="ss-btn ss-btn-secondary" asp-controller="Rezervacija" asp-action="Index">Natrag na rezervacije</a>
 			<a class="ss-btn" asp-controller="Home" asp-action="Index">Dashboard</a>

@@ -1,6 +1,15 @@
 @model SideSeat.Models.Auth.DriverKycViewModel
 @{
     ViewData["Title"] = "KYC obrazac";
+    var kycDate = new DateTimeInputViewModel
+    {
+        Name = nameof(Model.DatumRodenja),
+        Label = "Datum rodenja",
+        Value = Model.DatumRodenja,
+        DateOnly = true,
+        Required = true,
+        HelpText = "Unesite datum prema lokalnom formatu preglednika."
+    };
 }
 
 <section class="ss-page">
@@ -40,8 +49,7 @@
         </div>
 
         <div class="mb-3">
-            <label asp-for="DatumRodenja" class="form-label"></label>
-            <input asp-for="DatumRodenja" class="form-control" type="date" />
+            <partial name="_DateTimeInput" model="kycDate" />
             <span asp-validation-for="DatumRodenja" class="text-danger"></span>
         </div>
 
@@ -51,7 +59,3 @@
         </div>
     </form>
 </section>
-
-@section Scripts {
-    <partial name="_ValidationScriptsPartial" />
-}

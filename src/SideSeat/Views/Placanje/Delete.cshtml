@@ -1,0 +1,45 @@
+@model SideSeat.Models.Placanje
+@{
+    ViewData["Title"] = "Brisanje placanja";
+}
+
+<section class="ss-page">
+    <nav class="ss-breadcrumb" aria-label="Breadcrumb">
+        <a asp-controller="Home" asp-action="Index">Dashboard</a>
+        <span class="ss-breadcrumb-sep">/</span>
+        <a asp-controller="Placanje" asp-action="Index">Placanja</a>
+        <span class="ss-breadcrumb-sep">/</span>
+        <span class="current" aria-current="page">Brisanje</span>
+    </nav>
+
+    <div class="ss-page-head">
+        <h1>Brisanje placanja</h1>
+        <p>Provjerite transakciju prije uklanjanja iz sustava.</p>
+    </div>
+
+    <div class="ss-detail-card">
+        <dl class="ss-detail-grid">
+            <div>
+                <dt>Rezervacija</dt>
+                <dd>#@Model.RezervacijaId</dd>
+            </div>
+            <div>
+                <dt>Iznos</dt>
+                <dd>@Model.Iznos.ToString("0.00") EUR</dd>
+            </div>
+            <div>
+                <dt>Status</dt>
+                <dd>@(Model.Uspjesno ? "Uspjesno" : "Neuspjesno")</dd>
+            </div>
+        </dl>
+
+        <form asp-action="Delete" method="post">
+            @Html.AntiForgeryToken()
+            <input type="hidden" asp-for="Id" />
+            <div class="ss-actions">
+                <button type="submit" class="ss-btn">Obrisi</button>
+                <a class="ss-btn ss-btn-secondary" asp-action="Details" asp-route-id="@Model.Id">Odustani</a>
+            </div>
+        </form>
+    </div>
+</section>

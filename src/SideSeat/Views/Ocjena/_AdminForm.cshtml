@@ -1,0 +1,74 @@
+@model SideSeat.Models.ViewModels.OcjenaAdminFormViewModel
+
+@{
+    var reservationLookup = new AutocompleteLookupViewModel
+    {
+        Name = nameof(Model.RezervacijaId),
+        Label = "Rezervacija",
+        Endpoint = Url.Action("SearchReservations", "Ocjena") ?? string.Empty,
+        SelectedId = Model.RezervacijaId.ToString(),
+        SelectedText = Model.RezervacijaLabel,
+        Placeholder = "Pretrazi rezervacije...",
+        HelpText = "Pretrazite po putniku ili ID-u.",
+        MinimumLength = 0,
+        Required = true
+    };
+
+    var authorLookup = new AutocompleteLookupViewModel
+    {
+        Name = nameof(Model.AutorId),
+        Label = "Autor",
+        Endpoint = Url.Action("SearchUsers", "Ocjena") ?? string.Empty,
+        SelectedId = Model.AutorId.ToString(),
+        SelectedText = Model.AutorNaziv,
+        Placeholder = "Pretrazi autora...",
+        HelpText = "Krenite tipkati ime ili email.",
+        MinimumLength = 0,
+        Required = true
+    };
+
+    var createdAt = new DateTimeInputViewModel
+    {
+        Name = nameof(Model.Kreirano),
+        Label = "Kreirano",
+        Value = Model.Kreirano,
+        Required = true
+    };
+}
+
+<div class="ss-detail-card">
+    <div class="row g-3">
+        <div class="col-md-6">
+            <partial name="_AutocompleteLookup" model="reservationLookup" />
+            <span asp-validation-for="RezervacijaId" class="text-danger"></span>
+        </div>
+        <div class="col-md-6">
+            <partial name="_AutocompleteLookup" model="authorLookup" />
+            <span asp-validation-for="AutorId" class="text-danger"></span>
+        </div>
+    </div>
+
+    <div class="row g-3 mt-1">
+        <div class="col-md-4">
+            <label asp-for="BrojZvjezdica" class="form-label"></label>
+            <select asp-for="BrojZvjezdica" class="form-select">
+                <option value="5">5</option>
+                <option value="4">4</option>
+                <option value="3">3</option>
+                <option value="2">2</option>
+                <option value="1">1</option>
+            </select>
+            <span asp-validation-for="BrojZvjezdica" class="text-danger"></span>
+        </div>
+        <div class="col-md-8">
+            <partial name="_DateTimeInput" model="createdAt" />
+            <span asp-validation-for="Kreirano" class="text-danger"></span>
+        </div>
+    </div>
+
+    <div class="mt-3">
+        <label asp-for="Komentar" class="form-label"></label>
+        <textarea asp-for="Komentar" class="form-control" rows="3"></textarea>
+        <span asp-validation-for="Komentar" class="text-danger"></span>
+    </div>
+</div>

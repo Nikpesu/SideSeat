@@ -32,35 +32,22 @@ namespace SideSeat.Migrations
 
                     b.Property<string>("Drzava")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(120)
+                        .HasColumnType("nvarchar(120)");
 
                     b.Property<string>("Naziv")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(120)
+                        .HasColumnType("nvarchar(120)");
 
                     b.Property<string>("PostanskiBroj")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(12)
+                        .HasColumnType("nvarchar(12)");
 
                     b.HasKey("Id");
 
                     b.ToTable("Gradovi");
-
-                    b.HasData(
-                        new
-                        {
-                            Id = 1,
-                            Drzava = "Hrvatska",
-                            Naziv = "Zagreb",
-                            PostanskiBroj = "10000"
-                        },
-                        new
-                        {
-                            Id = 2,
-                            Drzava = "Hrvatska",
-                            Naziv = "Split",
-                            PostanskiBroj = "21000"
-                        });
                 });
 
             modelBuilder.Entity("SideSeat.Models.Korisnik", b =>
@@ -116,6 +103,9 @@ namespace SideSeat.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<decimal>("Saldo")
+                        .HasColumnType("decimal(18,2)");
+
                     b.Property<int>("Tip")
                         .HasColumnType("int");
 
@@ -127,54 +117,6 @@ namespace SideSeat.Migrations
                     b.HasIndex("VoziloId");
 
                     b.ToTable("Korisnici");
-
-                    b.HasData(
-                        new
-                        {
-                            Id = 1,
-                            Adresa = "Ilica 10, Zagreb",
-                            BrojMobitela = "0911111111",
-                            DatumRegistracije = new DateTime(2026, 5, 1, 8, 0, 0, 0, DateTimeKind.Unspecified),
-                            Email = "marko@example.com",
-                            Ime = "Marko",
-                            JeAktivan = true,
-                            KycBrojOsobne = "12345678",
-                            KycBrojVozacke = "HR-VOZ-001",
-                            KycDatumRodenja = new DateTime(1990, 4, 12, 0, 0, 0, 0, DateTimeKind.Unspecified),
-                            KycOib = "12345678901",
-                            KycPodnesen = true,
-                            LozinkaHash = "WjgcARlXlANvPrwzymGupw==.mAJGLSfwA1qBVtNB5RA7flpqKTF6m4GaYykrX7DvfRM=",
-                            Prezime = "Maric",
-                            Tip = 0
-                        },
-                        new
-                        {
-                            Id = 2,
-                            Adresa = "Marmontova 21, Split",
-                            BrojMobitela = "0922222222",
-                            DatumRegistracije = new DateTime(2026, 5, 1, 9, 0, 0, 0, DateTimeKind.Unspecified),
-                            Email = "ivana@example.com",
-                            Ime = "Ivana",
-                            JeAktivan = true,
-                            KycPodnesen = false,
-                            LozinkaHash = "d+Ekke4YV8yR6E71CavL1w==.emo+8SBlglGcaUZ6zdYXv/sWOHz95xzNsKI3rkmB8os=",
-                            Prezime = "Ivic",
-                            Tip = 1
-                        },
-                        new
-                        {
-                            Id = 3,
-                            Adresa = "Savska 100, Zagreb",
-                            BrojMobitela = "0933333333",
-                            DatumRegistracije = new DateTime(2026, 5, 1, 10, 0, 0, 0, DateTimeKind.Unspecified),
-                            Email = "admin@example.com",
-                            Ime = "Ana",
-                            JeAktivan = true,
-                            KycPodnesen = true,
-                            LozinkaHash = "UJon3KrOrz+TJuEAH49PBA==.mtr30yYsJ5J4MS/edvNKLbZ/aOhiZ+W0gPp24rGz0JY=",
-                            Prezime = "Admin",
-                            Tip = 2
-                        });
                 });
 
             modelBuilder.Entity("SideSeat.Models.OcjenaVoznje", b =>
@@ -208,17 +150,6 @@ namespace SideSeat.Migrations
                     b.HasIndex("RezervacijaId");
 
                     b.ToTable("Ocjene");
-
-                    b.HasData(
-                        new
-                        {
-                            Id = 1,
-                            AutorId = 2,
-                            BrojZvjezdica = 5,
-                            Komentar = "Odlicno",
-                            Kreirano = new DateTime(2026, 5, 12, 14, 0, 0, 0, DateTimeKind.Unspecified),
-                            RezervacijaId = 1
-                        });
                 });
 
             modelBuilder.Entity("SideSeat.Models.Placanje", b =>
@@ -249,17 +180,6 @@ namespace SideSeat.Migrations
                     b.HasIndex("RezervacijaId");
 
                     b.ToTable("Placanja");
-
-                    b.HasData(
-                        new
-                        {
-                            Id = 1,
-                            Iznos = 15.00m,
-                            NacinPlacanja = 1,
-                            RezervacijaId = 1,
-                            Uspjesno = true,
-                            VrijemePlacanja = new DateTime(2026, 5, 2, 10, 0, 0, 0, DateTimeKind.Unspecified)
-                        });
                 });
 
             modelBuilder.Entity("SideSeat.Models.Rezervacija", b =>
@@ -299,19 +219,40 @@ namespace SideSeat.Migrations
                     b.HasIndex("VoznjaId");
 
                     b.ToTable("Rezervacije");
+                });
 
-                    b.HasData(
-                        new
-                        {
-                            Id = 1,
-                            BrojMjesta = 1,
-                            CijenaUkupno = 15.00m,
-                            Napomena = "Bez prtljage",
-                            PutnikId = 2,
-                            Status = 0,
-                            VoznjaId = 1,
-                            VrijemeRezervacije = new DateTime(2026, 5, 2, 9, 30, 0, 0, DateTimeKind.Unspecified)
-                        });
+            modelBuilder.Entity("SideSeat.Models.SaldoTransakcija", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<decimal>("Iznos")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int>("KorisnikId")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("SaldoPoslije")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("SaldoPrije")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("Tip")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("Vrijeme")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("KorisnikId");
+
+                    b.ToTable("SaldoTransakcije");
                 });
 
             modelBuilder.Entity("SideSeat.Models.Vozilo", b =>
@@ -324,7 +265,8 @@ namespace SideSeat.Migrations
 
                     b.Property<string>("Boja")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(40)
+                        .HasColumnType("nvarchar(40)");
 
                     b.Property<int>("BrojSjedala")
                         .HasColumnType("int");
@@ -334,18 +276,21 @@ namespace SideSeat.Migrations
 
                     b.Property<string>("Marka")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(80)
+                        .HasColumnType("nvarchar(80)");
 
                     b.Property<string>("Model")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(80)
+                        .HasColumnType("nvarchar(80)");
 
                     b.Property<decimal>("ProsjecnaPotrosnja")
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<string>("Registracija")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(24)
+                        .HasColumnType("nvarchar(24)");
 
                     b.Property<int?>("VlasnikId")
                         .HasColumnType("int");
@@ -355,20 +300,6 @@ namespace SideSeat.Migrations
                     b.HasIndex("VlasnikId");
 
                     b.ToTable("Vozila");
-
-                    b.HasData(
-                        new
-                        {
-                            Id = 1,
-                            Boja = "Siva",
-                            BrojSjedala = 5,
-                            GodinaProizvodnje = 2021,
-                            Marka = "Skoda",
-                            Model = "Octavia",
-                            ProsjecnaPotrosnja = 6.5m,
-                            Registracija = "ZG-1234-AA",
-                            VlasnikId = 1
-                        });
                 });
 
             modelBuilder.Entity("SideSeat.Models.Voznja", b =>
@@ -419,22 +350,6 @@ namespace SideSeat.Migrations
                     b.HasIndex("VozacId");
 
                     b.ToTable("Voznje");
-
-                    b.HasData(
-                        new
-                        {
-                            Id = 1,
-                            CijenaPoMjestu = 15.00m,
-                            OcekivaniDolazak = new DateTime(2026, 5, 10, 12, 0, 0, 0, DateTimeKind.Unspecified),
-                            OdredisniGradId = 2,
-                            Opis = "Jutarnja voznja",
-                            Polazak = new DateTime(2026, 5, 10, 8, 0, 0, 0, DateTimeKind.Unspecified),
-                            PolazniGradId = 1,
-                            SlobodnaMjesta = 3,
-                            Status = 0,
-                            UkupnoMjesta = 4,
-                            VozacId = 1
-                        });
                 });
 
             modelBuilder.Entity("SideSeat.Models.Korisnik", b =>
@@ -495,6 +410,17 @@ namespace SideSeat.Migrations
                     b.Navigation("Voznja");
                 });
 
+            modelBuilder.Entity("SideSeat.Models.SaldoTransakcija", b =>
+                {
+                    b.HasOne("SideSeat.Models.Korisnik", "Korisnik")
+                        .WithMany("SaldoTransakcije")
+                        .HasForeignKey("KorisnikId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Korisnik");
+                });
+
             modelBuilder.Entity("SideSeat.Models.Vozilo", b =>
                 {
                     b.HasOne("SideSeat.Models.Korisnik", "Vlasnik")
@@ -536,6 +462,8 @@ namespace SideSeat.Migrations
                     b.Navigation("KreiraneVoznje");
 
                     b.Navigation("Rezervacije");
+
+                    b.Navigation("SaldoTransakcije");
                 });
 
             modelBuilder.Entity("SideSeat.Models.Voznja", b =>

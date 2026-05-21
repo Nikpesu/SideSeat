@@ -1,0 +1,35 @@
+@model SideSeat.Models.ViewModels.AutocompleteLookupViewModel
+@{
+    var inputId = $"{Model.Name}-lookup";
+    var menuId = $"{Model.Name}-menu";
+}
+
+<div class="ss-autocomplete"
+     data-ss-autocomplete
+     data-endpoint="@Model.Endpoint"
+     data-min-length="@Model.MinimumLength"
+     @(string.IsNullOrWhiteSpace(Model.RouteMode) ? null : $"data-route-mode=\"{Model.RouteMode}\"")
+     @(string.IsNullOrWhiteSpace(Model.RoutePeerName) ? null : $"data-route-peer=\"{Model.RoutePeerName}\"")>
+    <label class="form-label" for="@inputId">@Model.Label</label>
+    <input type="hidden"
+           name="@Model.Name"
+           value="@Model.SelectedId"
+           data-ss-autocomplete-id
+           @(Model.Required ? "required" : null) />
+    <input id="@inputId"
+           type="text"
+           class="form-control"
+           value="@Model.SelectedText"
+           placeholder="@Model.Placeholder"
+           autocomplete="off"
+           data-ss-autocomplete-input
+           aria-autocomplete="list"
+           aria-controls="@menuId"
+           aria-expanded="false"
+           @(Model.Required ? "required" : null) />
+    <div id="@menuId" class="ss-autocomplete-menu" data-ss-autocomplete-menu hidden></div>
+    @if (!string.IsNullOrWhiteSpace(Model.HelpText))
+    {
+        <small class="ss-autocomplete-help">@Model.HelpText</small>
+    }
+</div>

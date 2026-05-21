@@ -1,11 +1,69 @@
 @model SideSeat.Models.Lab3.VoznjaFormViewModel
 
+@{
+    var driverLookup = new AutocompleteLookupViewModel
+    {
+        Name = nameof(Model.VozacId),
+        Label = "Vozac",
+        Endpoint = Url.Action("SearchDrivers", "Voznja") ?? string.Empty,
+        SelectedId = Model.VozacId.ToString(),
+        SelectedText = Model.Vozaci.FirstOrDefault(x => x.Value == Model.VozacId.ToString())?.Text ?? string.Empty,
+        Placeholder = "Pretrazi vozaca...",
+        HelpText = "Krenite tipkati ime ili prezime vozaca.",
+        MinimumLength = 0,
+        Required = true
+    };
+
+    var startCityLookup = new AutocompleteLookupViewModel
+    {
+        Name = nameof(Model.PolazniGradId),
+        Label = "Polazni grad",
+        Endpoint = Url.Action("SearchCities", "Voznja") ?? string.Empty,
+        SelectedId = Model.PolazniGradId.ToString(),
+        SelectedText = Model.Gradovi.FirstOrDefault(x => x.Value == Model.PolazniGradId.ToString())?.Text ?? string.Empty,
+        Placeholder = "Pretrazi polazni grad...",
+        HelpText = "Pretraga gradova radi asinkrono preko servera.",
+        MinimumLength = 0,
+        Required = true
+    };
+
+    var endCityLookup = new AutocompleteLookupViewModel
+    {
+        Name = nameof(Model.OdredisniGradId),
+        Label = "Odredisni grad",
+        Endpoint = Url.Action("SearchCities", "Voznja") ?? string.Empty,
+        SelectedId = Model.OdredisniGradId.ToString(),
+        SelectedText = Model.Gradovi.FirstOrDefault(x => x.Value == Model.OdredisniGradId.ToString())?.Text ?? string.Empty,
+        Placeholder = "Pretrazi odredisni grad...",
+        HelpText = "Autocompletion koristi AJAX i vraca samo relevantne gradove.",
+        MinimumLength = 0,
+        Required = true
+    };
+
+    var departureDate = new DateTimeInputViewModel
+    {
+        Name = nameof(Model.Polazak),
+        Label = "Polazak",
+        Value = Model.Polazak,
+        HelpText = "Datum i vrijeme polaska unose se u lokalnom formatu preglednika.",
+        Required = true
+    };
+
+    var arrivalDate = new DateTimeInputViewModel
+    {
+        Name = nameof(Model.OcekivaniDolazak),
+        Label = "Ocekivani dolazak",
+        Value = Model.OcekivaniDolazak,
+        HelpText = "Ocekivani dolazak mora biti nakon polaska.",
+        Required = true
+    };
+}
+
 <div class="ss-detail-card">
     @if (Model.CanSelectDriver)
     {
         <div class="mb-3">
-            <label asp-for="VozacId" class="form-label"></label>
-            <select asp-for="VozacId" asp-items="Model.Vozaci" class="form-select"></select>
+            <partial name="_AutocompleteLookup" model="driverLookup" />
             <span asp-validation-for="VozacId" class="text-danger"></span>
         </div>
     }
@@ -16,26 +74,22 @@
 
     <div class="row g-3">
         <div class="col-md-6">
-            <label asp-for="PolazniGradId" class="form-label"></label>
-            <select asp-for="PolazniGradId" asp-items="Model.Gradovi" class="form-select"></select>
+            <partial name="_AutocompleteLookup" model="startCityLookup" />
             <span asp-validation-for="PolazniGradId" class="text-danger"></span>
         </div>
         <div class="col-md-6">
-            <label asp-for="OdredisniGradId" class="form-label"></label>
-            <select asp-for="OdredisniGradId" asp-items="Model.Gradovi" class="form-select"></select>
+            <partial name="_AutocompleteLookup" model="endCityLookup" />
             <span asp-validation-for="OdredisniGradId" class="text-danger"></span>
         </div>
     </div>
 
     <div class="row g-3 mt-1">
         <div class="col-md-6">
-            <label asp-for="Polazak" class="form-label"></label>
-            <input asp-for="Polazak" class="form-control" type="datetime-local" />
+            <partial name="_DateTimeInput" model="departureDate" />
             <span asp-validation-for="Polazak" class="text-danger"></span>
         </div>
         <div class="col-md-6">
-            <label asp-for="OcekivaniDolazak" class="form-label"></label>
-            <input asp-for="OcekivaniDolazak" class="form-control" type="datetime-local" />
+            <partial name="_DateTimeInput" model="arrivalDate" />
             <span asp-validation-for="OcekivaniDolazak" class="text-danger"></span>
         </div>
     </div>

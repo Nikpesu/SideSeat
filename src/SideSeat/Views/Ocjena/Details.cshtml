@@ -1,6 +1,7 @@
 @model SideSeat.Models.OcjenaVoznje
 @{
     ViewData["Title"] = "Detalji ocjene";
+    var isAdmin = User.IsInRole("Admin");
 }
 
 <section class="ss-page">
@@ -46,6 +47,11 @@
         </dl>
 
         <div class="ss-actions">
+            @if (isAdmin)
+            {
+                <a class="ss-btn" asp-controller="Ocjena" asp-action="AdminEdit" asp-route-id="@Model.Id">Uredi ocjenu</a>
+                <a class="ss-btn ss-btn-secondary" asp-controller="Ocjena" asp-action="AdminDelete" asp-route-id="@Model.Id">Obrisi ocjenu</a>
+            }
             <a class="ss-btn ss-btn-secondary" asp-controller="Ocjena" asp-action="Index">Natrag na ocjene</a>
             <a class="ss-btn" asp-controller="Home" asp-action="Index">Dashboard</a>
         </div>

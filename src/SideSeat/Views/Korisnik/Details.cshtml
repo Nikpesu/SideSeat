@@ -1,6 +1,7 @@
-@model SideSeat.Models.Korisnik
+@model SideSeat.Models.ViewModels.KorisnikProfileViewModel
 @{
     ViewData["Title"] = "Detalji korisnika";
+    var isAdmin = User.IsInRole("Admin");
 }
 
 <section class="ss-page">
@@ -9,7 +10,7 @@
         <span class="ss-breadcrumb-sep">/</span>
         <a asp-controller="Korisnik" asp-action="Index">Korisnici</a>
         <span class="ss-breadcrumb-sep">/</span>
-        <span class="current" aria-current="page">@Model.Ime @Model.Prezime</span>
+        <span class="current" aria-current="page">@Model.User.Ime @Model.User.Prezime</span>
     </nav>
 
     <div class="ss-page-head">
@@ -21,61 +22,114 @@
         <dl class="ss-detail-grid">
             <div>
                 <dt>ID</dt>
-                <dd>@Model.Id</dd>
+                <dd>@Model.User.Id</dd>
             </div>
             <div>
                 <dt>Ime i prezime</dt>
-                <dd>@Model.Ime @Model.Prezime</dd>
+                <dd>@Model.User.Ime @Model.User.Prezime</dd>
             </div>
             <div>
                 <dt>Tip korisnika</dt>
-                <dd>@Model.Tip</dd>
+                <dd>@Model.User.Tip</dd>
             </div>
             <div>
                 <dt>Status</dt>
                 <dd>
-                    <span class="ss-badge @(Model.JeAktivan ? "is-ok" : "is-off")">
-                        @(Model.JeAktivan ? "Aktivan" : "Neaktivan")
+                    <span class="ss-badge @(Model.User.JeAktivan ? "is-ok" : "is-off")">
+                        @(Model.User.JeAktivan ? "Aktivan" : "Neaktivan")
                     </span>
                 </dd>
             </div>
             <div>
                 <dt>Email</dt>
-                <dd>@Model.Email</dd>
+                <dd>@Model.User.Email</dd>
             </div>
             <div>
                 <dt>Adresa</dt>
-                <dd>@Model.Adresa</dd>
+                <dd>@Model.User.Adresa</dd>
             </div>
             <div>
                 <dt>Broj mobitela</dt>
-                <dd>@Model.BrojMobitela</dd>
+                <dd>@Model.User.BrojMobitela</dd>
             </div>
             <div>
                 <dt>Datum registracije</dt>
-                <dd>@Model.DatumRegistracije.ToString("dd.MM.yyyy")</dd>
+                <dd>@Model.User.DatumRegistracije.ToString("dd.MM.yyyy")</dd>
             </div>
             <div>
                 <dt>Vozilo</dt>
-                <dd>@(Model.Vozilo is null ? "Nema povezano vozilo" : $"{Model.Vozilo.Marka} {Model.Vozilo.Model}")</dd>
+                <dd>@(Model.User.Vozilo is null ? "Nema povezano vozilo" : $"{Model.User.Vozilo.Marka} {Model.User.Vozilo.Model}")</dd>
             </div>
             <div>
                 <dt>KYC status</dt>
-                <dd>@(Model.KycPodnesen ? "Ispunjen" : "Nije ispunjen")</dd>
+                <dd>@(Model.User.KycPodnesen ? "Ispunjen" : "Nije ispunjen")</dd>
             </div>
             <div>
                 <dt>Kreirane voznje</dt>
-                <dd>@(Model.KreiraneVoznje?.Count ?? 0)</dd>
+                <dd>@(Model.User.KreiraneVoznje?.Count ?? 0)</dd>
             </div>
             <div>
                 <dt>Rezervacije</dt>
-                <dd>@(Model.Rezervacije?.Count ?? 0)</dd>
+                <dd>@(Model.User.Rezervacije?.Count ?? 0)</dd>
+            </div>
+            <div>
+                <dt>Prosjecna ocjena</dt>
+                <dd>@(Model.BrojPrimljenihOcjena == 0 ? "Nema ocjena" : Model.ProsjecnaOcjena.ToString("0.0"))</dd>
+            </div>
+            <div>
+                <dt>Primljene ocjene</dt>
+                <dd>@Model.BrojPrimljenihOcjena</dd>
             </div>
         </dl>
 
         <div class="ss-actions">
+            @if (isAdmin)
+            {
+                <a class="ss-btn" asp-controller="Korisnik" asp-action="Edit" asp-route-id="@Model.User.Id">Uredi korisnika</a>
+                <a class="ss-btn ss-btn-secondary" asp-controller="Korisnik" asp-action="Delete" asp-route-id="@Model.User.Id">Obrisi korisnika</a>
+            }
             <a class="ss-btn ss-btn-secondary" asp-controller="Korisnik" asp-action="Index">Natrag na korisnike</a>
             <a class="ss-btn" asp-controller="Home" asp-action="Index">Dashboard</a>
         </div>
+    </div>
+
+    <div class="ss-detail-card">
+        <h2>Primljeni komentari</h2>
+        @if (Model.PrimljeneOcjene.Count == 0)
+        {
+            <p class="ss-empty">Nema primljenih komentara.</p>
+        }
+        else
+        {
+            <div class="ss-detail-grid">
+                @foreach (var ocjena in Model.PrimljeneOcjene)
+                {
+                    <div>
+                        <dt>@ocjena.Autor (@ocjena.BrojZvjezdica/5)</dt>
+                        <dd>@ocjena.Komentar</dd>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+
+    <div class="ss-detail-card">
+        <h2>Dani komentari</h2>
+        @if (Model.DaneOcjene.Count == 0)
+        {
+            <p class="ss-empty">Nema danih komentara.</p>
+        }
+        else
+        {
+            <div class="ss-detail-grid">
+                @foreach (var ocjena in Model.DaneOcjene)
+                {
+                    <div>
+                        <dt>@ocjena.Primatelj (@ocjena.BrojZvjezdica/5)</dt>
+                        <dd>@ocjena.Komentar</dd>
+                    </div>
+                }
+            </div>
+        }
     </div>
 </section>

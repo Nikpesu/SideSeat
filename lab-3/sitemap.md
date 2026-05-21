@@ -23,6 +23,9 @@
 ## Voznje
 - /Voznja/Index -> VoznjaController.Index -> Views/Voznja/Index.cshtml
 - /Voznja/Details/{id} -> VoznjaController.Details -> Views/Voznja/Details.cshtml
+  - prikaz putnika koji se voze/su se vozili (rezervacije te voznje)
+  - prikaz ocjena te voznje + prosjek ocjena voznje
+  - prikaz ocjena vozaca + srednja ocjena vozaca
 - /Voznja/Active -> VoznjaController.Active -> Views/Voznja/Active.cshtml
 - /Voznja/Create -> VoznjaController.Create -> Views/Voznja/Create.cshtml
 - /Voznja/Edit/{id} -> VoznjaController.Edit -> Views/Voznja/Edit.cshtml
@@ -39,3 +42,6 @@
 ## Ocjene
 - /Ocjena/Index -> OcjenaController.Index -> Views/Ocjena/Index.cshtml
 - /Ocjena/Details/{id} -> OcjenaController.Details -> Views/Ocjena/Details.cshtml
+- /Ocjena/Create?rezervacijaId={id} -> OcjenaController.Create -> Views/Ocjena/Create.cshtml
+  - putnik moze ocijeniti vozaca
+  - vozac moze ocijeniti putnika za istu rezervaciju

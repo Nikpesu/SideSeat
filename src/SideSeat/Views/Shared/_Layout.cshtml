@@ -1,8 +1,26 @@
 @{
+    var db = Context.RequestServices.GetService(typeof(SideSeat.Data.SideSeatDbContext)) as SideSeat.Data.SideSeatDbContext;
     var currentController = (ViewContext.RouteData.Values["controller"]?.ToString() ?? string.Empty).ToLowerInvariant();
     var currentAction = (ViewContext.RouteData.Values["action"]?.ToString() ?? string.Empty).ToLowerInvariant();
     var isAuthenticated = User.Identity?.IsAuthenticated == true;
     var isAdmin = User.IsInRole("Admin");
+    var returnUrlQuery = Context.Request.Query["returnUrl"].ToString();
+    var returnUrl = !string.IsNullOrWhiteSpace(returnUrlQuery) && !returnUrlQuery.Contains("auth=", StringComparison.OrdinalIgnoreCase)
+        ? returnUrlQuery
+        : Context.Request.Path.ToString();
+    var authError = TempData["AuthError"] as string;
+    decimal? userSaldo = null;
+    if (isAuthenticated && db is not null)
+    {
+        var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        if (int.TryParse(userIdClaim, out var userId))
+        {
+            userSaldo = db.Korisnici
+                .Where(k => k.Id == userId)
+                .Select(k => (decimal?)k.Saldo)
+                .FirstOrDefault();
+        }
+    }
 }
 <!DOCTYPE html>
 <html lang="hr">
@@ -26,12 +44,13 @@
                 </button>
                 <div class="collapse navbar-collapse" id="mainNavigation">
                     <ul class="navbar-nav ms-lg-3 ss-nav-list">
+                        <li class="nav-item">
+                            <a class="ss-nav-link @((currentController == "home" && currentAction == "index") ? "active" : string.Empty)"
+                               asp-controller="Home" asp-action="Index">Pocetna</a>
+                        </li>
+
                         @if (isAuthenticated)
                         {
-                            <li class="nav-item">
-                                <a class="ss-nav-link @((currentController == "home" && currentAction == "index") ? "active" : string.Empty)"
-                                   asp-controller="Home" asp-action="Index">Dashboard</a>
-                            </li>
                             <li class="nav-item">
                                 <a class="ss-nav-link @(currentController == "voznja" && currentAction == "active" ? "active" : string.Empty)"
                                    asp-controller="Voznja" asp-action="Active">Aktivne voznje</a>
@@ -45,10 +64,9 @@
                                    asp-controller="Rezervacija" asp-action="Index">Rezervacije</a>
                             </li>
                             <li class="nav-item">
-                                <a class="ss-nav-link @(currentController == "korisnik" && currentAction == "settings" ? "active" : string.Empty)"
-                                   asp-controller="Korisnik" asp-action="Settings">Postavke</a>
+                                <a class="ss-nav-link @(currentController == "ocjena" ? "active" : string.Empty)"
+                                   asp-controller="Ocjena" asp-action="Index">Ocjene</a>
                             </li>
-
                             @if (isAdmin)
                             {
                                 <li class="nav-item">
@@ -67,10 +85,6 @@
                                     <a class="ss-nav-link @(currentController == "placanje" ? "active" : string.Empty)"
                                        asp-controller="Placanje" asp-action="Index">Placanja</a>
                                 </li>
-                                <li class="nav-item">
-                                    <a class="ss-nav-link @(currentController == "ocjena" ? "active" : string.Empty)"
-                                       asp-controller="Ocjena" asp-action="Index">Ocjene</a>
-                                </li>
                             }
                         }
                     </ul>
@@ -80,15 +94,25 @@
                         {
                             <form asp-controller="Auth" asp-action="Logout" method="post" class="d-flex gap-2">
                                 @Html.AntiForgeryToken()
-                                <span class="ss-nav-link">@User.Identity!.Name</span>
+                                @if (userSaldo.HasValue)
+                                {
+                                    <a class="ss-nav-link @(currentController == "korisnik" && currentAction == "saldo" ? "active" : string.Empty)"
+                                       asp-controller="Korisnik" asp-action="Saldo">Saldo: @userSaldo.Value.ToString("0.00") EUR</a>
+                                }
+                                <a class="ss-nav-link @(currentController == "korisnik" && currentAction == "settings" ? "active" : string.Empty)"
+                                   asp-controller="Korisnik" asp-action="Settings">@User.Identity!.Name</a>
                                 <button type="submit" class="ss-btn ss-btn-secondary">Odjava</button>
                             </form>
                         }
                         else
                         {
                             <div class="d-flex gap-2">
-                                <a class="ss-btn ss-btn-secondary" asp-controller="Auth" asp-action="Login">Prijava</a>
-                                <a class="ss-btn" asp-controller="Auth" asp-action="Register">Registracija</a>
+                                <button class="ss-btn ss-btn-secondary" type="button" data-bs-toggle="modal" data-bs-target="#authModal" data-auth-open="login">
+                                    Prijava
+                                </button>
+                                <button class="ss-btn" type="button" data-bs-toggle="modal" data-bs-target="#authModal" data-auth-open="register">
+                                    Registracija
+                                </button>
                             </div>
                         }
                     </div>
@@ -97,7 +121,7 @@
         </nav>
     </header>
 
-    <div class="ss-shell">
+    <div class="ss-shell ss-shell-main">
         <main role="main" class="ss-main">
             @RenderBody()
         </main>
@@ -106,12 +130,108 @@
     <footer class="ss-footer">
         <div class="ss-shell ss-footer-inner">
             <span>&copy; 2026 SideSeat</span>
-            <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
+            <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy policy</a>
         </div>
     </footer>
 
+    <div class="modal fade ss-auth-modal" id="authModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content ss-auth-shell">
+                <div class="ss-auth-header">
+                    <div>
+                        <span class="ss-auth-kicker">SideSeat</span>
+                        <h2>Prijava u mrezu voznji</h2>
+                        <p>Upravljaj voznjama, rezervacijama i placanjima u realnom vremenu.</p>
+                    </div>
+                    <button type="button" class="btn-close ss-auth-close" data-bs-dismiss="modal" aria-label="Zatvori"></button>
+                </div>
+
+                <div class="ss-auth-tabs" role="tablist">
+                    <button type="button" class="ss-auth-tab is-active" data-auth-tab="login">Prijava</button>
+                    <button type="button" class="ss-auth-tab" data-auth-tab="register">Registracija</button>
+                </div>
+
+                <div class="ss-auth-body">
+                    @if (!string.IsNullOrWhiteSpace(authError))
+                    {
+                        <div class="ss-auth-alert" role="alert">@authError</div>
+                    }
+                    <div class="ss-auth-panel is-active" data-auth-panel="login">
+                        <form asp-controller="Auth" asp-action="Login" method="post" class="ss-auth-form">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="ReturnUrl" value="@returnUrl" />
+
+                            <div class="mb-3">
+                                <label class="form-label" for="auth-login-email">Email</label>
+                                <input id="auth-login-email" name="Email" type="email" class="form-control" autocomplete="email" required />
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label" for="auth-login-password">Lozinka</label>
+                                <input id="auth-login-password" name="Password" type="password" class="form-control" autocomplete="current-password" required />
+                            </div>
+
+                            <div class="form-check mb-3">
+                                <input id="auth-login-remember" name="RememberMe" type="checkbox" class="form-check-input" />
+                                <label class="form-check-label" for="auth-login-remember">Zapamti me</label>
+                            </div>
+
+                            <div class="ss-actions">
+                                <button class="ss-btn" type="submit">Prijavi se</button>
+                                <button class="ss-btn ss-btn-secondary" type="button" data-auth-tab="register">Kreiraj racun</button>
+                            </div>
+                            <small class="ss-datetime-help d-block mt-3">
+                                Seeded demo credentials:<br />
+                                admin@example.com / Admin123!<br />
+                                marko@example.com / User123!<br />
+                                ivana@example.com / User123!
+                            </small>
+                        </form>
+                    </div>
+
+                    <div class="ss-auth-panel" data-auth-panel="register">
+                        <form asp-controller="Auth" asp-action="Register" method="post" class="ss-auth-form">
+                            @Html.AntiForgeryToken()
+
+                            <div class="mb-3">
+                                <label class="form-label" for="auth-register-email">Email</label>
+                                <input id="auth-register-email" name="Email" type="email" class="form-control" autocomplete="email" required />
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label" for="auth-register-address">Adresa</label>
+                                <input id="auth-register-address" name="Address" type="text" class="form-control" autocomplete="street-address" required />
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label" for="auth-register-phone">Broj mobitela</label>
+                                <input id="auth-register-phone" name="PhoneNumber" type="tel" class="form-control" autocomplete="tel" required />
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label" for="auth-register-password">Lozinka</label>
+                                <input id="auth-register-password" name="Password" type="password" class="form-control" autocomplete="new-password" required />
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label" for="auth-register-confirm">Ponovi lozinku</label>
+                                <input id="auth-register-confirm" name="ConfirmPassword" type="password" class="form-control" autocomplete="new-password" required />
+                            </div>
+
+                            <div class="ss-actions">
+                                <button class="ss-btn" type="submit">Kreiraj racun</button>
+                                <button class="ss-btn ss-btn-secondary" type="button" data-auth-tab="login">Natrag na prijavu</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <partial name="_ValidationScriptsPartial" />
     <script src="~/js/site.js" asp-append-version="true"></script>
     @await RenderSectionAsync("Scripts", required: false)
 </body>

@@ -1,0 +1,56 @@
+@model SideSeat.Models.ViewModels.PlacanjeFormViewModel
+
+@{
+    var reservationLookup = new AutocompleteLookupViewModel
+    {
+        Name = nameof(Model.RezervacijaId),
+        Label = "Rezervacija",
+        Endpoint = Url.Action("SearchReservations", "Placanje") ?? string.Empty,
+        SelectedId = Model.RezervacijaId.ToString(),
+        SelectedText = Model.RezervacijaLabel,
+        Placeholder = "Pretrazi rezervacije...",
+        HelpText = "Pretrazujte po putniku ili ID-u.",
+        MinimumLength = 0,
+        Required = true
+    };
+
+    var paymentTime = new DateTimeInputViewModel
+    {
+        Name = nameof(Model.VrijemePlacanja),
+        Label = "Vrijeme placanja",
+        Value = Model.VrijemePlacanja,
+        Required = true
+    };
+}
+
+<div class="ss-detail-card">
+    <div class="row g-3">
+        <div class="col-md-6">
+            <partial name="_AutocompleteLookup" model="reservationLookup" />
+            <span asp-validation-for="RezervacijaId" class="text-danger"></span>
+        </div>
+        <div class="col-md-6">
+            <label asp-for="Iznos" class="form-label"></label>
+            <input asp-for="Iznos" class="form-control" type="number" step="0.01" />
+            <span asp-validation-for="Iznos" class="text-danger"></span>
+        </div>
+    </div>
+
+    <div class="row g-3 mt-1">
+        <div class="col-md-6">
+            <partial name="_DateTimeInput" model="paymentTime" />
+            <span asp-validation-for="VrijemePlacanja" class="text-danger"></span>
+        </div>
+        <div class="col-md-3">
+            <label asp-for="NacinPlacanja" class="form-label"></label>
+            <select asp-for="NacinPlacanja" class="form-select" asp-items="Html.GetEnumSelectList<SideSeat.Models.NacinPlacanja>()"></select>
+            <span asp-validation-for="NacinPlacanja" class="text-danger"></span>
+        </div>
+        <div class="col-md-3">
+            <div class="form-check mt-4">
+                <input asp-for="Uspjesno" class="form-check-input" />
+                <label asp-for="Uspjesno" class="form-check-label"></label>
+            </div>
+        </div>
+    </div>
+</div>

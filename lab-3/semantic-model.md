@@ -29,6 +29,11 @@
 ### OcjenaVoznje
 - Svojstva: Id (PK), RezervacijaId (FK), AutorId (FK), BrojZvjezdica, Komentar, Kreirano
 - Veze: N-1 s Rezervacija, N-1 s Korisnik (Autor)
+- Poslovno pravilo:
+  - Za jednu rezervaciju mogu postojati najvise 2 ocjene (po jedna po autoru): putnik ocjenjuje vozaca, vozac ocjenjuje putnika.
+  - Primatelj ocjene se racuna iz konteksta rezervacije:
+    - ako je AutorId == Voznja.VozacId, primatelj je Rezervacija.PutnikId
+    - inace, primatelj je Voznja.VozacId
 
 ## Relacijski sazetak
 - Grad 1-N Voznja (polazni i odredisni grad)
@@ -36,5 +41,5 @@
 - Korisnik 1-N Rezervacija (putnik)
 - Voznja 1-N Rezervacija
 - Rezervacija 1-1 Placanje
-- Rezervacija 1-N OcjenaVoznje (ili 1-0..1 ovisno o poslovnom pravilu)
+- Rezervacija 1-N OcjenaVoznje (0-2 u praksi: putnik + vozac)
 - Korisnik 0-1 Vozilo (vlasnik)

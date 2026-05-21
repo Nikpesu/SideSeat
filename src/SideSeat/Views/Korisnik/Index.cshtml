@@ -1,9 +1,11 @@
 @model IReadOnlyList<SideSeat.Models.Korisnik>
 @{
 	ViewData["Title"] = "Korisnici";
+	var search = ViewBag.Search as string ?? string.Empty;
+	var isAdmin = User.IsInRole("Admin");
 }
 
-<section class="ss-page">
+<section class="ss-page" data-ss-list-page>
 	<nav class="ss-breadcrumb" aria-label="Breadcrumb">
 		<a asp-controller="Home" asp-action="Index">Dashboard</a>
 		<span class="ss-breadcrumb-sep">/</span>
@@ -13,6 +15,29 @@
 	<div class="ss-page-head">
 		<h1>Korisnici</h1>
 		<p>Pregled registriranih korisnika i njihovog statusa.</p>
+		<div class="ss-list-toolbar">
+			<div class="ss-list-search">
+				<label class="form-label" for="korisnici-search">Pretraga</label>
+				<input id="korisnici-search" class="form-control" type="search" value="@search" placeholder="Ime, email, mobitel ili tip" data-ss-list-search />
+			</div>
+			<div class="ss-list-pagesize">
+				<label class="form-label" for="korisnici-pagesize">Prikaži</label>
+				@{ var _ps = ViewBag.PageSize as int?; }
+				<select id="korisnici-pagesize" class="form-select" data-ss-list-pagesize>
+					@if (_ps == 10) { <text><option value="10" selected>10</option></text> } else { <text><option value="10">10</option></text> }
+					@if (_ps == null || _ps == 25) { <text><option value="25" selected>25</option></text> } else { <text><option value="25">25</option></text> }
+					@if (_ps == 50) { <text><option value="50" selected>50</option></text> } else { <text><option value="50">50</option></text> }
+					@if (_ps == 100) { <text><option value="100" selected>100</option></text> } else { <text><option value="100">100</option></text> }
+					@if (_ps == 0) { <text><option value="0" selected>∞</option></text> } else { <text><option value="0">∞</option></text> }
+				</select>
+			</div>
+		</div>
+		@if (isAdmin)
+		{
+			<div class="ss-actions">
+				<a class="ss-btn" asp-action="Create">Novi korisnik</a>
+			</div>
+		}
 	</div>
 
 	@if (Model.Count == 0)
@@ -21,7 +46,7 @@
 	}
 	else
 	{
-		<div class="ss-table-shell" role="region" aria-label="Lista korisnika" tabindex="0">
+		<div class="ss-table-shell" role="region" aria-label="Lista korisnika" tabindex="0" data-ss-list-content>
 			<table class="ss-table">
 				<thead>
 					<tr>
@@ -50,6 +75,11 @@
 							</td>
 							<td>
 								<a class="ss-btn" asp-controller="Korisnik" asp-action="Details" asp-route-id="@korisnik.Id">Detalji</a>
+								@if (isAdmin)
+								{
+									<a class="ss-btn ss-btn-secondary" asp-controller="Korisnik" asp-action="Edit" asp-route-id="@korisnik.Id">Uredi</a>
+									<a class="ss-btn ss-btn-secondary" asp-controller="Korisnik" asp-action="Delete" asp-route-id="@korisnik.Id">Obrisi</a>
+								}
 							</td>
 						</tr>
 					}

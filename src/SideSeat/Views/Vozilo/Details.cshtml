@@ -54,6 +54,8 @@
 		</dl>
 
 		<div class="ss-actions">
+			<a class="ss-btn" asp-controller="Vozilo" asp-action="Edit" asp-route-id="@Model.Id">Uredi vozilo</a>
+			<a class="ss-btn ss-btn-secondary" asp-controller="Vozilo" asp-action="Delete" asp-route-id="@Model.Id">Obrisi vozilo</a>
 			<a class="ss-btn ss-btn-secondary" asp-controller="Vozilo" asp-action="Index">Natrag na vozila</a>
 			<a class="ss-btn" asp-controller="Home" asp-action="Index">Dashboard</a>
 		</div>

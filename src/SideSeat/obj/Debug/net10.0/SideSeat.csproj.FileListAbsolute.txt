@@ -23,7 +23,6 @@ C:\Users\nikpe\Documents\GitHub\SideSeat\src\SideSeat\obj\Debug\net10.0\scopedcs
 C:\Users\nikpe\Documents\GitHub\SideSeat\src\SideSeat\obj\Debug\net10.0\scopedcss\bundle\SideSeat.styles.css
 C:\Users\nikpe\Documents\GitHub\SideSeat\src\SideSeat\obj\Debug\net10.0\scopedcss\projectbundle\SideSeat.bundle.scp.css
 C:\Users\nikpe\Documents\GitHub\SideSeat\src\SideSeat\obj\Debug\net10.0\compressed\enqnzennzg-{0}-61n19gt1b8-61n19gt1b8.gz
-C:\Users\nikpe\Documents\GitHub\SideSeat\src\SideSeat\obj\Debug\net10.0\compressed\2jeb1sp3qf-{0}-xtxxf3hu2r-xtxxf3hu2r.gz
 C:\Users\nikpe\Documents\GitHub\SideSeat\src\SideSeat\obj\Debug\net10.0\compressed\vfg2n6iihd-{0}-bqjiyaj88i-bqjiyaj88i.gz
 C:\Users\nikpe\Documents\GitHub\SideSeat\src\SideSeat\obj\Debug\net10.0\compressed\mt5rg1zb48-{0}-c2jlpeoesf-c2jlpeoesf.gz
 C:\Users\nikpe\Documents\GitHub\SideSeat\src\SideSeat\obj\Debug\net10.0\compressed\oqp8q8sw2g-{0}-erw9l3u2r3-erw9l3u2r3.gz
@@ -95,7 +94,6 @@ C:\Users\nikpe\Documents\GitHub\SideSeat\src\SideSeat\obj\Debug\net10.0\refint\S
 C:\Users\nikpe\Documents\GitHub\SideSeat\src\SideSeat\obj\Debug\net10.0\SideSeat.pdb
 C:\Users\nikpe\Documents\GitHub\SideSeat\src\SideSeat\obj\Debug\net10.0\SideSeat.genruntimeconfig.cache
 C:\Users\nikpe\Documents\GitHub\SideSeat\src\SideSeat\obj\Debug\net10.0\ref\SideSeat.dll
-C:\Users\nikpe\Documents\GitHub\SideSeat\src\SideSeat\obj\Debug\net10.0\compressed\panfg2bemx-{0}-51di3tk2yk-51di3tk2yk.gz
 C:\Users\nikpe\Documents\GitHub\SideSeat\src\SideSeat\obj\Debug\net10.0\SideSeat.csproj.AssemblyReference.cache
 C:\Users\nikpe\Documents\GitHub\SideSeat\src\SideSeat\bin\Debug\net10.0\Azure.Core.dll
 C:\Users\nikpe\Documents\GitHub\SideSeat\src\SideSeat\bin\Debug\net10.0\Azure.Identity.dll
@@ -232,7 +230,6 @@ C:\Users\nikpe\Documents\GitHub\SideSeat\src\SideSeat\bin\Debug\net10.0\runtimes
 C:\Users\nikpe\Documents\GitHub\SideSeat\src\SideSeat\bin\Debug\net10.0\runtimes\win-x86\native\Microsoft.Data.SqlClient.SNI.dll
 C:\Users\nikpe\Documents\GitHub\SideSeat\src\SideSeat\bin\Debug\net10.0\runtimes\win\lib\net9.0\System.Windows.Extensions.dll
 C:\Users\nikpe\Documents\GitHub\SideSeat\src\SideSeat\obj\Debug\net10.0\SideSeat.csproj.Up2Date
-C:\Users\nikpe\Documents\GitHub\SideSeat\src\SideSeat\obj\Debug\net10.0\staticwebassets.upToDateCheck.txt
 C:\Users\nikpe\Documents\GitHub\SideSeat.worktrees\agents-ui-skill-agent-futuristic-design\src\SideSeat\bin\Debug\net10.0\appsettings.Development.json
 C:\Users\nikpe\Documents\GitHub\SideSeat.worktrees\agents-ui-skill-agent-futuristic-design\src\SideSeat\bin\Debug\net10.0\appsettings.json
 C:\Users\nikpe\Documents\GitHub\SideSeat.worktrees\agents-ui-skill-agent-futuristic-design\src\SideSeat\bin\Debug\net10.0\SideSeat.staticwebassets.runtime.json
@@ -467,3 +464,14 @@ C:\Users\nikpe\Documents\GitHub\SideSeat.worktrees\agents-ui-skill-agent-futuris
 C:\Users\nikpe\Documents\GitHub\SideSeat.worktrees\agents-ui-skill-agent-futuristic-design\src\SideSeat\obj\Debug\net10.0\SideSeat.pdb
 C:\Users\nikpe\Documents\GitHub\SideSeat.worktrees\agents-ui-skill-agent-futuristic-design\src\SideSeat\obj\Debug\net10.0\SideSeat.genruntimeconfig.cache
 C:\Users\nikpe\Documents\GitHub\SideSeat.worktrees\agents-ui-skill-agent-futuristic-design\src\SideSeat\obj\Debug\net10.0\ref\SideSeat.dll
+c:\Users\nikpe\Documents\GitHub\SideSeat\artifacts\verify-build\appsettings.Development.json
+c:\Users\nikpe\Documents\GitHub\SideSeat\artifacts\verify-build\appsettings.json
+c:\Users\nikpe\Documents\GitHub\SideSeat\artifacts\verify-build\SideSeat.staticwebassets.runtime.json
+c:\Users\nikpe\Documents\GitHub\SideSeat\artifacts\verify-build\SideSeat.staticwebassets.endpoints.json
+c:\Users\nikpe\Documents\GitHub\SideSeat\artifacts\verify-build\SideSeat.exe
+c:\Users\nikpe\Documents\GitHub\SideSeat\artifacts\verify-build\SideSeat.deps.json
+c:\Users\nikpe\Documents\GitHub\SideSeat\artifacts\verify-build\SideSeat.runtimeconfig.json
+c:\Users\nikpe\Documents\GitHub\SideSeat\artifacts\verify-build\SideSeat.dll
+c:\Users\nikpe\Documents\GitHub\SideSeat\artifacts\verify-build\SideSeat.pdb
+C:\Users\nikpe\Documents\GitHub\SideSeat\src\SideSeat\obj\Debug\net10.0\compressed\panfg2bemx-{0}-5p4hhfkhce-5p4hhfkhce.gz
+C:\Users\nikpe\Documents\GitHub\SideSeat\src\SideSeat\obj\Debug\net10.0\compressed\2jeb1sp3qf-{0}-n9ogx82l45-n9ogx82l45.gz

@@ -1,0 +1,46 @@
+@model SideSeat.Models.Voznja
+@{
+    ViewData["Title"] = "Brisanje voznje";
+}
+
+<section class="ss-page">
+    <nav class="ss-breadcrumb" aria-label="Breadcrumb">
+        <a asp-controller="Home" asp-action="Index">Dashboard</a>
+        <span class="ss-breadcrumb-sep">/</span>
+        <a asp-controller="Voznja" asp-action="Index">Voznje</a>
+        <span class="ss-breadcrumb-sep">/</span>
+        <span class="current" aria-current="page">Brisanje</span>
+    </nav>
+
+    <div class="ss-page-head">
+        <h1>Brisanje voznje</h1>
+        <p>Provjerite detalje prije uklanjanja voznje.</p>
+    </div>
+
+    <div class="ss-detail-card">
+        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+        <dl class="ss-detail-grid">
+            <div>
+                <dt>Ruta</dt>
+                <dd>@Model.PolazniGrad?.Naziv -> @Model.OdredisniGrad?.Naziv</dd>
+            </div>
+            <div>
+                <dt>Polazak</dt>
+                <dd>@Model.Polazak.ToString("dd.MM.yyyy HH:mm")</dd>
+            </div>
+            <div>
+                <dt>Mjesta</dt>
+                <dd>@Model.SlobodnaMjesta / @Model.UkupnoMjesta</dd>
+            </div>
+        </dl>
+
+        <form asp-action="Delete" method="post">
+            @Html.AntiForgeryToken()
+            <input type="hidden" asp-for="Id" />
+            <div class="ss-actions">
+                <button type="submit" class="ss-btn">Obrisi</button>
+                <a class="ss-btn ss-btn-secondary" asp-action="Details" asp-route-id="@Model.Id">Odustani</a>
+            </div>
+        </form>
+    </div>
+</section>

@@ -1,0 +1,52 @@
+@model SideSeat.Models.Ocjena.CreateOcjenaViewModel
+@{
+    ViewData["Title"] = "Ocjeni voznju";
+}
+
+<section class="ss-page">
+    <nav class="ss-breadcrumb" aria-label="Breadcrumb">
+        <a asp-controller="Home" asp-action="Index">Pocetna</a>
+        <span class="ss-breadcrumb-sep">/</span>
+        <a asp-controller="Rezervacija" asp-action="Index">Rezervacije</a>
+        <span class="ss-breadcrumb-sep">/</span>
+        <span class="current" aria-current="page">Ocjenjivanje</span>
+    </nav>
+
+    <div class="ss-page-head">
+        <h1>Ocjeni voznju</h1>
+        <p>Ostavi ocjenu i komentar za @Model.TargetName.</p>
+    </div>
+
+    <form asp-action="Create" method="post" class="ss-detail-card">
+        @Html.AntiForgeryToken()
+        <input type="hidden" asp-for="RezervacijaId" />
+        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+        <div class="mb-3">
+            <label asp-for="BrojZvjezdica" class="form-label">Broj zvjezdica</label>
+            <select asp-for="BrojZvjezdica" class="form-select">
+                <option value="5">5</option>
+                <option value="4">4</option>
+                <option value="3">3</option>
+                <option value="2">2</option>
+                <option value="1">1</option>
+            </select>
+            <span asp-validation-for="BrojZvjezdica" class="text-danger"></span>
+        </div>
+
+        <div class="mb-3">
+            <label asp-for="Komentar" class="form-label"></label>
+            <textarea asp-for="Komentar" class="form-control" rows="4" placeholder="Napiši komentar..."></textarea>
+            <span asp-validation-for="Komentar" class="text-danger"></span>
+        </div>
+
+        <div class="ss-actions">
+            <button class="ss-btn" type="submit">Spremi ocjenu</button>
+            <a class="ss-btn ss-btn-secondary" asp-controller="Rezervacija" asp-action="Index">Natrag</a>
+        </div>
+    </form>
+</section>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

@@ -24,4 +24,8 @@ public class RegisterViewModel
     [Required]
     [Display(Name = "Adresa")]
     public string Address { get; set; } = string.Empty;
+
+    [Required]
+    [Display(Name = "Broj mobitela")]
+    public string PhoneNumber { get; set; } = string.Empty;
 }

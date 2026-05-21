@@ -1,0 +1,137 @@
+@model SideSeat.Models.ViewModels.KorisnikFormViewModel
+
+@{
+    var voziloLookup = new AutocompleteLookupViewModel
+    {
+        Name = nameof(Model.VoziloId),
+        Label = "Vozilo",
+        Endpoint = Url.Action("SearchVehicles", "Vozilo") ?? string.Empty,
+        SelectedId = Model.VoziloId?.ToString() ?? string.Empty,
+        SelectedText = Model.VoziloNaziv,
+        Placeholder = "Pretrazi vozila...",
+        HelpText = "Odaberite vozilo povezano s vozacem.",
+        MinimumLength = 0,
+        Required = false
+    };
+
+    var registrationDate = new DateTimeInputViewModel
+    {
+        Name = nameof(Model.DatumRegistracije),
+        Label = "Datum registracije",
+        Value = Model.DatumRegistracije,
+        DateOnly = true,
+        Required = true
+    };
+
+    var kycDate = new DateTimeInputViewModel
+    {
+        Name = nameof(Model.KycDatumRodenja),
+        Label = "Datum rodenja",
+        Value = Model.KycDatumRodenja,
+        DateOnly = true,
+        Required = false
+    };
+}
+
+<div class="ss-detail-card">
+    <div class="row g-3">
+        <div class="col-md-6">
+            <label asp-for="Ime" class="form-label"></label>
+            <input asp-for="Ime" class="form-control" />
+            <span asp-validation-for="Ime" class="text-danger"></span>
+        </div>
+        <div class="col-md-6">
+            <label asp-for="Prezime" class="form-label"></label>
+            <input asp-for="Prezime" class="form-control" />
+            <span asp-validation-for="Prezime" class="text-danger"></span>
+        </div>
+    </div>
+
+    <div class="row g-3 mt-1">
+        <div class="col-md-6">
+            <label asp-for="Email" class="form-label"></label>
+            <input asp-for="Email" class="form-control" />
+            <span asp-validation-for="Email" class="text-danger"></span>
+        </div>
+        <div class="col-md-6">
+            <label asp-for="BrojMobitela" class="form-label"></label>
+            <input asp-for="BrojMobitela" class="form-control" />
+            <span asp-validation-for="BrojMobitela" class="text-danger"></span>
+        </div>
+    </div>
+
+    <div class="row g-3 mt-1">
+        <div class="col-md-6">
+            <label asp-for="Adresa" class="form-label"></label>
+            <input asp-for="Adresa" class="form-control" />
+            <span asp-validation-for="Adresa" class="text-danger"></span>
+        </div>
+        <div class="col-md-6">
+            <partial name="_DateTimeInput" model="registrationDate" />
+            <span asp-validation-for="DatumRegistracije" class="text-danger"></span>
+        </div>
+    </div>
+
+    <div class="row g-3 mt-1">
+        <div class="col-md-6">
+            <label asp-for="Tip" class="form-label"></label>
+            <select asp-for="Tip" class="form-select" asp-items="Html.GetEnumSelectList<SideSeat.Models.TipKorisnika>()"></select>
+            <span asp-validation-for="Tip" class="text-danger"></span>
+        </div>
+        <div class="col-md-3">
+            <div class="form-check mt-4">
+                <input asp-for="JeAktivan" class="form-check-input" />
+                <label asp-for="JeAktivan" class="form-check-label"></label>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="form-check mt-4">
+                <input asp-for="KycPodnesen" class="form-check-input" />
+                <label asp-for="KycPodnesen" class="form-check-label"></label>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-3 mt-1">
+        <div class="col-md-6">
+            <label asp-for="Password" class="form-label"></label>
+            <input asp-for="Password" class="form-control" />
+            <span asp-validation-for="Password" class="text-danger"></span>
+        </div>
+        <div class="col-md-6">
+            <label asp-for="ConfirmPassword" class="form-label"></label>
+            <input asp-for="ConfirmPassword" class="form-control" />
+            <span asp-validation-for="ConfirmPassword" class="text-danger"></span>
+        </div>
+    </div>
+
+    <div class="row g-3 mt-1">
+        <div class="col-md-6">
+            <label asp-for="KycOib" class="form-label"></label>
+            <input asp-for="KycOib" class="form-control" />
+            <span asp-validation-for="KycOib" class="text-danger"></span>
+        </div>
+        <div class="col-md-6">
+            <label asp-for="KycBrojOsobne" class="form-label"></label>
+            <input asp-for="KycBrojOsobne" class="form-control" />
+            <span asp-validation-for="KycBrojOsobne" class="text-danger"></span>
+        </div>
+    </div>
+
+    <div class="row g-3 mt-1">
+        <div class="col-md-6">
+            <label asp-for="KycBrojVozacke" class="form-label"></label>
+            <input asp-for="KycBrojVozacke" class="form-control" />
+            <span asp-validation-for="KycBrojVozacke" class="text-danger"></span>
+        </div>
+        <div class="col-md-6">
+            <partial name="_DateTimeInput" model="kycDate" />
+            <span asp-validation-for="KycDatumRodenja" class="text-danger"></span>
+        </div>
+    </div>
+
+    <div class="mt-3">
+        <partial name="_AutocompleteLookup" model="voziloLookup" />
+        <span asp-validation-for="VoziloId" class="text-danger"></span>
+    </div>
+</div>

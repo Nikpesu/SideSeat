@@ -38,6 +38,8 @@
 		</dl>
 
 		<div class="ss-actions">
+			<a class="ss-btn" asp-controller="Grad" asp-action="Edit" asp-route-id="@Model.Id">Uredi grad</a>
+			<a class="ss-btn ss-btn-secondary" asp-controller="Grad" asp-action="Delete" asp-route-id="@Model.Id">Obrisi grad</a>
 			<a class="ss-btn ss-btn-secondary" asp-controller="Grad" asp-action="Index">Natrag na gradove</a>
 			<a class="ss-btn" asp-controller="Home" asp-action="Index">Dashboard</a>
 		</div>

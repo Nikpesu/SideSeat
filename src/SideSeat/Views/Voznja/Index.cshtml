@@ -1,11 +1,21 @@
 @model IReadOnlyList<SideSeat.Models.Voznja>
+@using SideSeat.Models.ViewModels
 @{
 	ViewData["Title"] = "Voznje";
+	var search = ViewBag.Search as string ?? string.Empty;
+    var selectedDate = ViewBag.Date as DateTime?;
+    var dateFilter = new DateTimeInputViewModel
+    {
+        Name = "date",
+        Label = "Datum",
+        Value = selectedDate,
+        DateOnly = true
+    };
 	var currentUserId = int.TryParse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value, out var idValue) ? idValue : 0;
 	var isAdmin = User.IsInRole("Admin");
 }
 
-<section class="ss-page">
+<section class="ss-page" data-ss-list-page>
 	<nav class="ss-breadcrumb" aria-label="Breadcrumb">
 		<a asp-controller="Home" asp-action="Index">Dashboard</a>
 		<span class="ss-breadcrumb-sep">/</span>
@@ -15,6 +25,26 @@
 	<div class="ss-page-head">
 		<h1>Voznje</h1>
 		<p>Pregled svih voznji, ruta i slobodnih mjesta.</p>
+		<div class="ss-list-toolbar">
+			<div class="ss-list-search">
+				<label class="form-label" for="voznje-search">Pretraga</label>
+				<input id="voznje-search" class="form-control" type="search" value="@search" placeholder="Ruta, vozac, status ili ID" data-ss-list-search />
+			</div>
+			<div class="ss-list-pagesize">
+				<label class="form-label" for="voznje-pagesize">Prikaži</label>
+				@{ var _ps = ViewBag.PageSize as int?; }
+				<select id="voznje-pagesize" class="form-select" data-ss-list-pagesize>
+					@if (_ps == 10) { <text><option value="10" selected>10</option></text> } else { <text><option value="10">10</option></text> }
+					@if (_ps == null || _ps == 25) { <text><option value="25" selected>25</option></text> } else { <text><option value="25">25</option></text> }
+					@if (_ps == 50) { <text><option value="50" selected>50</option></text> } else { <text><option value="50">50</option></text> }
+					@if (_ps == 100) { <text><option value="100" selected>100</option></text> } else { <text><option value="100">100</option></text> }
+					@if (_ps == 0) { <text><option value="0" selected>∞</option></text> } else { <text><option value="0">∞</option></text> }
+				</select>
+			</div>
+            <div class="ss-list-date">
+                <partial name="_DateTimeInput" model="dateFilter" />
+            </div>
+		</div>
 		<div class="ss-actions">
 			<a class="ss-btn ss-btn-secondary" asp-controller="Voznja" asp-action="Active">Aktivne voznje</a>
 			<a class="ss-btn" asp-controller="Voznja" asp-action="Create">Nova voznja</a>
@@ -27,7 +57,7 @@
 	}
 	else
 	{
-		<div class="ss-table-shell" role="region" aria-label="Lista voznji" tabindex="0">
+		<div class="ss-table-shell" role="region" aria-label="Lista voznji" tabindex="0" data-ss-list-content>
 			<table class="ss-table">
 				<thead>
 					<tr>
@@ -65,6 +95,7 @@
 								@if (isAdmin || voznja.VozacId == currentUserId)
 								{
 									<a class="ss-btn ss-btn-secondary" asp-controller="Voznja" asp-action="Edit" asp-route-id="@voznja.Id">Uredi</a>
+									<a class="ss-btn ss-btn-secondary" asp-controller="Voznja" asp-action="Delete" asp-route-id="@voznja.Id">Obrisi</a>
 								}
 							</td>
 						</tr>

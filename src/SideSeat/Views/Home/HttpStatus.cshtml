@@ -1,0 +1,13 @@
+@{
+    ViewData["Title"] = $"{ViewBag.StatusCode} - {ViewBag.StatusTitle}";
+}
+
+<section class="ss-page">
+    <div class="ss-page-head">
+        <h1>@ViewBag.StatusCode - @ViewBag.StatusTitle</h1>
+        <p>@ViewBag.StatusMessage</p>
+        <div class="ss-actions">
+            <a class="ss-btn" asp-controller="Home" asp-action="Index">Povratak na pocetnu</a>
+        </div>
+    </div>
+</section>

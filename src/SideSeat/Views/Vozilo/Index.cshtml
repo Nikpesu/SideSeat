@@ -1,9 +1,10 @@
 @model IReadOnlyList<SideSeat.Models.Vozilo>
 @{
     ViewData["Title"] = "Vozila";
+    var search = ViewBag.Search as string ?? string.Empty;
 }
 
-<section class="ss-page">
+<section class="ss-page" data-ss-list-page>
     <nav class="ss-breadcrumb" aria-label="Breadcrumb">
         <a asp-controller="Home" asp-action="Index">Dashboard</a>
         <span class="ss-breadcrumb-sep">/</span>
@@ -13,6 +14,26 @@
     <div class="ss-page-head">
         <h1>Vozila</h1>
         <p>Pregled vozila koja su povezana s korisnicima vozacima.</p>
+        <div class="ss-list-toolbar">
+            <div class="ss-list-search">
+                <label class="form-label" for="vozila-search">Pretraga</label>
+                <input id="vozila-search" class="form-control" type="search" value="@search" placeholder="Marka, model, registracija ili vlasnik" data-ss-list-search />
+            </div>
+            <div class="ss-list-pagesize">
+                <label class="form-label" for="vozilo-pagesize">Prikaži</label>
+                @{ var _ps = ViewBag.PageSize as int?; }
+                <select id="vozilo-pagesize" class="form-select" data-ss-list-pagesize>
+                    @if (_ps == 10) { <text><option value="10" selected>10</option></text> } else { <text><option value="10">10</option></text> }
+                    @if (_ps == null || _ps == 25) { <text><option value="25" selected>25</option></text> } else { <text><option value="25">25</option></text> }
+                    @if (_ps == 50) { <text><option value="50" selected>50</option></text> } else { <text><option value="50">50</option></text> }
+                    @if (_ps == 100) { <text><option value="100" selected>100</option></text> } else { <text><option value="100">100</option></text> }
+                    @if (_ps == 0) { <text><option value="0" selected>∞</option></text> } else { <text><option value="0">∞</option></text> }
+                </select>
+            </div>
+            <div class="ss-actions">
+                <a class="ss-btn" asp-action="Create">Novo vozilo</a>
+            </div>
+        </div>
     </div>
 
     @if (Model.Count == 0)
@@ -21,7 +42,7 @@
     }
     else
     {
-        <div class="ss-table-shell" role="region" aria-label="Lista vozila" tabindex="0">
+        <div class="ss-table-shell" role="region" aria-label="Lista vozila" tabindex="0" data-ss-list-content>
             <table class="ss-table">
                 <thead>
                     <tr>

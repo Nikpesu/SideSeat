@@ -1,0 +1,30 @@
+@model SideSeat.Models.Vozilo
+@{
+    ViewData["Title"] = "Novo vozilo";
+}
+
+<section class="ss-page">
+    <nav class="ss-breadcrumb" aria-label="Breadcrumb">
+        <a asp-controller="Home" asp-action="Index">Dashboard</a>
+        <span class="ss-breadcrumb-sep">/</span>
+        <a asp-controller="Vozilo" asp-action="Index">Vozila</a>
+        <span class="ss-breadcrumb-sep">/</span>
+        <span class="current" aria-current="page">Novo vozilo</span>
+    </nav>
+
+    <div class="ss-page-head">
+        <h1>Novo vozilo</h1>
+        <p>Dodajte vozilo i po potrebi ga odmah povežite s korisnikom.</p>
+    </div>
+
+    <form asp-action="Create" method="post">
+        @Html.AntiForgeryToken()
+        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+        <partial name="_Form" model="Model" />
+
+        <div class="ss-actions">
+            <button type="submit" class="ss-btn">Spremi</button>
+            <a class="ss-btn ss-btn-secondary" asp-action="Index">Odustani</a>
+        </div>
+    </form>
+</section>

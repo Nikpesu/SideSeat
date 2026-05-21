@@ -1,6 +1,7 @@
 @model SideSeat.Models.Placanje
 @{
     ViewData["Title"] = "Detalji placanja";
+    var isAdmin = User.IsInRole("Admin");
 }
 
 <section class="ss-page">
@@ -58,6 +59,11 @@
         </dl>
 
         <div class="ss-actions">
+            @if (isAdmin)
+            {
+                <a class="ss-btn" asp-controller="Placanje" asp-action="Edit" asp-route-id="@Model.Id">Uredi placanje</a>
+                <a class="ss-btn ss-btn-secondary" asp-controller="Placanje" asp-action="Delete" asp-route-id="@Model.Id">Obrisi placanje</a>
+            }
             <a class="ss-btn ss-btn-secondary" asp-controller="Placanje" asp-action="Index">Natrag na placanja</a>
             <a class="ss-btn" asp-controller="Home" asp-action="Index">Dashboard</a>
         </div>

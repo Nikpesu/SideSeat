@@ -30,7 +30,7 @@ public class AuthController : Controller
             return RedirectToAction("Index", "Home");
         }
 
-        return View(new LoginViewModel { ReturnUrl = returnUrl });
+        return RedirectToAction("Index", "Home");
     }
 
     [HttpPost]
@@ -40,7 +40,8 @@ public class AuthController : Controller
     {
         if (!ModelState.IsValid)
         {
-            return View(model);
+            TempData["AuthError"] = "Provjeri unesene podatke.";
+            return RedirectToAction("Index", "Home", new { auth = "login", returnUrl = GetSafeReturnUrl(model.ReturnUrl) });
         }
 
         var user = await _db.Korisnici
@@ -48,7 +49,8 @@ public class AuthController : Controller
         if (user is null || !_passwordHashingService.Verify(model.Password, user.LozinkaHash))
         {
             ModelState.AddModelError(string.Empty, "Neispravan email ili lozinka.");
-            return View(model);
+            TempData["AuthError"] = "Neispravan email ili lozinka.";
+            return RedirectToAction("Index", "Home", new { auth = "login", returnUrl = GetSafeReturnUrl(model.ReturnUrl) });
         }
 
         await SignInAsync(user, model.RememberMe);
@@ -64,7 +66,7 @@ public class AuthController : Controller
     [AllowAnonymous]
     public IActionResult Register()
     {
-        return View(new RegisterViewModel());
+        return RedirectToAction("Index", "Home");
     }
 
     [HttpPost]
@@ -74,7 +76,8 @@ public class AuthController : Controller
     {
         if (!ModelState.IsValid)
         {
-            return View(model);
+            TempData["AuthError"] = "Provjeri unesene podatke.";
+            return RedirectToAction("Index", "Home", new { auth = "register" });
         }
 
         var normalizedEmail = model.Email.Trim();
@@ -82,7 +85,8 @@ public class AuthController : Controller
         if (emailExists)
         {
             ModelState.AddModelError(nameof(model.Email), "Korisnik s ovim emailom vec postoji.");
-            return View(model);
+            TempData["AuthError"] = "Korisnik s ovim emailom vec postoji.";
+            return RedirectToAction("Index", "Home", new { auth = "register" });
         }
 
         var localPart = normalizedEmail.Split('@')[0];
@@ -93,7 +97,7 @@ public class AuthController : Controller
             Adresa = model.Address.Trim(),
             Ime = string.IsNullOrWhiteSpace(localPart) ? "Korisnik" : localPart,
             Prezime = string.Empty,
-            BrojMobitela = string.Empty,
+            BrojMobitela = model.PhoneNumber.Trim(),
             DatumRegistracije = DateTime.UtcNow,
             Tip = TipKorisnika.Putnik,
             JeAktivan = true,
@@ -119,6 +123,7 @@ public class AuthController : Controller
     [AllowAnonymous]
     public IActionResult AccessDenied()
     {
+        Response.StatusCode = StatusCodes.Status403Forbidden;
         return View();
     }
 
@@ -143,5 +148,15 @@ public class AuthController : Controller
                 IsPersistent = rememberMe,
                 ExpiresUtc = rememberMe ? DateTimeOffset.UtcNow.AddDays(14) : null
             });
+    }
+
+    private static string? GetSafeReturnUrl(string? returnUrl)
+    {
+        if (string.IsNullOrWhiteSpace(returnUrl))
+        {
+            return null;
+        }
+
+        return returnUrl.Contains("auth=", StringComparison.OrdinalIgnoreCase) ? null : returnUrl;
     }
 }

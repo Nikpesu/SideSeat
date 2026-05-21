@@ -36,15 +36,25 @@
             <span asp-validation-for="Address" class="text-danger"></span>
         </div>
 
+        <div class="mb-3">
+            <label asp-for="PhoneNumber" class="form-label"></label>
+            <input asp-for="PhoneNumber" class="form-control" />
+            <span asp-validation-for="PhoneNumber" class="text-danger"></span>
+        </div>
+
         <div class="form-check mb-2">
-            <input asp-for="IsRider" class="form-check-input" />
+            <input asp-for="IsRider" class="form-check-input" disabled="@(!Model.CanDisableRider ? "disabled" : null)" />
             <label asp-for="IsRider" class="form-check-label"></label>
         </div>
 
         <div class="form-check mb-3">
-            <input asp-for="IsDriver" class="form-check-input" />
+            <input asp-for="IsDriver" class="form-check-input" disabled="@(!Model.CanDisableDriver ? "disabled" : null)" />
             <label asp-for="IsDriver" class="form-check-label"></label>
         </div>
+        @if (!Model.CanDisableRider || !Model.CanDisableDriver)
+        {
+            <small class="ss-datetime-help d-block mb-3">Aktivirane uloge su zakljucane i ne mogu se ugasiti kroz postavke.</small>
+        }
 
         <div class="mb-3">
             <span class="ss-badge @(Model.KycPodnesen ? "is-ok" : "is-alert")">
@@ -54,6 +64,24 @@
             {
                 <a class="ss-btn ss-btn-secondary ms-2" asp-action="Kyc">Ispuni KYC</a>
             }
+        </div>
+
+        <hr />
+        <h2 class="h5 mb-3">Promjena lozinke</h2>
+        <div class="mb-3">
+            <label asp-for="CurrentPassword" class="form-label"></label>
+            <input asp-for="CurrentPassword" class="form-control" autocomplete="current-password" />
+            <span asp-validation-for="CurrentPassword" class="text-danger"></span>
+        </div>
+        <div class="mb-3">
+            <label asp-for="NewPassword" class="form-label"></label>
+            <input asp-for="NewPassword" class="form-control" autocomplete="new-password" />
+            <span asp-validation-for="NewPassword" class="text-danger"></span>
+        </div>
+        <div class="mb-3">
+            <label asp-for="ConfirmNewPassword" class="form-label"></label>
+            <input asp-for="ConfirmNewPassword" class="form-control" autocomplete="new-password" />
+            <span asp-validation-for="ConfirmNewPassword" class="text-danger"></span>
         </div>
 
         <div class="ss-actions">

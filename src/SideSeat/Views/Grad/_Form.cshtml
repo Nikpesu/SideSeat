@@ -1,0 +1,21 @@
+@model SideSeat.Models.Grad
+
+<div class="ss-detail-card">
+    <div class="mb-3">
+        <label asp-for="Naziv" class="form-label"></label>
+        <input asp-for="Naziv" class="form-control" />
+        <span asp-validation-for="Naziv" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="Drzava" class="form-label"></label>
+        <input asp-for="Drzava" class="form-control" />
+        <span asp-validation-for="Drzava" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="PostanskiBroj" class="form-label"></label>
+        <input asp-for="PostanskiBroj" class="form-control" />
+        <span asp-validation-for="PostanskiBroj" class="text-danger"></span>
+    </div>
+</div>

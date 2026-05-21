@@ -1,0 +1,78 @@
+@model SideSeat.Models.ViewModels.RezervacijaAdminFormViewModel
+
+@{
+    var rideLookup = new AutocompleteLookupViewModel
+    {
+        Name = nameof(Model.VoznjaId),
+        Label = "Voznja",
+        Endpoint = Url.Action("SearchRides", "Rezervacija") ?? string.Empty,
+        SelectedId = Model.VoznjaId.ToString(),
+        SelectedText = Model.VoznjaNaziv,
+        Placeholder = "Pretrazi voznju...",
+        HelpText = "Pretrazite po ruti ili datumu polaska.",
+        MinimumLength = 0,
+        Required = true
+    };
+
+    var userLookup = new AutocompleteLookupViewModel
+    {
+        Name = nameof(Model.PutnikId),
+        Label = "Putnik",
+        Endpoint = Url.Action("SearchUsers", "Rezervacija") ?? string.Empty,
+        SelectedId = Model.PutnikId.ToString(),
+        SelectedText = Model.PutnikNaziv,
+        Placeholder = "Pretrazi putnika...",
+        HelpText = "Krenite tipkati ime, prezime ili email.",
+        MinimumLength = 0,
+        Required = true
+    };
+
+    var createdAt = new DateTimeInputViewModel
+    {
+        Name = nameof(Model.VrijemeRezervacije),
+        Label = "Vrijeme rezervacije",
+        Value = Model.VrijemeRezervacije,
+        Required = true
+    };
+}
+
+<div class="ss-detail-card">
+    <div class="row g-3">
+        <div class="col-md-6">
+            <partial name="_AutocompleteLookup" model="rideLookup" />
+            <span asp-validation-for="VoznjaId" class="text-danger"></span>
+        </div>
+        <div class="col-md-6">
+            <partial name="_AutocompleteLookup" model="userLookup" />
+            <span asp-validation-for="PutnikId" class="text-danger"></span>
+        </div>
+    </div>
+
+    <div class="row g-3 mt-1">
+        <div class="col-md-4">
+            <label asp-for="BrojMjesta" class="form-label"></label>
+            <input asp-for="BrojMjesta" class="form-control" type="number" />
+            <span asp-validation-for="BrojMjesta" class="text-danger"></span>
+        </div>
+        <div class="col-md-4">
+            <label asp-for="Status" class="form-label"></label>
+            <select asp-for="Status" class="form-select" asp-items="Html.GetEnumSelectList<SideSeat.Models.StatusRezervacije>()"></select>
+            <span asp-validation-for="Status" class="text-danger"></span>
+        </div>
+        <div class="col-md-4">
+            <partial name="_DateTimeInput" model="createdAt" />
+            <span asp-validation-for="VrijemeRezervacije" class="text-danger"></span>
+        </div>
+    </div>
+
+    <div class="mt-3">
+        <label asp-for="Napomena" class="form-label"></label>
+        <textarea asp-for="Napomena" class="form-control" rows="3"></textarea>
+        <span asp-validation-for="Napomena" class="text-danger"></span>
+    </div>
+
+    <div class="mt-3">
+        <span class="ss-badge is-alert">Cijena: @Model.CijenaUkupno.ToString("0.00") EUR</span>
+        <small class="text-muted ms-2">Cijena se racuna prema cijeni po mjestu.</small>
+    </div>
+</div>
