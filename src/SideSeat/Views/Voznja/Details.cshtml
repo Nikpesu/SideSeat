@@ -4,6 +4,7 @@
 	var currentUserId = int.TryParse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value, out var idValue) ? idValue : 0;
 	var voznja = Model.Voznja;
 	var canEdit = User.IsInRole("Admin") || voznja.VozacId == currentUserId;
+	var canExecute = canEdit && voznja.Status == SideSeat.Models.StatusVoznje.Planirana;
 	var canBook = !canEdit && voznja.Status == SideSeat.Models.StatusVoznje.Planirana && voznja.SlobodnaMjesta > 0;
 	var statusClass = voznja.Status == SideSeat.Models.StatusVoznje.Planirana
 		? "is-ok"
@@ -27,6 +28,11 @@
 	</div>
 
 	<div class="ss-detail-card">
+		@if (TempData["RideExecuted"] is string rideExecutedMessage)
+		{
+			<div class="alert alert-info" role="status">@rideExecutedMessage</div>
+		}
+
 		<dl class="ss-detail-grid">
 			<div>
 				<dt>ID</dt>
@@ -193,6 +199,13 @@
 			}
 			@if (canEdit)
 			{
+				@if (canExecute)
+				{
+					<form asp-controller="Voznja" asp-action="Izvrsi" asp-route-id="@voznja.Id" method="post" onsubmit="return confirm('Potvrdi izvrsenje voznje i naplatu svih putnika?');">
+						@Html.AntiForgeryToken()
+						<button type="submit" class="ss-btn">Izvrsi voznju</button>
+					</form>
+				}
 				<a class="ss-btn" asp-controller="Voznja" asp-action="Edit" asp-route-id="@voznja.Id">Uredi voznju</a>
 				<a class="ss-btn ss-btn-secondary" asp-controller="Voznja" asp-action="Delete" asp-route-id="@voznja.Id">Obrisi voznju</a>
 			}

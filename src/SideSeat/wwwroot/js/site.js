@@ -359,13 +359,16 @@
         }
       });
       document.addEventListener("click", (event) => {
-        if (!field.contains(event.target)) {
+        const path = typeof event.composedPath === "function" ? event.composedPath() : [];
+        const clickedInsideField = path.length > 0
+          ? path.includes(field)
+          : field.contains(event.target);
+        if (!clickedInsideField) {
           closePicker();
         }
       });
     });
   };
-
   const initializeAutocompleteFields = () => {
     document.querySelectorAll("[data-ss-autocomplete]").forEach((field) => {
       if (field.dataset.ssBound === "true") {
@@ -440,6 +443,7 @@
         }
 
         try {
+          //AJAX UPIT
           const response = await fetch(url.toString(), {
             headers: {
               "X-Requested-With": "XMLHttpRequest"
@@ -555,6 +559,7 @@
         });
 
         try {
+          //AJAX UPIT
           const response = await fetch(url.toString(), {
             headers: {
               "X-Requested-With": "XMLHttpRequest"
@@ -680,6 +685,7 @@
         }
 
         try {
+          //AJAX UPIT
           const response = await fetch(url.toString(), {
             headers: {
               "X-Requested-With": "XMLHttpRequest"

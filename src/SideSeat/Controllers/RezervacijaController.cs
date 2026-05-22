@@ -440,6 +440,22 @@ public class RezervacijaController : Controller
             return NotFound();
         }
 
+        var ocjene = await _db.Ocjene
+            .Where(o => o.RezervacijaId == id)
+            .ToListAsync();
+        if (ocjene.Count > 0)
+        {
+            _db.Ocjene.RemoveRange(ocjene);
+        }
+
+        var placanja = await _db.Placanja
+            .Where(p => p.RezervacijaId == id)
+            .ToListAsync();
+        if (placanja.Count > 0)
+        {
+            _db.Placanja.RemoveRange(placanja);
+        }
+
         rezervacija.Voznja.SlobodnaMjesta += rezervacija.BrojMjesta;
         _db.Rezervacije.Remove(rezervacija);
         await _db.SaveChangesAsync();

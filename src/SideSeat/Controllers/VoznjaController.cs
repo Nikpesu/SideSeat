@@ -261,6 +261,114 @@ public class VoznjaController : Controller
         return View(model);
     }
 
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Izvrsi(int id)
+    {
+        var userId = User.GetKorisnikId();
+        if (userId is null)
+        {
+            return Challenge();
+        }
+
+        var voznja = await _db.Voznje
+            .Include(v => v.Rezervacije)
+            .ThenInclude(r => r.Putnik)
+            .FirstOrDefaultAsync(v => v.Id == id);
+        if (voznja is null)
+        {
+            return NotFound();
+        }
+
+        var isAdmin = User.IsInRole("Admin");
+        if (!isAdmin && voznja.VozacId != userId.Value)
+        {
+            return Forbid();
+        }
+
+        if (voznja.Status == StatusVoznje.Zavrsena)
+        {
+            TempData["RideExecuted"] = "Voznja je vec zavrsena.";
+            return RedirectToAction(nameof(Details), new { id });
+        }
+
+        if (voznja.Status != StatusVoznje.Planirana)
+        {
+            TempData["RideExecuted"] = "Voznja se ne moze izvrsiti u trenutnom statusu.";
+            return RedirectToAction(nameof(Details), new { id });
+        }
+
+        var nowUtc = DateTime.UtcNow;
+        var vozac = await _db.Korisnici.FirstOrDefaultAsync(k => k.Id == voznja.VozacId);
+        if (vozac is null)
+        {
+            return NotFound();
+        }
+        var zaNaplatu = voznja.Rezervacije
+            .Where(r => r.Status != StatusRezervacije.Otkazana)
+            .ToList();
+
+        foreach (var rezervacija in zaNaplatu)
+        {
+            var passengerSettlementTip = $"naplata-rezervacije:{rezervacija.Id}";
+            var driverSettlementTip = $"priljev-voznja:{rezervacija.Id}";
+            var passengerSettled = await _db.SaldoTransakcije
+                .AnyAsync(t => t.KorisnikId == rezervacija.PutnikId && t.Tip == passengerSettlementTip);
+            var driverSettled = await _db.SaldoTransakcije
+                .AnyAsync(t => t.KorisnikId == vozac.Id && t.Tip == driverSettlementTip);
+            var alreadySettled = passengerSettled && driverSettled;
+            if (alreadySettled)
+            {
+                continue;
+            }
+
+            var alreadyCharged = await _db.Placanja
+                .AnyAsync(p => p.RezervacijaId == rezervacija.Id && p.Uspjesno);
+            if (!alreadyCharged)
+            {
+                _db.Placanja.Add(new Placanje
+                {
+                    RezervacijaId = rezervacija.Id,
+                    Iznos = rezervacija.CijenaUkupno,
+                    NacinPlacanja = (NacinPlacanja)0,
+                    Uspjesno = true,
+                    VrijemePlacanja = nowUtc
+                });
+            }
+
+            var saldoPrije = rezervacija.Putnik.Saldo;
+            rezervacija.Putnik.Saldo -= rezervacija.CijenaUkupno;
+
+            _db.SaldoTransakcije.Add(new SaldoTransakcija
+            {
+                KorisnikId = rezervacija.PutnikId,
+                Iznos = rezervacija.CijenaUkupno,
+                Tip = passengerSettlementTip,
+                SaldoPrije = saldoPrije,
+                SaldoPoslije = rezervacija.Putnik.Saldo,
+                Vrijeme = nowUtc
+            });
+
+            var vozacSaldoPrije = vozac.Saldo;
+            vozac.Saldo += rezervacija.CijenaUkupno;
+            _db.SaldoTransakcije.Add(new SaldoTransakcija
+            {
+                KorisnikId = vozac.Id,
+                Iznos = rezervacija.CijenaUkupno,
+                Tip = driverSettlementTip,
+                SaldoPrije = vozacSaldoPrije,
+                SaldoPoslije = vozac.Saldo,
+                Vrijeme = nowUtc
+            });
+        }
+
+        voznja.Status = StatusVoznje.Zavrsena;
+        await _db.SaveChangesAsync();
+
+        TempData["RideExecuted"] = "Voznja je izvrsena.";
+        return RedirectToAction(nameof(Details), new { id });
+    }
+
     public IActionResult Create()
     {
         var userId = User.GetKorisnikId();
@@ -519,10 +627,26 @@ public class VoznjaController : Controller
             return Forbid();
         }
 
-        if (voznja.Rezervacije.Count > 0)
+        var rezervacijaIds = voznja.Rezervacije.Select(r => r.Id).ToList();
+        if (rezervacijaIds.Count > 0)
         {
-            ModelState.AddModelError(string.Empty, "Voznja ima rezervacije i ne moze se obrisati.");
-            return View("Delete", voznja);
+            var ocjene = await _db.Ocjene
+                .Where(o => rezervacijaIds.Contains(o.RezervacijaId))
+                .ToListAsync();
+            var placanja = await _db.Placanja
+                .Where(p => rezervacijaIds.Contains(p.RezervacijaId))
+                .ToListAsync();
+
+            if (ocjene.Count > 0)
+            {
+                _db.Ocjene.RemoveRange(ocjene);
+            }
+            if (placanja.Count > 0)
+            {
+                _db.Placanja.RemoveRange(placanja);
+            }
+
+            _db.Rezervacije.RemoveRange(voznja.Rezervacije);
         }
 
         _db.Voznje.Remove(voznja);

@@ -11,7 +11,7 @@
         SelectedId = Model.SearchFrom?.ToString() ?? string.Empty,
         SelectedText = Model.SearchFromText,
         Placeholder = "Odaberi polaziste...",
-        HelpText = "Prikazuju se samo gradovi s dostupnim voznjama.",
+        HelpText = "Odaberi polaziste ili ostavi prazno za sve destinacije.",
         MinimumLength = 0,
         RouteMode = "from",
         RoutePeerName = "to"
@@ -24,7 +24,7 @@
         SelectedId = Model.SearchTo?.ToString() ?? string.Empty,
         SelectedText = Model.SearchToText,
         Placeholder = "Odaberi odrediste...",
-        HelpText = "Lista odredista se suzava prema polazistu.",
+        HelpText = "Odaberi odrediste ili ostavi prazno za sve destinacije.",
         MinimumLength = 0,
         RouteMode = "to",
         RoutePeerName = "from"

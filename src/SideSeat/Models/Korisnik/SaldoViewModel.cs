@@ -23,4 +23,6 @@ public class SaldoTransakcijaRowViewModel
     public decimal Iznos { get; set; }
     public decimal SaldoPrije { get; set; }
     public decimal SaldoPoslije { get; set; }
+    public string Komentar { get; set; } = string.Empty;
+    public int? VoznjaId { get; set; }
 }

@@ -553,18 +553,43 @@ public class KorisnikController : Controller
 
     private SaldoViewModel BuildSaldoModel(int korisnikId, decimal saldo, SaldoViewModel? current = null)
     {
-        var transakcije = _db.SaldoTransakcije
+        var transakcijeRaw = _db.SaldoTransakcije
             .AsNoTracking()
             .Where(t => t.KorisnikId == korisnikId)
             .OrderByDescending(t => t.Vrijeme)
             .Take(100)
-            .Select(t => new SaldoTransakcijaRowViewModel
+            .ToList();
+
+        var rideReservationIds = transakcijeRaw
+            .Select(t => TryExtractRideReservationId(t.Tip))
+            .Where(id => id.HasValue)
+            .Select(id => id!.Value)
+            .Distinct()
+            .ToList();
+
+        var reservationRideMap = _db.Rezervacije
+            .AsNoTracking()
+            .Where(r => rideReservationIds.Contains(r.Id))
+            .ToDictionary(r => r.Id, r => r.VoznjaId);
+
+        var transakcije = transakcijeRaw
+            .Select(t =>
             {
-                Vrijeme = t.Vrijeme,
-                Tip = t.Tip,
-                Iznos = t.Iznos,
-                SaldoPrije = t.SaldoPrije,
-                SaldoPoslije = t.SaldoPoslije
+                var reservationId = TryExtractRideReservationId(t.Tip);
+                var voznjaId = reservationId.HasValue && reservationRideMap.TryGetValue(reservationId.Value, out var mappedRideId)
+                    ? mappedRideId
+                    : (int?)null;
+
+                return new SaldoTransakcijaRowViewModel
+                {
+                    Vrijeme = t.Vrijeme,
+                    Tip = t.Tip,
+                    Iznos = t.Iznos,
+                    SaldoPrije = t.SaldoPrije,
+                    SaldoPoslije = t.SaldoPoslije,
+                    VoznjaId = voznjaId,
+                    Komentar = BuildTransactionComment(t.Tip, voznjaId)
+                };
             })
             .ToList();
 
@@ -575,6 +600,48 @@ public class KorisnikController : Controller
             Akcija = current?.Akcija ?? "uplata",
             Transakcije = transakcije
         };
+    }
+
+    private static int? TryExtractRideReservationId(string tip)
+    {
+        if (tip.StartsWith("priljev-voznja:", StringComparison.OrdinalIgnoreCase))
+        {
+            var value = tip["priljev-voznja:".Length..];
+            return int.TryParse(value, out var reservationId) ? reservationId : null;
+        }
+
+        if (tip.StartsWith("naplata-rezervacije:", StringComparison.OrdinalIgnoreCase))
+        {
+            var value = tip["naplata-rezervacije:".Length..];
+            return int.TryParse(value, out var reservationId) ? reservationId : null;
+        }
+
+        return null;
+    }
+
+    private static string BuildTransactionComment(string tip, int? voznjaId)
+    {
+        if (tip.Equals("uplata", StringComparison.OrdinalIgnoreCase))
+        {
+            return "Rucna uplata";
+        }
+
+        if (tip.Equals("isplata", StringComparison.OrdinalIgnoreCase))
+        {
+            return "Rucna isplata";
+        }
+
+        if (tip.StartsWith("priljev-voznja:", StringComparison.OrdinalIgnoreCase) && voznjaId.HasValue)
+        {
+            return $"Voznja #{voznjaId.Value}";
+        }
+
+        if (tip.StartsWith("naplata-rezervacije:", StringComparison.OrdinalIgnoreCase))
+        {
+            return "Naplata nakon voznje";
+        }
+
+        return "-";
     }
 
     [HttpPost]

@@ -65,6 +65,7 @@
                         <tr>
                             <th>Vrijeme</th>
                             <th>Tip</th>
+                            <th>Komentar</th>
                             <th>Iznos</th>
                             <th>Saldo prije</th>
                             <th>Saldo poslije</th>
@@ -74,10 +75,27 @@
                     @foreach (var tx in Model.Transakcije)
                     {
                         var isUplata = tx.Tip.Equals("uplata", StringComparison.OrdinalIgnoreCase);
+                        var isIsplata = tx.Tip.Equals("isplata", StringComparison.OrdinalIgnoreCase);
+                        var isRideOut = tx.Tip.StartsWith("naplata-rezervacije", StringComparison.OrdinalIgnoreCase);
+                        var isRideIn = tx.Tip.StartsWith("priljev-voznja", StringComparison.OrdinalIgnoreCase);
+                        var isRide = isRideOut || isRideIn;
+                        var tipLabel = isRide ? "Voznja" : (isUplata ? "Uplata" : "Isplata");
+                        var sign = (isUplata || isRideIn) ? "+" : "-";
+                        var canOpenRide = isRideIn && tx.VoznjaId.HasValue;
                         <tr>
                             <td>@tx.Vrijeme.ToLocalTime().ToString("dd.MM.yyyy HH:mm")</td>
-                            <td>@(isUplata ? "Uplata" : "Isplata")</td>
-                            <td>@(isUplata ? "+" : "-")@tx.Iznos.ToString("0.00") EUR</td>
+                            <td>@tipLabel</td>
+                            <td>
+                                @if (canOpenRide)
+                                {
+                                    <a asp-controller="Voznja" asp-action="Details" asp-route-id="@tx.VoznjaId">@tx.Komentar</a>
+                                }
+                                else
+                                {
+                                    @tx.Komentar
+                                }
+                            </td>
+                            <td>@sign@tx.Iznos.ToString("0.00") EUR</td>
                             <td>@tx.SaldoPrije.ToString("0.00") EUR</td>
                             <td>@tx.SaldoPoslije.ToString("0.00") EUR</td>
                         </tr>
