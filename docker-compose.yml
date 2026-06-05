@@ -1,0 +1,41 @@
+services:
+  sideseat-db:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: sideseat-db
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: "${SA_PASSWORD:-SideSeat123!}"
+      MSSQL_PID: "Developer"
+    ports:
+      - "14333:1433"
+    volumes:
+      - sideseat-sql-data:/var/opt/mssql
+    healthcheck:
+      test: "bash -c '</dev/tcp/localhost/1433'"
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+
+  sideseat-web:
+    build:
+      context: .
+      dockerfile: src/SideSeat/Dockerfile
+    container_name: sideseat-web
+    depends_on:
+      sideseat-db:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: "Docker"
+      ASPNETCORE_URLS: "http://+:8080"
+      ConnectionStrings__SideSeatDbContext: "Server=sideseat-db,1433;Database=SideSeat;User Id=sa;Password=${SA_PASSWORD:-SideSeat123!};TrustServerCertificate=True;MultipleActiveResultSets=true"
+      Authentication__Google__ClientId: "${GOOGLE_CLIENT_ID:-}"
+      Authentication__Google__ClientSecret: "${GOOGLE_CLIENT_SECRET:-}"
+    ports:
+      - "8080:8080"
+    volumes:
+      - sideseat-uploads:/app/wwwroot/uploads
+
+volumes:
+  sideseat-sql-data:
+  sideseat-uploads:

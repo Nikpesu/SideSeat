@@ -1,7 +1,7 @@
 @model SideSeat.Models.Rezervacija
 @{
 	ViewData["Title"] = "Detalji rezervacije";
-	var currentUserId = int.TryParse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value, out var idValue) ? idValue : 0;
+	var currentUserId = int.TryParse(User.FindFirst(SideSeat.Security.SideSeatClaimTypes.KorisnikId)?.Value, out var idValue) ? idValue : 0;
 	var canConfirm = User.IsInRole("Admin") || Model.Voznja?.VozacId == currentUserId;
 	var isAdmin = User.IsInRole("Admin");
 	var statusClass = Model.Status == SideSeat.Models.StatusRezervacije.Potvrdena

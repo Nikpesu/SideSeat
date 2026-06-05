@@ -11,7 +11,7 @@
         Value = selectedDate,
         DateOnly = true
     };
-	var currentUserId = int.TryParse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value, out var idValue) ? idValue : 0;
+	var currentUserId = int.TryParse(User.FindFirst(SideSeat.Security.SideSeatClaimTypes.KorisnikId)?.Value, out var idValue) ? idValue : 0;
 	var isAdmin = User.IsInRole("Admin");
 }
 

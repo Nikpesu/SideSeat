@@ -1,25 +1,29 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using SideSeat.Data;
 using SideSeat.Models;
 using SideSeat.Models.Auth;
-using SideSeat.Services;
 
 namespace SideSeat.Controllers;
 
 public class AuthController : Controller
 {
     private readonly SideSeatDbContext _db;
-    private readonly IPasswordHashingService _passwordHashingService;
+    private readonly UserManager<AppUser> _userManager;
+    private readonly SignInManager<AppUser> _signInManager;
 
-    public AuthController(SideSeatDbContext db, IPasswordHashingService passwordHashingService)
+    public AuthController(
+        SideSeatDbContext db,
+        UserManager<AppUser> userManager,
+        SignInManager<AppUser> signInManager)
     {
         _db = db;
-        _passwordHashingService = passwordHashingService;
+        _userManager = userManager;
+        _signInManager = signInManager;
     }
 
     [AllowAnonymous]
@@ -30,7 +34,7 @@ public class AuthController : Controller
             return RedirectToAction("Index", "Home");
         }
 
-        return RedirectToAction("Index", "Home");
+        return RedirectToAction("Index", "Home", new { auth = "login", returnUrl = GetSafeReturnUrl(returnUrl) });
     }
 
     [HttpPost]
@@ -44,16 +48,20 @@ public class AuthController : Controller
             return RedirectToAction("Index", "Home", new { auth = "login", returnUrl = GetSafeReturnUrl(model.ReturnUrl) });
         }
 
-        var user = await _db.Korisnici
-            .FirstOrDefaultAsync(k => k.Email == model.Email.Trim());
-        if (user is null || !_passwordHashingService.Verify(model.Password, user.LozinkaHash))
+        var normalizedEmail = model.Email.Trim();
+        var user = await _userManager.FindByEmailAsync(normalizedEmail);
+        if (user is null)
         {
-            ModelState.AddModelError(string.Empty, "Neispravan email ili lozinka.");
             TempData["AuthError"] = "Neispravan email ili lozinka.";
             return RedirectToAction("Index", "Home", new { auth = "login", returnUrl = GetSafeReturnUrl(model.ReturnUrl) });
         }
 
-        await SignInAsync(user, model.RememberMe);
+        var result = await _signInManager.PasswordSignInAsync(user, model.Password, model.RememberMe, lockoutOnFailure: false);
+        if (!result.Succeeded)
+        {
+            TempData["AuthError"] = "Neispravan email ili lozinka.";
+            return RedirectToAction("Index", "Home", new { auth = "login", returnUrl = GetSafeReturnUrl(model.ReturnUrl) });
+        }
 
         if (!string.IsNullOrWhiteSpace(model.ReturnUrl) && Url.IsLocalUrl(model.ReturnUrl))
         {
@@ -66,7 +74,7 @@ public class AuthController : Controller
     [AllowAnonymous]
     public IActionResult Register()
     {
-        return RedirectToAction("Index", "Home");
+        return RedirectToAction("Index", "Home", new { auth = "register" });
     }
 
     [HttpPost]
@@ -81,34 +89,164 @@ public class AuthController : Controller
         }
 
         var normalizedEmail = model.Email.Trim();
-        var emailExists = await _db.Korisnici.AnyAsync(k => k.Email == normalizedEmail);
-        if (emailExists)
+        if (await _userManager.FindByEmailAsync(normalizedEmail) is not null)
         {
-            ModelState.AddModelError(nameof(model.Email), "Korisnik s ovim emailom vec postoji.");
             TempData["AuthError"] = "Korisnik s ovim emailom vec postoji.";
             return RedirectToAction("Index", "Home", new { auth = "register" });
         }
 
-        var localPart = normalizedEmail.Split('@')[0];
-        var user = new Korisnik
+        var korisnik = CreateDomainUser(
+            normalizedEmail,
+            model.Address,
+            model.PhoneNumber,
+            TipKorisnika.Putnik);
+
+        _db.Korisnici.Add(korisnik);
+        await _db.SaveChangesAsync();
+
+        var appUser = new AppUser
         {
+            UserName = normalizedEmail,
             Email = normalizedEmail,
-            LozinkaHash = _passwordHashingService.Hash(model.Password),
-            Adresa = model.Address.Trim(),
-            Ime = string.IsNullOrWhiteSpace(localPart) ? "Korisnik" : localPart,
-            Prezime = string.Empty,
-            BrojMobitela = model.PhoneNumber.Trim(),
-            DatumRegistracije = DateTime.UtcNow,
-            Tip = TipKorisnika.Putnik,
-            JeAktivan = true,
-            KycPodnesen = false
+            EmailConfirmed = true,
+            PhoneNumber = model.PhoneNumber.Trim(),
+            OIB = model.OIB.Trim(),
+            JMBG = model.JMBG.Trim(),
+            KorisnikId = korisnik.Id
         };
 
-        _db.Korisnici.Add(user);
-        await _db.SaveChangesAsync();
-        await SignInAsync(user, rememberMe: false);
+        var result = await _userManager.CreateAsync(appUser, model.Password);
+        if (!result.Succeeded)
+        {
+            _db.Korisnici.Remove(korisnik);
+            await _db.SaveChangesAsync();
+            TempData["AuthError"] = string.Join(" ", result.Errors.Select(e => e.Description));
+            return RedirectToAction("Index", "Home", new { auth = "register" });
+        }
+
+        await _userManager.AddToRoleAsync(appUser, IdentityDataSeeder.PassengerRole);
+        await _signInManager.SignInAsync(appUser, isPersistent: false);
 
         return RedirectToAction("Settings", "Korisnik");
+    }
+
+    [HttpPost]
+    [AllowAnonymous]
+    [ValidateAntiForgeryToken]
+    public IActionResult ExternalLogin(string provider, string? returnUrl = null)
+    {
+        var redirectUrl = Url.Action(nameof(ExternalLoginCallback), "Auth", new { returnUrl = GetSafeReturnUrl(returnUrl) });
+        var properties = _signInManager.ConfigureExternalAuthenticationProperties(provider, redirectUrl);
+        return Challenge(properties, provider);
+    }
+
+    [AllowAnonymous]
+    public async Task<IActionResult> ExternalLoginCallback(string? returnUrl = null, string? remoteError = null)
+    {
+        if (!string.IsNullOrWhiteSpace(remoteError))
+        {
+            TempData["AuthError"] = $"Vanjska prijava nije uspjela: {remoteError}";
+            return RedirectToAction("Index", "Home", new { auth = "login", returnUrl = GetSafeReturnUrl(returnUrl) });
+        }
+
+        var info = await _signInManager.GetExternalLoginInfoAsync();
+        if (info is null)
+        {
+            TempData["AuthError"] = "Nije moguce dohvatiti podatke vanjske prijave.";
+            return RedirectToAction("Index", "Home", new { auth = "login", returnUrl = GetSafeReturnUrl(returnUrl) });
+        }
+
+        var signInResult = await _signInManager.ExternalLoginSignInAsync(info.LoginProvider, info.ProviderKey, isPersistent: false);
+        if (signInResult.Succeeded)
+        {
+            return RedirectToLocal(returnUrl);
+        }
+
+        var email = info.Principal.FindFirstValue(ClaimTypes.Email) ?? string.Empty;
+        var existingUser = string.IsNullOrWhiteSpace(email) ? null : await _userManager.FindByEmailAsync(email);
+        if (existingUser is not null)
+        {
+            var addLoginResult = await _userManager.AddLoginAsync(existingUser, info);
+            if (addLoginResult.Succeeded)
+            {
+                await _signInManager.SignInAsync(existingUser, isPersistent: false);
+                return RedirectToLocal(returnUrl);
+            }
+        }
+
+        return View("ExternalLoginConfirmation", new ExternalLoginConfirmationViewModel
+        {
+            Email = email,
+            ReturnUrl = GetSafeReturnUrl(returnUrl)
+        });
+    }
+
+    [HttpPost]
+    [AllowAnonymous]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ExternalLoginConfirmation(ExternalLoginConfirmationViewModel model)
+    {
+        var info = await _signInManager.GetExternalLoginInfoAsync();
+        if (info is null)
+        {
+            TempData["AuthError"] = "Vanjska prijava je istekla. Pokusajte ponovno.";
+            return RedirectToAction("Index", "Home", new { auth = "login" });
+        }
+
+        if (!ModelState.IsValid)
+        {
+            return View(model);
+        }
+
+        var normalizedEmail = model.Email.Trim();
+        if (await _userManager.FindByEmailAsync(normalizedEmail) is not null)
+        {
+            ModelState.AddModelError(nameof(model.Email), "Korisnik s ovim emailom vec postoji.");
+            return View(model);
+        }
+
+        var korisnik = CreateDomainUser(
+            normalizedEmail,
+            model.Address,
+            model.PhoneNumber,
+            TipKorisnika.Putnik);
+
+        _db.Korisnici.Add(korisnik);
+        await _db.SaveChangesAsync();
+
+        var appUser = new AppUser
+        {
+            UserName = normalizedEmail,
+            Email = normalizedEmail,
+            EmailConfirmed = true,
+            PhoneNumber = model.PhoneNumber.Trim(),
+            OIB = model.OIB.Trim(),
+            JMBG = model.JMBG.Trim(),
+            KorisnikId = korisnik.Id
+        };
+
+        var createResult = await _userManager.CreateAsync(appUser);
+        if (!createResult.Succeeded)
+        {
+            _db.Korisnici.Remove(korisnik);
+            await _db.SaveChangesAsync();
+            AddIdentityErrors(createResult);
+            return View(model);
+        }
+
+        var loginResult = await _userManager.AddLoginAsync(appUser, info);
+        if (!loginResult.Succeeded)
+        {
+            _db.Korisnici.Remove(korisnik);
+            await _db.SaveChangesAsync();
+            AddIdentityErrors(loginResult);
+            return View(model);
+        }
+
+        await _userManager.AddToRoleAsync(appUser, IdentityDataSeeder.PassengerRole);
+        await _signInManager.SignInAsync(appUser, isPersistent: false);
+
+        return RedirectToLocal(model.ReturnUrl);
     }
 
     [Authorize]
@@ -116,8 +254,8 @@ public class AuthController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Logout()
     {
-        await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-        return RedirectToAction(nameof(Login));
+        await _signInManager.SignOutAsync();
+        return RedirectToAction("Index", "Home");
     }
 
     [AllowAnonymous]
@@ -127,27 +265,40 @@ public class AuthController : Controller
         return View();
     }
 
-    private async Task SignInAsync(Korisnik user, bool rememberMe)
+    private Korisnik CreateDomainUser(string email, string address, string phoneNumber, TipKorisnika tip)
     {
-        var role = user.Tip == TipKorisnika.Admin ? "Admin" : "User";
-        var claims = new List<Claim>
+        var localPart = email.Split('@')[0];
+        return new Korisnik
         {
-            new(ClaimTypes.NameIdentifier, user.Id.ToString()),
-            new(ClaimTypes.Name, user.Email),
-            new(ClaimTypes.Role, role)
+            Email = email,
+            LozinkaHash = string.Empty,
+            Adresa = address.Trim(),
+            Ime = string.IsNullOrWhiteSpace(localPart) ? "Korisnik" : localPart,
+            Prezime = string.Empty,
+            BrojMobitela = phoneNumber.Trim(),
+            DatumRegistracije = DateTime.UtcNow,
+            Tip = tip,
+            JeAktivan = true,
+            KycPodnesen = false
         };
+    }
 
-        var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
-        var principal = new ClaimsPrincipal(identity);
+    private IActionResult RedirectToLocal(string? returnUrl)
+    {
+        if (!string.IsNullOrWhiteSpace(returnUrl) && Url.IsLocalUrl(returnUrl))
+        {
+            return Redirect(returnUrl);
+        }
 
-        await HttpContext.SignInAsync(
-            CookieAuthenticationDefaults.AuthenticationScheme,
-            principal,
-            new AuthenticationProperties
-            {
-                IsPersistent = rememberMe,
-                ExpiresUtc = rememberMe ? DateTimeOffset.UtcNow.AddDays(14) : null
-            });
+        return RedirectToAction("Index", "Home");
+    }
+
+    private void AddIdentityErrors(IdentityResult result)
+    {
+        foreach (var error in result.Errors)
+        {
+            ModelState.AddModelError(string.Empty, error.Description);
+        }
     }
 
     private static string? GetSafeReturnUrl(string? returnUrl)

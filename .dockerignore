@@ -1,0 +1,15 @@
+**/.git
+**/.vs
+**/.vscode
+**/bin
+**/obj
+**/TestResults
+**/node_modules
+artifacts
+lab-*/transcripts
+lab-*/chat-events
+lab-*/agent_log*.*
+*.user
+*.suo
+*.vsidx
+.env

@@ -474,5 +474,7 @@ c:\Users\nikpe\Documents\GitHub\SideSeat\artifacts\verify-build\SideSeat.runtime
 c:\Users\nikpe\Documents\GitHub\SideSeat\artifacts\verify-build\SideSeat.dll
 c:\Users\nikpe\Documents\GitHub\SideSeat\artifacts\verify-build\SideSeat.pdb
 C:\Users\nikpe\Documents\GitHub\SideSeat\src\SideSeat\obj\Debug\net10.0\compressed\panfg2bemx-{0}-5p4hhfkhce-5p4hhfkhce.gz
-C:\Users\nikpe\Documents\GitHub\SideSeat\src\SideSeat\obj\Debug\net10.0\staticwebassets.upToDateCheck.txt
 C:\Users\nikpe\Documents\GitHub\SideSeat\src\SideSeat\obj\Debug\net10.0\compressed\2jeb1sp3qf-{0}-o6morf1kzo-o6morf1kzo.gz
+C:\Users\nikpe\Documents\GitHub\SideSeat\src\SideSeat\bin\Debug\net10.0\Microsoft.AspNetCore.Authentication.Google.dll
+C:\Users\nikpe\Documents\GitHub\SideSeat\src\SideSeat\bin\Debug\net10.0\Microsoft.AspNetCore.Identity.EntityFrameworkCore.dll
+C:\Users\nikpe\Documents\GitHub\SideSeat\src\SideSeat\bin\Debug\net10.0\appsettings.Docker.json

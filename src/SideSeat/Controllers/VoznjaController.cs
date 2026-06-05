@@ -17,11 +17,13 @@ public class VoznjaController : Controller
 {
     private readonly SideSeatEfRepository _repository;
     private readonly SideSeatDbContext _db;
+    private readonly IWebHostEnvironment _webHostEnvironment;
 
-    public VoznjaController(SideSeatEfRepository repository, SideSeatDbContext db)
+    public VoznjaController(SideSeatEfRepository repository, SideSeatDbContext db, IWebHostEnvironment webHostEnvironment)
     {
         _repository = repository;
         _db = db;
+        _webHostEnvironment = webHostEnvironment;
     }
 
     public IActionResult Index(string? search, DateTime? date, int? pageSize)
@@ -719,6 +721,108 @@ public class VoznjaController : Controller
         return Json(results);
     }
 
+    [HttpGet]
+    public IActionResult GetAttachments(int voznjaId)
+    {
+        var voznja = _db.Voznje
+            .AsNoTracking()
+            .FirstOrDefault(v => v.Id == voznjaId);
+        if (voznja is null)
+        {
+            return NotFound();
+        }
+
+        var attachments = _db.VoznjaAttachments
+            .AsNoTracking()
+            .Where(a => a.VoznjaId == voznjaId)
+            .OrderByDescending(a => a.CreatedAt)
+            .ToList();
+
+        ViewBag.CanDeleteAttachments = CanManageRide(voznja);
+        return PartialView("_Attachments", attachments);
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> UploadAttachment(int voznjaId, IFormFile? file)
+    {
+        var voznja = await _db.Voznje.FirstOrDefaultAsync(v => v.Id == voznjaId);
+        if (voznja is null)
+        {
+            return NotFound();
+        }
+
+        if (!CanManageRide(voznja))
+        {
+            return Forbid();
+        }
+
+        if (file is null || file.Length == 0)
+        {
+            return BadRequest(new { message = "Datoteka nije poslana." });
+        }
+
+        if (file.Length > 10 * 1024 * 1024)
+        {
+            return BadRequest(new { message = "Datoteka moze imati najvise 10 MB." });
+        }
+
+        var uploadsPath = Path.Combine(_webHostEnvironment.WebRootPath, "uploads", "voznje", voznjaId.ToString());
+        Directory.CreateDirectory(uploadsPath);
+
+        var safeExtension = Path.GetExtension(file.FileName);
+        var storedFileName = $"{Guid.NewGuid():N}{safeExtension}";
+        var diskPath = Path.Combine(uploadsPath, storedFileName);
+
+        await using (var stream = new FileStream(diskPath, FileMode.CreateNew))
+        {
+            await file.CopyToAsync(stream);
+        }
+
+        var attachment = new VoznjaAttachment
+        {
+            VoznjaId = voznjaId,
+            FileName = Path.GetFileName(file.FileName),
+            FilePath = $"/uploads/voznje/{voznjaId}/{storedFileName}",
+            ContentType = string.IsNullOrWhiteSpace(file.ContentType) ? "application/octet-stream" : file.ContentType,
+            FileSize = file.Length,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        _db.VoznjaAttachments.Add(attachment);
+        await _db.SaveChangesAsync();
+
+        return Json(new { success = true, attachmentId = attachment.Id });
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> DeleteAttachment(int id)
+    {
+        var attachment = await _db.VoznjaAttachments
+            .Include(a => a.Voznja)
+            .FirstOrDefaultAsync(a => a.Id == id);
+        if (attachment is null)
+        {
+            return NotFound();
+        }
+
+        if (!CanManageRide(attachment.Voznja))
+        {
+            return Forbid();
+        }
+
+        var relativePath = attachment.FilePath.TrimStart('/').Replace('/', Path.DirectorySeparatorChar);
+        var diskPath = Path.Combine(_webHostEnvironment.WebRootPath, relativePath);
+        if (System.IO.File.Exists(diskPath))
+        {
+            System.IO.File.Delete(diskPath);
+        }
+
+        _db.VoznjaAttachments.Remove(attachment);
+        await _db.SaveChangesAsync();
+
+        return Json(new { success = true });
+    }
+
     private VoznjaFormViewModel BuildFormViewModel(bool isAdmin, int currentUserId)
     {
         var model = new VoznjaFormViewModel
@@ -769,5 +873,11 @@ public class VoznjaController : Controller
         return user is not null &&
                user.Tip is TipKorisnika.Vozac or TipKorisnika.VozacIPutnik &&
                user.KycPodnesen;
+    }
+
+    private bool CanManageRide(Voznja voznja)
+    {
+        var userId = User.GetKorisnikId();
+        return User.IsInRole("Admin") || (userId.HasValue && voznja.VozacId == userId.Value);
     }
 }

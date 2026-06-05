@@ -1,0 +1,59 @@
+@model SideSeat.Models.Auth.ExternalLoginConfirmationViewModel
+@{
+    ViewData["Title"] = "Dovrsi vanjsku prijavu";
+}
+
+<section class="ss-page">
+    <nav class="ss-breadcrumb" aria-label="Breadcrumb">
+        <a asp-controller="Home" asp-action="Index">Dashboard</a>
+        <span class="ss-breadcrumb-sep">/</span>
+        <span class="current" aria-current="page">Google prijava</span>
+    </nav>
+
+    <div class="ss-page-head">
+        <h1>Dovrsi registraciju</h1>
+        <p>Google je potvrdio identitet. SideSeat jos treba lokalne podatke za korisnicki profil.</p>
+    </div>
+
+    <form asp-controller="Auth" asp-action="ExternalLoginConfirmation" method="post" class="ss-detail-card">
+        @Html.AntiForgeryToken()
+        <input type="hidden" asp-for="ReturnUrl" />
+        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+        <div class="mb-3">
+            <label asp-for="Email" class="form-label"></label>
+            <input asp-for="Email" class="form-control" readonly />
+            <span asp-validation-for="Email" class="text-danger"></span>
+        </div>
+
+        <div class="mb-3">
+            <label asp-for="Address" class="form-label"></label>
+            <input asp-for="Address" class="form-control" autocomplete="street-address" />
+            <span asp-validation-for="Address" class="text-danger"></span>
+        </div>
+
+        <div class="mb-3">
+            <label asp-for="PhoneNumber" class="form-label"></label>
+            <input asp-for="PhoneNumber" class="form-control" autocomplete="tel" />
+            <span asp-validation-for="PhoneNumber" class="text-danger"></span>
+        </div>
+
+        <div class="row g-3">
+            <div class="col-md-6">
+                <label asp-for="OIB" class="form-label"></label>
+                <input asp-for="OIB" class="form-control" minlength="11" maxlength="11" pattern="[0-9]{11}" />
+                <span asp-validation-for="OIB" class="text-danger"></span>
+            </div>
+            <div class="col-md-6">
+                <label asp-for="JMBG" class="form-label"></label>
+                <input asp-for="JMBG" class="form-control" minlength="13" maxlength="13" pattern="[0-9]{13}" />
+                <span asp-validation-for="JMBG" class="text-danger"></span>
+            </div>
+        </div>
+
+        <div class="ss-actions mt-4">
+            <button class="ss-btn" type="submit">Dovrsi prijavu</button>
+            <a class="ss-btn ss-btn-secondary" asp-controller="Home" asp-action="Index">Odustani</a>
+        </div>
+    </form>
+</section>

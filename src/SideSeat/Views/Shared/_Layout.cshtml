@@ -12,7 +12,7 @@
     decimal? userSaldo = null;
     if (isAuthenticated && db is not null)
     {
-        var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        var userIdClaim = User.FindFirst(SideSeat.Security.SideSeatClaimTypes.KorisnikId)?.Value;
         if (int.TryParse(userIdClaim, out var userId))
         {
             userSaldo = db.Korisnici
@@ -187,6 +187,12 @@
                                 ivana@example.com / User123!
                             </small>
                         </form>
+                        <form asp-controller="Auth" asp-action="ExternalLogin" method="post" class="mt-3">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="provider" value="Google" />
+                            <input type="hidden" name="returnUrl" value="@returnUrl" />
+                            <button class="ss-btn ss-btn-secondary w-100" type="submit">Prijava preko Google računa</button>
+                        </form>
                     </div>
 
                     <div class="ss-auth-panel" data-auth-panel="register">
@@ -206,6 +212,16 @@
                             <div class="mb-3">
                                 <label class="form-label" for="auth-register-phone">Broj mobitela</label>
                                 <input id="auth-register-phone" name="PhoneNumber" type="tel" class="form-control" autocomplete="tel" required />
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label" for="auth-register-oib">OIB</label>
+                                <input id="auth-register-oib" name="OIB" type="text" class="form-control" minlength="11" maxlength="11" pattern="[0-9]{11}" required />
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label" for="auth-register-jmbg">JMBG</label>
+                                <input id="auth-register-jmbg" name="JMBG" type="text" class="form-control" minlength="13" maxlength="13" pattern="[0-9]{13}" required />
                             </div>
 
                             <div class="mb-3">

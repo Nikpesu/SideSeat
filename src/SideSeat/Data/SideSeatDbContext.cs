@@ -1,9 +1,11 @@
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using SideSeat.Models;
 
 namespace SideSeat.Data;
 
-public class SideSeatDbContext : DbContext
+public class SideSeatDbContext : IdentityDbContext<AppUser, IdentityRole<int>, int>
 {
     public SideSeatDbContext(DbContextOptions<SideSeatDbContext> options) : base(options)
     {
@@ -17,6 +19,7 @@ public class SideSeatDbContext : DbContext
     public DbSet<Placanje> Placanja => Set<Placanje>();
     public DbSet<OcjenaVoznje> Ocjene => Set<OcjenaVoznje>();
     public DbSet<SaldoTransakcija> SaldoTransakcije => Set<SaldoTransakcija>();
+    public DbSet<VoznjaAttachment> VoznjaAttachments => Set<VoznjaAttachment>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -58,5 +61,21 @@ public class SideSeatDbContext : DbContext
             .HasForeignKey(t => t.KorisnikId)
             .OnDelete(DeleteBehavior.Cascade);
 
+        modelBuilder.Entity<AppUser>()
+            .HasOne(u => u.Korisnik)
+            .WithOne()
+            .HasForeignKey<AppUser>(u => u.KorisnikId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<AppUser>()
+            .HasIndex(u => u.KorisnikId)
+            .IsUnique()
+            .HasFilter("[KorisnikId] IS NOT NULL");
+
+        modelBuilder.Entity<VoznjaAttachment>()
+            .HasOne(a => a.Voznja)
+            .WithMany(v => v.Attachments)
+            .HasForeignKey(a => a.VoznjaId)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }

@@ -1,0 +1,8 @@
+agent_log.txt
+agent_log.jsonl
+chat-events/
+transcripts/
+codex_agent_log.txt
+codex_agent_log.jsonl
+codex-chat-events/
+codex-log-state.json

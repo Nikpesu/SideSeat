@@ -1,7 +1,7 @@
 @model SideSeat.Models.Rides.VoznjaDetailsViewModel
 @{
 	ViewData["Title"] = "Detalji voznje";
-	var currentUserId = int.TryParse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value, out var idValue) ? idValue : 0;
+	var currentUserId = int.TryParse(User.FindFirst(SideSeat.Security.SideSeatClaimTypes.KorisnikId)?.Value, out var idValue) ? idValue : 0;
 	var voznja = Model.Voznja;
 	var canEdit = User.IsInRole("Admin") || voznja.VozacId == currentUserId;
 	var canExecute = canEdit && voznja.Status == SideSeat.Models.StatusVoznje.Planirana;

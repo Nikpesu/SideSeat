@@ -81,30 +81,57 @@ Sto je napravljeno u projektu:
 
 Preduvjet:
 
-- Instaliran .NET SDK (projekt targetira 
-et10.0).
+- Instaliran .NET SDK (projekt targetira net10.0).
 
 Pokretanje:
 
-`bash
+```bash
 cd src/SideSeat
 dotnet restore
 dotnet run
-`
+```
 
 Build provjera:
 
-`bash
+```bash
 cd src/SideSeat
 dotnet build
-`
+```
 
 Migracije i baza:
 
-`bash
+```bash
 cd src/SideSeat
 dotnet ef database update
-`
+```
+
+Docker pokretanje:
+
+```bash
+docker compose up --build
+```
+
+Aplikacija je tada dostupna na `http://localhost:8080`, a SQL Server na `localhost,14333`.
+Ako zelis Google login u Dockeru, kopiraj `.env.example` u `.env` i upisi `GOOGLE_CLIENT_ID` i `GOOGLE_CLIENT_SECRET`.
+Za gasenje pokreni:
+
+```bash
+docker compose down
+```
+
+Docker Hub image za Linux host:
+
+```bash
+docker login
+docker build -f src/SideSeat/Dockerfile -t nikolica/sideseat:v0.1 .
+docker push nikolica/sideseat:v0.1
+```
+
+Na Linux serveru kopiraj `docker-compose.hub.yml` i pokreni:
+
+```bash
+docker compose -f docker-compose.hub.yml up -d
+```
 
 Demo korisnici:
 

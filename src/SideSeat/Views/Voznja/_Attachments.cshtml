@@ -1,0 +1,42 @@
+@model IEnumerable<SideSeat.Models.VoznjaAttachment>
+@{
+    var canDelete = ViewBag.CanDeleteAttachments as bool? ?? false;
+}
+
+@if (!Model.Any())
+{
+    <p class="ss-empty">Za ovu voznju jos nema prilozenih datoteka.</p>
+}
+else
+{
+    <div class="ss-table-shell" role="region" aria-label="Datoteke voznje" tabindex="0">
+        <table class="ss-table">
+            <thead>
+                <tr>
+                    <th>Datoteka</th>
+                    <th>Tip</th>
+                    <th>Velicina</th>
+                    <th>Dodano</th>
+                    <th>Akcije</th>
+                </tr>
+            </thead>
+            <tbody>
+            @foreach (var attachment in Model)
+            {
+                <tr>
+                    <td><a href="@attachment.FilePath" target="_blank" rel="noopener">@attachment.FileName</a></td>
+                    <td>@attachment.ContentType</td>
+                    <td>@((attachment.FileSize / 1024m).ToString("0.0")) KB</td>
+                    <td>@attachment.CreatedAt.ToLocalTime().ToString("dd.MM.yyyy HH:mm")</td>
+                    <td>
+                        @if (canDelete)
+                        {
+                            <button type="button" class="ss-btn ss-btn-secondary" data-delete-attachment="@attachment.Id">Obrisi</button>
+                        }
+                    </td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+}
