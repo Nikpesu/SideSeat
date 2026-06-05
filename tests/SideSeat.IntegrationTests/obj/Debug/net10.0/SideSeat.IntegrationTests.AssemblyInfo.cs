@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("SideSeat.IntegrationTests")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+88af9bce88008d0582114cccd5d0cb9a3f1af969")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+8bc3a907d51ec04d314ac7297be5365b5d7c98a2")]
 [assembly: System.Reflection.AssemblyProductAttribute("SideSeat.IntegrationTests")]
 [assembly: System.Reflection.AssemblyTitleAttribute("SideSeat.IntegrationTests")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

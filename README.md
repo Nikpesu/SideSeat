@@ -1,154 +1,194 @@
 # SideSeat
 
-SideSeat je seminarski projekt za kolegij Razvoj web aplikacija u ASP.NET MVC tehnologiji.
-Ovaj README prati stvarni tok vjezbi (Lab 1 i Lab 2), a ne dugorocni roadmap projekta.
+SideSeat je seminarski ASP.NET Core MVC projekt za kolegij Razvoj web aplikacija. Aplikacija pokriva ridesharing domenu: korisnici, vozila, vožnje, rezervacije, plaćanja, ocjene, autentikacija, API i upload datoteka.
 
-## Trenutni status
+## Trenutni Status
 
-- Projekt je aktivno implementiran kroz Labski tok.
-- Podaci su na EF Core + SQL Server bazi (SideSeatDbContext + migracije).
-- Implementirani su login/registracija, korisnicke postavke, KYC za vozaca te role-based pristup.
-- Admin ima pristup svim tablicama/formama, korisnik vidi svoje voznje i rezervacije.
+- Projekt targetira `.NET 10` i koristi EF Core + SQL Server.
+- Autentikacija je prebačena na ASP.NET Core Identity.
+- Implementirane su role `Admin`, `Driver` i `Passenger`.
+- Dodan je Google external login kroz konfiguraciju iz secrets/env varijabli.
+- Implementirani su REST API endpointi s DTO modelima za glavne entitete.
+- Upload datoteka vezan je uz konkretnu vožnju.
+- Dodani su integracijski testovi preko `WebApplicationFactory`.
+- Projekt se može pokrenuti lokalno, kroz Docker Compose ili preko Docker Hub imagea.
 
-## Tok vjezbe
+## Brzi Start — Docker Hub
 
-### Lab 1 - Osnove C#, LINQ i async/await
+Najjednostavnije pokretanje na Linux Docker hostu:
 
-Cilj vjezbe:
+```bash
+mkdir sideseat
+cd sideseat
+curl -o docker-compose.yml https://raw.githubusercontent.com/nikolica/SideSeat/main/docker-compose.hub.yml
+docker compose up -d
+```
 
-- Kreirati objektni model domene.
-- Popuniti model testnim podacima.
-- Napisati smislene LINQ upite.
-- Primijeniti async/await koncept.
+Ako nemaš GitHub raw link ili repo nije dostupan, samo kopiraj lokalni `docker-compose.hub.yml` na Linux server i pokreni:
 
-Sto je napravljeno u projektu:
+```bash
+docker compose -f docker-compose.hub.yml up -d
+```
 
-- Objektni model i enumi nalaze se u src/SideSeat/Models/Lab1.
-- Demo podaci i LINQ/async primjer su u src/SideSeat/Models/Lab1/Lab1Demo.cs.
-- Entiteti koji se koriste kroz vjezbe:
-     - Grad
-     - Korisnik
-     - Vozilo
-     - Voznja
-     - Rezervacija
-     - Placanje
-     - OcjenaVoznje
+Aplikacija je dostupna na:
 
-### Lab 2 - HTML Binding i MVC
+```text
+http://localhost:8080
+```
 
-Cilj vjezbe:
+Docker Hub image:
 
-- Koristiti mock repository kao izvor podataka.
-- Napraviti Index i Details stranice za sve entitete.
-- Napraviti custom home/dashboard stranicu.
-- Osigurati kompletnu navigaciju (menu, linkovi, breadcrumbs).
-- Primijeniti unique UX pristup uz sub-agent workflow.
+```text
+nikolica/sideseat:v0.1
+```
 
-Sto je napravljeno u projektu:
+Image je buildan kao Linux image (`linux/amd64`).
 
-- Centralni mock repository: src/SideSeat/Repositories/LabMockRepository.cs.
-- Kontroleri s Index i Details akcijama za:
-     - Grad
-     - Korisnik
-     - Vozilo
-     - Voznja
-     - Rezervacija
-     - Placanje
-     - Ocjena
-- Dashboard stranica: src/SideSeat/Views/Home/Index.cshtml.
-- Glavna navigacija i layout: src/SideSeat/Views/Shared/_Layout.cshtml.
-- Custom styling i responzivnost: src/SideSeat/wwwroot/css/site.css.
-- UX sub-agent konfiguracija: .github/agents/ux-lab.agent.md.
-- Futuristic UI agent: .github/agents/futuristic-ui-lab.agent.md.
-- Futuristic UI skill: .github/skills/futuristic-ui-design/SKILL.md.
-- Login/registracija i cookie auth: src/SideSeat/Controllers/AuthController.cs.
-- KYC i user settings flow: src/SideSeat/Controllers/KorisnikController.cs.
-- Forme za kreiranje voznje i rezervacije + confirmation stranice:
-     - src/SideSeat/Controllers/VoznjaController.cs
-     - src/SideSeat/Controllers/RezervacijaController.cs
-     - src/SideSeat/Controllers/ConfirmationController.cs
+## Lokalno Docker Pokretanje
 
-## Brzi pregled napretka
+Za lokalni build imagea iz source koda:
 
-- [x] Lab 1 model + seed podaci
-- [x] Lab 1 LINQ upiti i async/await demo
-- [x] Lab 2 mock repository
-- [x] Lab 2 Index/Details stranice za glavne entitete
-- [x] Lab 2 dashboard + navigacija
-- [x] Lab 2 custom UX smjernice kroz sub-agent
+```bash
+docker compose up --build
+```
 
-## Pokretanje projekta
+Servisi:
 
-Preduvjet:
+- Web aplikacija: `http://localhost:8080`
+- SQL Server container: `localhost,14333`
+- Upload volume: `sideseat-uploads`
+- SQL data volume: `sideseat-sql-data`
 
-- Instaliran .NET SDK (projekt targetira net10.0).
+Za gašenje:
+
+```bash
+docker compose down
+```
+
+Za brisanje baze i upload volumena:
+
+```bash
+docker compose down -v
+```
+
+## Environment Varijable
+
+Primjer `.env` datoteke:
+
+```text
+SA_PASSWORD=SideSeat123!
+DOCKERHUB_IMAGE=nikolica/sideseat:v0.1
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+```
+
+Ako koristiš Google login u Dockeru, u Google Console dodaj redirect URI:
+
+```text
+http://localhost:8080/signin-google
+```
+
+Za lokalni HTTPS development redirect URI:
+
+```text
+https://localhost:7119/signin-google
+```
+
+## Lokalno Pokretanje Bez Dockera
+
+Preduvjeti:
+
+- `.NET SDK 10`
+- SQL Server LocalDB ili drugi SQL Server
 
 Pokretanje:
 
 ```bash
 cd src/SideSeat
 dotnet restore
+dotnet ef database update
 dotnet run
 ```
 
-Build provjera:
+Build:
 
 ```bash
-cd src/SideSeat
-dotnet build
+dotnet build src/SideSeat/SideSeat.csproj
 ```
 
-Migracije i baza:
+Testovi:
 
 ```bash
-cd src/SideSeat
-dotnet ef database update
+dotnet test tests/SideSeat.IntegrationTests/SideSeat.IntegrationTests.csproj
 ```
 
-Docker pokretanje:
+## Demo Korisnici
 
-```bash
-docker compose up --build
+- Admin: `admin@example.com` / `Admin123!`
+- Vozač: `marko@example.com` / `User123!`
+- Putnik: `ivana@example.com` / `User123!`
+
+## Lab Pregled
+
+- [x] Lab 1 — C# model, LINQ i async/await demo
+- [x] Lab 2 — MVC prikaz, dashboard i navigacija
+- [x] Lab 3 — forme, view modeli, validacija i korisnički tokovi
+- [x] Lab 4 — autentikacija, role, plaćanja/saldo i napredniji tokovi
+- [x] Lab 5 — API, DTO, Identity, Google login, upload i integracijski testovi
+
+Detalji za Lab 5 nalaze se u `lab5Doc.md`.
+
+## API Sažetak
+
+API endpointi su dostupni pod:
+
+- `/api/gradovi`
+- `/api/korisnici`
+- `/api/vozila`
+- `/api/voznje`
+- `/api/rezervacije`
+- `/api/placanja`
+- `/api/ocjene`
+- `/api/saldo-transakcije`
+
+`GET` endpointi vraćaju DTO modele. `POST`, `PUT` i `DELETE` endpointi su zaštićeni autorizacijom prema ulozi i poslovnom pravilu.
+
+## Upload Datoteka
+
+Upload je vezan uz `Voznja` jer projekt nema `Quiz` entitet. Datoteke se spremaju na disk:
+
+```text
+wwwroot/uploads/voznje/{voznjaId}
 ```
 
-Aplikacija je tada dostupna na `http://localhost:8080`, a SQL Server na `localhost,14333`.
-Ako zelis Google login u Dockeru, kopiraj `.env.example` u `.env` i upisi `GOOGLE_CLIENT_ID` i `GOOGLE_CLIENT_SECRET`.
-Za gasenje pokreni:
+Metapodaci se spremaju u bazu kroz `VoznjaAttachment`.
 
-```bash
-docker compose down
+## Docker Hub Push
+
+Ako treba ponovno objaviti verziju `v0.1`:
+
+```powershell
+docker login
+.\scripts\docker-push-v0.1.ps1 -DockerHubUser nikolica
 ```
 
-Docker Hub image za Linux host:
+Linux/macOS:
 
 ```bash
 docker login
-docker build -f src/SideSeat/Dockerfile -t nikolica/sideseat:v0.1 .
-docker push nikolica/sideseat:v0.1
+chmod +x scripts/docker-push-v0.1.sh
+./scripts/docker-push-v0.1.sh nikolica
 ```
 
-Na Linux serveru kopiraj `docker-compose.hub.yml` i pokreni:
+## Struktura Repozitorija
 
-```bash
-docker compose -f docker-compose.hub.yml up -d
-```
-
-Demo korisnici:
-
-- Admin: dmin@example.com / Admin123!
-- Vozac: marko@example.com / User123!
-- Putnik: ivana@example.com / User123!
-
-## Struktura repozitorija (bitno za predaju)
-
-- lab-1/
-     - opis zadatka i logovi rada agenta za Lab 1
-- lab-2/
-     - opis zadatka i logovi rada agenta za Lab 2
-- src/SideSeat/
-     - ASP.NET Core MVC aplikacija
+- `src/SideSeat/` — ASP.NET Core MVC aplikacija
+- `tests/SideSeat.IntegrationTests/` — integracijski testovi
+- `lab-1/` do `lab-5/` — materijali i zadaci po vježbama
+- `docker-compose.yml` — lokalni build + SQL Server
+- `docker-compose.hub.yml` — Linux/Docker Hub pokretanje bez lokalnog builda
+- `lab5Doc.md` — Lab 5 dokumentacija i checklist
 
 ## Napomena
 
-README je uskladen s trenutnim stanjem implementacije i tokom vjezbi.
-Za svaku iducu vjezbu preporuka je azurirati ovaj dokument nakon zavrsenog taska.
+Tajne podatke ne commitati u repozitorij. Koristi `.env`, user secrets ili environment varijable.
