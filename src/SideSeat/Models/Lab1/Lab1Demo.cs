@@ -214,7 +214,7 @@ public static class Lab1Demo
             BrojMjesta = 1,
             CijenaUkupno = voznja1.CijenaPoMjestu,
             VrijemeRezervacije = DateTime.Now.AddHours(-3),
-            Status = StatusRezervacije.Aktivna,
+            Status = StatusRezervacije.UProcesuPotvrde,
             Napomena = "Polazak mi odgovara tocno u 8:00."
         };
 
@@ -242,7 +242,7 @@ public static class Lab1Demo
             BrojMjesta = 1,
             CijenaUkupno = voznja3.CijenaPoMjestu,
             VrijemeRezervacije = DateTime.Now.AddHours(-1),
-            Status = StatusRezervacije.Aktivna,
+            Status = StatusRezervacije.UProcesuPotvrde,
             Napomena = "Treba mi preuzimanje kod Arene."
         };
 
@@ -274,7 +274,7 @@ public static class Lab1Demo
                 Rezervacija = rezervacija3,
                 Iznos = rezervacija3.CijenaUkupno,
                 VrijemePlacanja = DateTime.Now.AddHours(-1),
-                NacinPlacanja = NacinPlacanja.Online,
+                NacinPlacanja = NacinPlacanja.RevolutPay,
                 Uspjesno = true
             }
         ]);
@@ -328,7 +328,7 @@ public static class Lab1Demo
                 Vozac = k,
                 BrojAktivnihRezervacija = k.KreiraneVoznje
                     .SelectMany(v => v.Rezervacije)
-                    .Count(r => r.Status != StatusRezervacije.Otkazana)
+                    .Count(r => r.Status != StatusRezervacije.Odbijena)
             })
             .OrderByDescending(x => x.BrojAktivnihRezervacija)
             .ToList();
@@ -343,7 +343,7 @@ public static class Lab1Demo
         var granica = DateTime.Now.AddDays(7);
         var putniciOVomTjednu = podaci.Korisnici
             .Where(k => k.Tip == TipKorisnika.Putnik)
-            .Where(k => k.Rezervacije.Any(r => r.Voznja.Polazak <= granica && r.Status != StatusRezervacije.Otkazana))
+            .Where(k => k.Rezervacije.Any(r => r.Voznja.Polazak <= granica && r.Status != StatusRezervacije.Odbijena))
             .ToList();
 
         Console.WriteLine("3)Putnici koji imaju voznju unutar 7 dana:");
@@ -358,7 +358,7 @@ public static class Lab1Demo
             {
                 VoznjaId = v.Id,
                 Prihod = v.Rezervacije
-                    .Where(r => r.Status != StatusRezervacije.Otkazana)
+                    .Where(r => r.Status != StatusRezervacije.Odbijena)
                     .Sum(r => r.CijenaUkupno)
             })
             .OrderByDescending(x => x.Prihod)
@@ -377,7 +377,7 @@ public static class Lab1Demo
         Console.WriteLine("===== LAB 1: Async/Await =====");
 
         // Pokrecemo dva neovisna async poziva bez cekanja odmah nakon pokretanja.
-        var aktivneTask = DohvatiRezervacijePoStatusuAsync(podaci.Rezervacije, StatusRezervacije.Aktivna);
+        var aktivneTask = DohvatiRezervacijePoStatusuAsync(podaci.Rezervacije, StatusRezervacije.UProcesuPotvrde);
         var potvrdeneTask = DohvatiRezervacijePoStatusuAsync(podaci.Rezervacije, StatusRezervacije.Potvrdena);
 
         // Cekamo da oba zavrse (paralelno izvrsavanje taskova).

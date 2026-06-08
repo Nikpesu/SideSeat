@@ -18,8 +18,9 @@ public class SideSeatDbContext : IdentityDbContext<AppUser, IdentityRole<int>, i
     public DbSet<Rezervacija> Rezervacije => Set<Rezervacija>();
     public DbSet<Placanje> Placanja => Set<Placanje>();
     public DbSet<OcjenaVoznje> Ocjene => Set<OcjenaVoznje>();
+    public DbSet<OcjenaSlika> OcjenaSlike => Set<OcjenaSlika>();
     public DbSet<SaldoTransakcija> SaldoTransakcije => Set<SaldoTransakcija>();
-    public DbSet<VoznjaAttachment> VoznjaAttachments => Set<VoznjaAttachment>();
+    public DbSet<Obavijest> Obavijesti => Set<Obavijest>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -61,6 +62,12 @@ public class SideSeatDbContext : IdentityDbContext<AppUser, IdentityRole<int>, i
             .HasForeignKey(t => t.KorisnikId)
             .OnDelete(DeleteBehavior.Cascade);
 
+        modelBuilder.Entity<Obavijest>()
+            .HasOne(o => o.Korisnik)
+            .WithMany(k => k.Obavijesti)
+            .HasForeignKey(o => o.KorisnikId)
+            .OnDelete(DeleteBehavior.Cascade);
+
         modelBuilder.Entity<AppUser>()
             .HasOne(u => u.Korisnik)
             .WithOne()
@@ -72,10 +79,10 @@ public class SideSeatDbContext : IdentityDbContext<AppUser, IdentityRole<int>, i
             .IsUnique()
             .HasFilter("[KorisnikId] IS NOT NULL");
 
-        modelBuilder.Entity<VoznjaAttachment>()
-            .HasOne(a => a.Voznja)
-            .WithMany(v => v.Attachments)
-            .HasForeignKey(a => a.VoznjaId)
+        modelBuilder.Entity<OcjenaSlika>()
+            .HasOne(s => s.OcjenaVoznje)
+            .WithMany(o => o.Slike)
+            .HasForeignKey(s => s.OcjenaVoznjeId)
             .OnDelete(DeleteBehavior.Cascade);
     }
 }

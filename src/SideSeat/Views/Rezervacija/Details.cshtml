@@ -5,8 +5,9 @@
 	var canConfirm = User.IsInRole("Admin") || Model.Voznja?.VozacId == currentUserId;
 	var isAdmin = User.IsInRole("Admin");
 	var statusClass = Model.Status == SideSeat.Models.StatusRezervacije.Potvrdena
+		|| Model.Status == SideSeat.Models.StatusRezervacije.Zavrsena
 		? "is-ok"
-		: Model.Status == SideSeat.Models.StatusRezervacije.Aktivna
+		: Model.Status == SideSeat.Models.StatusRezervacije.UProcesuPotvrde
 			? "is-alert"
 			: "is-off";
 }
@@ -26,6 +27,10 @@
 	</div>
 
 	<div class="ss-detail-card">
+		@if (TempData["ReservationStatus"] is string reservationStatus)
+		{
+			<div class="alert alert-info" role="status">@reservationStatus</div>
+		}
 		<dl class="ss-detail-grid">
 			<div>
 				<dt>ID</dt>
@@ -33,7 +38,7 @@
 			</div>
 			<div>
 				<dt>Status</dt>
-				<dd><span class="ss-badge @statusClass">@Model.Status</span></dd>
+				<dd><span class="ss-badge @statusClass">@Model.Status.ToDisplayName()</span></dd>
 			</div>
 			<div>
 				<dt>Putnik</dt>
@@ -41,7 +46,12 @@
 			</div>
 			<div>
 				<dt>Voznja</dt>
-				<dd>@Model.Voznja?.PolazniGrad?.Naziv -> @Model.Voznja?.OdredisniGrad?.Naziv</dd>
+				<dd>
+					<a asp-controller="Voznja" asp-action="Details" asp-route-id="@Model.VoznjaId">
+						Vožnja #@Model.VoznjaId:
+						@Model.Voznja?.PolazniGrad?.Naziv -> @Model.Voznja?.OdredisniGrad?.Naziv
+					</a>
+				</dd>
 			</div>
 			<div>
 				<dt>Broj mjesta</dt>
@@ -62,12 +72,17 @@
 		</dl>
 
 		<div class="ss-actions">
-			@if (canConfirm && Model.Status == SideSeat.Models.StatusRezervacije.Aktivna)
+			@if (canConfirm && Model.Status == SideSeat.Models.StatusRezervacije.UProcesuPotvrde)
 			{
 				<form asp-action="Confirm" method="post">
 					@Html.AntiForgeryToken()
 					<input type="hidden" name="id" value="@Model.Id" />
 					<button type="submit" class="ss-btn">Potvrdi rezervaciju</button>
+				</form>
+				<form asp-action="Reject" method="post">
+					@Html.AntiForgeryToken()
+					<input type="hidden" name="id" value="@Model.Id" />
+					<button type="submit" class="ss-btn ss-btn-secondary">Odbij rezervaciju</button>
 				</form>
 			}
 			@if (isAdmin)

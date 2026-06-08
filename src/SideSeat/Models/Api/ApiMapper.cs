@@ -82,7 +82,8 @@ public static class ApiMapper
         Autor = ocjena.Autor?.ToDto(),
         BrojZvjezdica = ocjena.BrojZvjezdica,
         Komentar = ocjena.Komentar,
-        Kreirano = ocjena.Kreirano
+        Kreirano = ocjena.Kreirano,
+        Slike = ocjena.Slike.Select(s => s.ToDto()).ToList()
     };
 
     public static SaldoTransakcijaDto ToDto(this SaldoTransakcija transakcija) => new()
@@ -96,14 +97,14 @@ public static class ApiMapper
         Vrijeme = transakcija.Vrijeme
     };
 
-    public static VoznjaAttachmentDto ToDto(this VoznjaAttachment attachment) => new()
+    public static OcjenaSlikaDto ToDto(this OcjenaSlika slika) => new()
     {
-        Id = attachment.Id,
-        VoznjaId = attachment.VoznjaId,
-        FileName = attachment.FileName,
-        FilePath = attachment.FilePath,
-        ContentType = attachment.ContentType,
-        FileSize = attachment.FileSize,
-        CreatedAt = attachment.CreatedAt
+        Id = slika.Id,
+        OcjenaVoznjeId = slika.OcjenaVoznjeId,
+        FileName = slika.FileName,
+        FilePath = slika.FilePath,
+        ContentType = slika.ContentType,
+        FileSize = slika.FileSize,
+        CreatedAt = slika.CreatedAt
     };
 }

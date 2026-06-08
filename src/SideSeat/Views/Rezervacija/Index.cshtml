@@ -1,7 +1,7 @@
-@model IReadOnlyList<SideSeat.Models.ViewModels.RezervacijaListItemViewModel>
+@model SideSeat.Models.ViewModels.RezervacijaListViewModel
 @using SideSeat.Models.ViewModels
 @{
-    ViewData["Title"] = "Rezervacije";
+    ViewData["Title"] = Model.Title;
     var search = ViewBag.Search as string ?? string.Empty;
     var selectedDate = ViewBag.Date as DateTime?;
     var dateFilter = new DateTimeInputViewModel
@@ -11,7 +11,7 @@
         Value = selectedDate,
         DateOnly = true
     };
-    var isAdmin = User.IsInRole("Admin");
+    var isAdmin = Model.IsAdmin;
 }
 
 <section class="ss-page" data-ss-list-page>
@@ -21,9 +21,11 @@
         <span class="current" aria-current="page">Rezervacije</span>
     </nav>
 
+    <partial name="_ReservationViewSelector" model="Model" />
+
     <div class="ss-page-head">
-        <h1>Rezervacije</h1>
-        <p>Aktivne, potvrdjene i otkazane rezervacije.</p>
+        <h1>@Model.Title</h1>
+        <p>@Model.Description</p>
         <div class="ss-list-toolbar">
             <div class="ss-list-search">
                 <label class="form-label" for="rezervacije-search">Pretraga</label>
@@ -53,9 +55,9 @@
         </div>
     </div>
 
-    @if (Model.Count == 0)
+    @if (Model.Rezervacije.Count == 0)
     {
-        <p class="ss-empty">Nema unesenih rezervacija.</p>
+        <p class="ss-empty">@Model.EmptyMessage</p>
     }
     else
     {
@@ -74,23 +76,29 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach (var item in Model)
+                    @foreach (var item in Model.Rezervacije)
                     {
                         var rezervacija = item.Rezervacija;
                         var statusClass = rezervacija.Status == SideSeat.Models.StatusRezervacije.Potvrdena
+                            || rezervacija.Status == SideSeat.Models.StatusRezervacije.Zavrsena
                             ? "is-ok"
-                            : rezervacija.Status == SideSeat.Models.StatusRezervacije.Aktivna
+                            : rezervacija.Status == SideSeat.Models.StatusRezervacije.UProcesuPotvrde
                                 ? "is-alert"
                                 : "is-off";
 
                         <tr>
                             <td>@rezervacija.Id</td>
                             <td>@rezervacija.Putnik?.Ime @rezervacija.Putnik?.Prezime</td>
-                            <td>@rezervacija.Voznja?.PolazniGrad?.Naziv -> @rezervacija.Voznja?.OdredisniGrad?.Naziv</td>
+                            <td>
+                                <a asp-controller="Voznja" asp-action="Details" asp-route-id="@rezervacija.VoznjaId">
+                                    Vožnja #@rezervacija.VoznjaId:
+                                    @rezervacija.Voznja?.PolazniGrad?.Naziv -> @rezervacija.Voznja?.OdredisniGrad?.Naziv
+                                </a>
+                            </td>
                             <td>@rezervacija.BrojMjesta</td>
                             <td>@rezervacija.CijenaUkupno.ToString("0.00") EUR</td>
                             <td>@rezervacija.VrijemeRezervacije.ToString("dd.MM.yyyy HH:mm")</td>
-                            <td><span class="ss-badge @statusClass">@rezervacija.Status</span></td>
+                            <td><span class="ss-badge @statusClass">@rezervacija.Status.ToDisplayName()</span></td>
                             <td>
                                 <a class="ss-btn" asp-controller="Rezervacija" asp-action="Details" asp-route-id="@rezervacija.Id">Detalji</a>
                                 @if (item.CanRate)

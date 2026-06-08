@@ -1,0 +1,48 @@
+@model SideSeat.Models.Notifications.NotificationBellViewModel
+
+<div class="dropdown ss-notification-dropdown">
+    <button class="ss-notification-bell" type="button" data-bs-toggle="dropdown" aria-expanded="false"
+            aria-label="Obavijesti, nepročitano: @Model.UnreadCount">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4" />
+        </svg>
+        @if (Model.UnreadCount > 0)
+        {
+            <span class="ss-notification-count">@(Model.UnreadCount > 99 ? "99+" : Model.UnreadCount)</span>
+        }
+    </button>
+
+    <div class="dropdown-menu dropdown-menu-end ss-notification-menu">
+        <div class="ss-notification-header">
+            <strong>Obavijesti</strong>
+            @if (Model.UnreadCount > 0)
+            {
+                <form asp-controller="Obavijest" asp-action="MarkAllRead" method="post">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="returnUrl" value="@Context.Request.Path@Context.Request.QueryString" />
+                    <button type="submit" class="ss-notification-read-all">Označi sve pročitanim</button>
+                </form>
+            }
+        </div>
+
+        @if (Model.Items.Count == 0)
+        {
+            <p class="ss-notification-empty">Nema obavijesti.</p>
+        }
+        else
+        {
+            <div class="ss-notification-list">
+                @foreach (var item in Model.Items)
+                {
+                    <a class="ss-notification-item @(!item.IsRead ? "is-unread" : string.Empty)"
+                       asp-controller="Obavijest" asp-action="Open" asp-route-id="@item.Id">
+                        <span class="ss-notification-type">@item.Type</span>
+                        <strong>@item.Title</strong>
+                        <span>@item.Message</span>
+                        <time datetime="@item.CreatedAt.ToString("O")">@item.CreatedAt.ToLocalTime().ToString("dd.MM.yyyy HH:mm")</time>
+                    </a>
+                }
+            </div>
+        }
+    </div>
+</div>

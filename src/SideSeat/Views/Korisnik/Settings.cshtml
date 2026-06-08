@@ -26,9 +26,22 @@
         <div class="alert alert-success" role="alert">@settingsSaved</div>
     }
 
-    <form asp-action="Settings" method="post" class="ss-detail-card">
+    <form asp-action="Settings" method="post" enctype="multipart/form-data" class="ss-detail-card">
         @Html.AntiForgeryToken()
         <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+        <div class="mb-3">
+            <label asp-for="ProfileImage" class="form-label"></label>
+            @if (!string.IsNullOrWhiteSpace(Model.CurrentProfileImagePath))
+            {
+                <div class="mb-2">
+                    <img class="ss-profile-avatar" src="@Model.CurrentProfileImagePath" alt="Trenutna profilna slika" />
+                </div>
+            }
+            <input asp-for="ProfileImage" class="form-control" type="file" accept="image/jpeg,image/png,image/gif,image/webp" />
+            <span asp-validation-for="ProfileImage" class="text-danger"></span>
+            <small class="text-muted">JPG, PNG, GIF ili WEBP, najviše 5 MB.</small>
+        </div>
 
         <div class="mb-3">
             <label asp-for="Address" class="form-label"></label>

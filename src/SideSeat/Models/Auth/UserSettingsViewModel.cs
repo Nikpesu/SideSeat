@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using Microsoft.AspNetCore.Http;
 
 namespace SideSeat.Models.Auth;
 
@@ -23,6 +24,11 @@ public class UserSettingsViewModel
     public bool CanDisableRider { get; set; } = true;
 
     public bool CanDisableDriver { get; set; } = true;
+
+    [Display(Name = "Profilna slika")]
+    public IFormFile? ProfileImage { get; set; }
+
+    public string? CurrentProfileImagePath { get; set; }
 
     [DataType(DataType.Password)]
     [Display(Name = "Trenutna lozinka")]

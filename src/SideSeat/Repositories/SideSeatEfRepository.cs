@@ -112,12 +112,14 @@ public class SideSeatEfRepository
     public List<OcjenaVoznje> GetOcjene() => _db.Ocjene
         .AsNoTracking()
         .Include(o => o.Autor)
+        .Include(o => o.Slike)
         .OrderByDescending(o => o.Kreirano)
         .ToList();
 
     public OcjenaVoznje? GetOcjenaById(int id) => _db.Ocjene
         .AsNoTracking()
         .Include(o => o.Autor)
+        .Include(o => o.Slike)
         .Include(o => o.Rezervacija)
         .FirstOrDefault(o => o.Id == id);
 }

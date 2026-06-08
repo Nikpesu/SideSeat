@@ -321,8 +321,23 @@ namespace SideSeat.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("ProfilnaSlikaPath")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<decimal>("Saldo")
                         .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("SpremljenaAdresaPlacanja")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("SpremljenaKarticaIme")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("SpremljenaKarticaVrijediDo")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("SpremljenaKarticaZadnjeCetiri")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<int>("Tip")
                         .HasColumnType("int");
@@ -335,6 +350,88 @@ namespace SideSeat.Migrations
                     b.HasIndex("VoziloId");
 
                     b.ToTable("Korisnici");
+                });
+
+            modelBuilder.Entity("SideSeat.Models.Obavijest", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("KorisnikId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("Kreirano")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Link")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("Naslov")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("nvarchar(120)");
+
+                    b.Property<string>("Poruka")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<bool>("Procitano")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Tip")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("nvarchar(40)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("KorisnikId");
+
+                    b.ToTable("Obavijesti");
+                });
+
+            modelBuilder.Entity("SideSeat.Models.OcjenaSlika", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("ContentType")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("nvarchar(120)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("FileName")
+                        .IsRequired()
+                        .HasMaxLength(260)
+                        .HasColumnType("nvarchar(260)");
+
+                    b.Property<string>("FilePath")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<long>("FileSize")
+                        .HasColumnType("bigint");
+
+                    b.Property<int>("OcjenaVoznjeId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OcjenaVoznjeId");
+
+                    b.ToTable("OcjenaSlike");
                 });
 
             modelBuilder.Entity("SideSeat.Models.OcjenaVoznje", b =>
@@ -449,6 +546,10 @@ namespace SideSeat.Migrations
 
                     b.Property<decimal>("Iznos")
                         .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("Komentar")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<int>("KorisnikId")
                         .HasColumnType("int");
@@ -570,45 +671,6 @@ namespace SideSeat.Migrations
                     b.ToTable("Voznje");
                 });
 
-            modelBuilder.Entity("SideSeat.Models.VoznjaAttachment", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("ContentType")
-                        .IsRequired()
-                        .HasMaxLength(120)
-                        .HasColumnType("nvarchar(120)");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("FileName")
-                        .IsRequired()
-                        .HasMaxLength(260)
-                        .HasColumnType("nvarchar(260)");
-
-                    b.Property<string>("FilePath")
-                        .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
-
-                    b.Property<long>("FileSize")
-                        .HasColumnType("bigint");
-
-                    b.Property<int>("VoznjaId")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("VoznjaId");
-
-                    b.ToTable("VoznjaAttachments");
-                });
-
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<int>", b =>
                 {
                     b.HasOne("Microsoft.AspNetCore.Identity.IdentityRole<int>", null)
@@ -677,6 +739,28 @@ namespace SideSeat.Migrations
                         .HasForeignKey("VoziloId");
 
                     b.Navigation("Vozilo");
+                });
+
+            modelBuilder.Entity("SideSeat.Models.Obavijest", b =>
+                {
+                    b.HasOne("SideSeat.Models.Korisnik", "Korisnik")
+                        .WithMany("Obavijesti")
+                        .HasForeignKey("KorisnikId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Korisnik");
+                });
+
+            modelBuilder.Entity("SideSeat.Models.OcjenaSlika", b =>
+                {
+                    b.HasOne("SideSeat.Models.OcjenaVoznje", "OcjenaVoznje")
+                        .WithMany("Slike")
+                        .HasForeignKey("OcjenaVoznjeId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("OcjenaVoznje");
                 });
 
             modelBuilder.Entity("SideSeat.Models.OcjenaVoznje", b =>
@@ -775,30 +859,24 @@ namespace SideSeat.Migrations
                     b.Navigation("Vozac");
                 });
 
-            modelBuilder.Entity("SideSeat.Models.VoznjaAttachment", b =>
-                {
-                    b.HasOne("SideSeat.Models.Voznja", "Voznja")
-                        .WithMany("Attachments")
-                        .HasForeignKey("VoznjaId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Voznja");
-                });
-
             modelBuilder.Entity("SideSeat.Models.Korisnik", b =>
                 {
                     b.Navigation("KreiraneVoznje");
+
+                    b.Navigation("Obavijesti");
 
                     b.Navigation("Rezervacije");
 
                     b.Navigation("SaldoTransakcije");
                 });
 
+            modelBuilder.Entity("SideSeat.Models.OcjenaVoznje", b =>
+                {
+                    b.Navigation("Slike");
+                });
+
             modelBuilder.Entity("SideSeat.Models.Voznja", b =>
                 {
-                    b.Navigation("Attachments");
-
                     b.Navigation("Rezervacije");
                 });
 #pragma warning restore 612, 618

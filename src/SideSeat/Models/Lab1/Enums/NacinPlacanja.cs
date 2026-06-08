@@ -2,7 +2,7 @@ namespace SideSeat.Models;
 
 public enum NacinPlacanja
 {
-    Gotovina,
+    PayPal,
     Kartica,
-    Online
+    RevolutPay
 }

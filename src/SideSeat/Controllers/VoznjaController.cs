@@ -9,6 +9,7 @@ using SideSeat.Repositories;
 using SideSeat.Models.ViewModels;
 using SideSeat.Models.Rides;
 using SideSeat.Security;
+using SideSeat.Services;
 
 namespace SideSeat.Controllers;
 
@@ -17,16 +18,19 @@ public class VoznjaController : Controller
 {
     private readonly SideSeatEfRepository _repository;
     private readonly SideSeatDbContext _db;
-    private readonly IWebHostEnvironment _webHostEnvironment;
+    private readonly INotificationService _notifications;
 
-    public VoznjaController(SideSeatEfRepository repository, SideSeatDbContext db, IWebHostEnvironment webHostEnvironment)
+    public VoznjaController(
+        SideSeatEfRepository repository,
+        SideSeatDbContext db,
+        INotificationService notifications)
     {
         _repository = repository;
         _db = db;
-        _webHostEnvironment = webHostEnvironment;
+        _notifications = notifications;
     }
 
-    public IActionResult Index(string? search, DateTime? date, int? pageSize)
+    public IActionResult Index(string? view, string? status, string? search, DateTime? date, int? pageSize)
     {
         var userId = User.GetKorisnikId();
         if (userId is null)
@@ -34,94 +38,54 @@ public class VoznjaController : Controller
             return Challenge();
         }
 
-        if (User.IsInRole("Admin"))
+        var isAdmin = User.IsInRole("Admin");
+        var korisnikTip = _db.Korisnici
+            .AsNoTracking()
+            .Where(k => k.Id == userId.Value)
+            .Select(k => (TipKorisnika?)k.Tip)
+            .FirstOrDefault();
+        var canViewDriving = isAdmin
+                             || User.IsInRole("Driver")
+                             || korisnikTip is TipKorisnika.Vozac or TipKorisnika.VozacIPutnik;
+        var selectedView = NormalizeRideView(view, isAdmin);
+        var selectedStatus = NormalizeStatusFilter(status);
+        if (!isAdmin && selectedView == "all")
         {
-            var adminVoznje = _repository.GetVoznje();
-            if (!string.IsNullOrWhiteSpace(search))
-            {
-                var normalizedSearch = search.Trim();
-                adminVoznje = adminVoznje.Where(voznja =>
-                    voznja.PolazniGrad?.Naziv.Contains(normalizedSearch, StringComparison.OrdinalIgnoreCase) == true ||
-                    voznja.OdredisniGrad?.Naziv.Contains(normalizedSearch, StringComparison.OrdinalIgnoreCase) == true ||
-                    voznja.Vozac?.Ime.Contains(normalizedSearch, StringComparison.OrdinalIgnoreCase) == true ||
-                    voznja.Vozac?.Prezime.Contains(normalizedSearch, StringComparison.OrdinalIgnoreCase) == true ||
-                    voznja.Status.ToString().Contains(normalizedSearch, StringComparison.OrdinalIgnoreCase) ||
-                    voznja.Id.ToString().Contains(normalizedSearch, StringComparison.OrdinalIgnoreCase)).ToList();
-            }
-
-            if (date.HasValue)
-            {
-                var selectedDate = date.Value.Date;
-                adminVoznje = adminVoznje.Where(v => v.Polazak.Date == selectedDate).ToList();
-            }
-
-            ViewBag.Search = search;
-            ViewBag.Date = date;
-            ViewBag.PageSize = pageSize;
-
-            if (pageSize.HasValue)
-            {
-                var normalized = PageSizeOptions.Normalize(pageSize.Value);
-                if (normalized > 0)
-                {
-                    adminVoznje = adminVoznje.Take(normalized).ToList();
-                }
-            }
-
-            return View(adminVoznje);
+            return Forbid();
         }
 
-        var userVoznje = _db.Voznje
+        var query = _db.Voznje
             .AsNoTracking()
             .Include(v => v.Vozac)
             .Include(v => v.PolazniGrad)
             .Include(v => v.OdredisniGrad)
-            .Where(v => v.VozacId == userId.Value || v.Rezervacije.Any(r => r.PutnikId == userId.Value))
-            .OrderBy(v => v.Polazak)
+            .Include(v => v.Rezervacije)
+            .AsQueryable();
+
+        query = selectedView switch
+        {
+            "available" => query.Where(v =>
+                v.Status == StatusVoznje.Planirana &&
+                v.SlobodnaMjesta > 0 &&
+                v.VozacId != userId.Value),
+            "driving" => query.Where(v => v.VozacId == userId.Value),
+            "ridden" => query.Where(v => v.Rezervacije.Any(r => r.PutnikId == userId.Value)),
+            _ => query
+        };
+
+        var statusCounts = query
+            .Select(v => v.Status)
             .ToList();
 
-        if (!string.IsNullOrWhiteSpace(search))
+        query = selectedStatus switch
         {
-            var normalizedSearch = search.Trim();
-            userVoznje = userVoznje.Where(voznja =>
-                voznja.PolazniGrad?.Naziv.Contains(normalizedSearch, StringComparison.OrdinalIgnoreCase) == true ||
-                voznja.OdredisniGrad?.Naziv.Contains(normalizedSearch, StringComparison.OrdinalIgnoreCase) == true ||
-                voznja.Vozac?.Ime.Contains(normalizedSearch, StringComparison.OrdinalIgnoreCase) == true ||
-                voznja.Vozac?.Prezime.Contains(normalizedSearch, StringComparison.OrdinalIgnoreCase) == true ||
-                voznja.Status.ToString().Contains(normalizedSearch, StringComparison.OrdinalIgnoreCase) ||
-                voznja.Id.ToString().Contains(normalizedSearch, StringComparison.OrdinalIgnoreCase)).ToList();
-        }
+            "planned" => query.Where(v => v.Status == StatusVoznje.Planirana),
+            "completed" => query.Where(v => v.Status == StatusVoznje.Zavrsena),
+            "cancelled" => query.Where(v => v.Status == StatusVoznje.Otkazana),
+            _ => query
+        };
 
-        if (date.HasValue)
-        {
-            var selectedDate = date.Value.Date;
-            userVoznje = userVoznje.Where(v => v.Polazak.Date == selectedDate).ToList();
-        }
-
-        ViewBag.Search = search;
-        ViewBag.Date = date;
-        ViewBag.PageSize = pageSize;
-
-        if (pageSize.HasValue)
-        {
-            var normalized = PageSizeOptions.Normalize(pageSize.Value);
-            if (normalized > 0)
-            {
-                userVoznje = userVoznje.Take(normalized).ToList();
-            }
-        }
-
-        return View(userVoznje);
-    }
-
-    public IActionResult Active(string? search, DateTime? date, int? pageSize)
-    {
-        var voznje = _db.Voznje
-            .AsNoTracking()
-            .Include(v => v.Vozac)
-            .Include(v => v.PolazniGrad)
-            .Include(v => v.OdredisniGrad)
-            .Where(v => v.Status == StatusVoznje.Planirana && v.SlobodnaMjesta > 0)
+        var voznje = query
             .OrderBy(v => v.Polazak)
             .ToList();
 
@@ -133,6 +97,7 @@ public class VoznjaController : Controller
                 voznja.OdredisniGrad?.Naziv.Contains(normalizedSearch, StringComparison.OrdinalIgnoreCase) == true ||
                 voznja.Vozac?.Ime.Contains(normalizedSearch, StringComparison.OrdinalIgnoreCase) == true ||
                 voznja.Vozac?.Prezime.Contains(normalizedSearch, StringComparison.OrdinalIgnoreCase) == true ||
+                voznja.Status.ToString().Contains(normalizedSearch, StringComparison.OrdinalIgnoreCase) ||
                 voznja.Id.ToString().Contains(normalizedSearch, StringComparison.OrdinalIgnoreCase)).ToList();
         }
 
@@ -142,6 +107,7 @@ public class VoznjaController : Controller
             voznje = voznje.Where(v => v.Polazak.Date == selectedDate).ToList();
         }
 
+        ViewBag.RideView = selectedView;
         ViewBag.Search = search;
         ViewBag.Date = date;
         ViewBag.PageSize = pageSize;
@@ -155,8 +121,59 @@ public class VoznjaController : Controller
             }
         }
 
-        return View(voznje);
+        var display = GetRideViewDisplay(selectedView);
+        return View(new VoznjaListViewModel
+        {
+            Voznje = voznje,
+            SelectedView = selectedView,
+            Title = display.Title,
+            Description = display.Description,
+            EmptyMessage = display.EmptyMessage,
+            IsAdmin = isAdmin,
+            CanViewDriving = canViewDriving,
+            SelectedStatus = selectedStatus,
+            AllCount = statusCounts.Count,
+            PlannedCount = statusCounts.Count(value => value == StatusVoznje.Planirana),
+            CompletedCount = statusCounts.Count(value => value == StatusVoznje.Zavrsena),
+            CancelledCount = statusCounts.Count(value => value == StatusVoznje.Otkazana)
+        });
     }
+
+    public IActionResult Active(string? search, DateTime? date, int? pageSize)
+    {
+        return RedirectToAction(nameof(Index), new { view = "available", search, date, pageSize });
+    }
+
+    private static string NormalizeStatusFilter(string? status) =>
+        status?.Trim().ToLowerInvariant() switch
+        {
+            "planned" => "planned",
+            "completed" => "completed",
+            "cancelled" => "cancelled",
+            _ => "all"
+        };
+
+    private static string NormalizeRideView(string? view, bool isAdmin)
+    {
+        var normalized = view?.Trim().ToLowerInvariant();
+        return normalized switch
+        {
+            "all" => "all",
+            "available" or "active" => "available",
+            "driving" or "mine" or "mine-active" => "driving",
+            "ridden" => "ridden",
+            _ => isAdmin ? "all" : "available"
+        };
+    }
+
+    private static (string Title, string Description, string EmptyMessage) GetRideViewDisplay(string view) =>
+        view switch
+        {
+            "available" => ("Dostupne vožnje", "Planirane vožnje s dostupnim mjestima koje možeš rezervirati.", "Trenutno nema dostupnih vožnji."),
+            "driving" => ("Moje vožnje", "Vožnje na kojima si vozač.", "Nemaš kreiranih vožnji."),
+            "ridden" => ("Moja voženja", "Vožnje na kojima sudjeluješ kao putnik.", "Nemaš rezerviranih vožnji."),
+            _ => ("Sve voznje", "Administratorski pregled svih voznji i statusa.", "Nema unesenih voznji.")
+        };
 
     public IActionResult Details(int id)
     {
@@ -191,6 +208,7 @@ public class VoznjaController : Controller
         var ocjeneVoznje = _db.Ocjene
             .AsNoTracking()
             .Include(o => o.Autor)
+            .Include(o => o.Slike)
             .Include(o => o.Rezervacija)
             .ThenInclude(r => r.Putnik)
             .Where(o => o.Rezervacija.VoznjaId == id)
@@ -207,12 +225,21 @@ public class VoznjaController : Controller
                 : $"{voznja.Vozac.Ime} {voznja.Vozac.Prezime}".Trim(),
             BrojZvjezdica = o.BrojZvjezdica,
             Komentar = o.Komentar,
-            Kreirano = o.Kreirano
+            Kreirano = o.Kreirano,
+            Slike = o.Slike
+                .OrderBy(s => s.CreatedAt)
+                .Select(s => new SideSeat.Models.Ocjena.OcjenaSlikaViewModel
+                {
+                    FileName = s.FileName,
+                    FilePath = s.FilePath
+                })
+                .ToList()
         }).ToList();
 
         var ocjeneVozaca = _db.Ocjene
             .AsNoTracking()
             .Include(o => o.Autor)
+            .Include(o => o.Slike)
             .Include(o => o.Rezervacija)
             .ThenInclude(r => r.Voznja)
             .Where(o => o.Rezervacija.Voznja.VozacId == voznja.VozacId && o.AutorId != voznja.VozacId)
@@ -227,7 +254,15 @@ public class VoznjaController : Controller
             PrimateljIme = $"{voznja.Vozac.Ime} {voznja.Vozac.Prezime}".Trim(),
             BrojZvjezdica = o.BrojZvjezdica,
             Komentar = o.Komentar,
-            Kreirano = o.Kreirano
+            Kreirano = o.Kreirano,
+            Slike = o.Slike
+                .OrderBy(s => s.CreatedAt)
+                .Select(s => new SideSeat.Models.Ocjena.OcjenaSlikaViewModel
+                {
+                    FileName = s.FileName,
+                    FilePath = s.FilePath
+                })
+                .ToList()
         }).ToList();
 
         var ocjenaByRezervacijaAutor = ocjeneVoznje
@@ -300,6 +335,12 @@ public class VoznjaController : Controller
             return RedirectToAction(nameof(Details), new { id });
         }
 
+        if (voznja.Rezervacije.Any(r => r.Status == StatusRezervacije.UProcesuPotvrde))
+        {
+            TempData["RideExecuted"] = "Prije vožnje moraš potvrditi ili odbiti sve rezervacije u procesu potvrde.";
+            return RedirectToAction(nameof(Details), new { id });
+        }
+
         var nowUtc = DateTime.UtcNow;
         var vozac = await _db.Korisnici.FirstOrDefaultAsync(k => k.Id == voznja.VozacId);
         if (vozac is null)
@@ -307,7 +348,7 @@ public class VoznjaController : Controller
             return NotFound();
         }
         var zaNaplatu = voznja.Rezervacije
-            .Where(r => r.Status != StatusRezervacije.Otkazana)
+            .Where(r => r.Status == StatusRezervacije.Potvrdena)
             .ToList();
 
         foreach (var rezervacija in zaNaplatu)
@@ -362,9 +403,23 @@ public class VoznjaController : Controller
                 SaldoPoslije = vozac.Saldo,
                 Vrijeme = nowUtc
             });
+
+            rezervacija.Status = StatusRezervacije.Zavrsena;
+            _notifications.Add(
+                rezervacija.PutnikId,
+                "Vožnja završena i naplaćena",
+                $"Vožnja #{voznja.Id} je završena. Naplaćeno je {rezervacija.CijenaUkupno:0.00} EUR.",
+                "Naplata",
+                $"/Voznja/Details/{voznja.Id}");
         }
 
         voznja.Status = StatusVoznje.Zavrsena;
+        _notifications.Add(
+            voznja.VozacId,
+            "Vožnja završena",
+            $"Vožnja #{voznja.Id} je završena. Obrađeno rezervacija: {zaNaplatu.Count}.",
+            "Vožnja",
+            $"/Voznja/Details/{voznja.Id}");
         await _db.SaveChangesAsync();
 
         TempData["RideExecuted"] = "Voznja je izvrsena.";
@@ -455,6 +510,13 @@ public class VoznjaController : Controller
         };
 
         _db.Voznje.Add(voznja);
+        _db.SaveChanges();
+        _notifications.Add(
+            voznja.VozacId,
+            "Vožnja kreirana",
+            $"Vožnja #{voznja.Id} je uspješno kreirana.",
+            "Vožnja",
+            $"/Voznja/Details/{voznja.Id}");
         _db.SaveChanges();
 
         return RedirectToAction("Ride", "Confirmation", new { id = voznja.Id });
@@ -559,6 +621,7 @@ public class VoznjaController : Controller
             return View(model);
         }
 
+        var oldStatus = voznja.Status;
         voznja.VozacId = model.VozacId;
         voznja.PolazniGradId = model.PolazniGradId;
         voznja.OdredisniGradId = model.OdredisniGradId;
@@ -573,6 +636,21 @@ public class VoznjaController : Controller
             voznja.Status = model.Status;
         }
 
+        if (oldStatus != voznja.Status)
+        {
+            foreach (var putnikId in _db.Rezervacije
+                         .Where(r => r.VoznjaId == voznja.Id)
+                         .Select(r => r.PutnikId)
+                         .Distinct())
+            {
+                _notifications.Add(
+                    putnikId,
+                    "Promjena vožnje",
+                    $"Status vožnje #{voznja.Id} promijenjen je u {voznja.Status}.",
+                    "Vožnja",
+                    $"/Voznja/Details/{voznja.Id}");
+            }
+        }
         _db.SaveChanges();
 
         return RedirectToAction(nameof(Details), new { id = voznja.Id });
@@ -719,108 +797,6 @@ public class VoznjaController : Controller
             .ToList();
 
         return Json(results);
-    }
-
-    [HttpGet]
-    public IActionResult GetAttachments(int voznjaId)
-    {
-        var voznja = _db.Voznje
-            .AsNoTracking()
-            .FirstOrDefault(v => v.Id == voznjaId);
-        if (voznja is null)
-        {
-            return NotFound();
-        }
-
-        var attachments = _db.VoznjaAttachments
-            .AsNoTracking()
-            .Where(a => a.VoznjaId == voznjaId)
-            .OrderByDescending(a => a.CreatedAt)
-            .ToList();
-
-        ViewBag.CanDeleteAttachments = CanManageRide(voznja);
-        return PartialView("_Attachments", attachments);
-    }
-
-    [HttpPost]
-    public async Task<IActionResult> UploadAttachment(int voznjaId, IFormFile? file)
-    {
-        var voznja = await _db.Voznje.FirstOrDefaultAsync(v => v.Id == voznjaId);
-        if (voznja is null)
-        {
-            return NotFound();
-        }
-
-        if (!CanManageRide(voznja))
-        {
-            return Forbid();
-        }
-
-        if (file is null || file.Length == 0)
-        {
-            return BadRequest(new { message = "Datoteka nije poslana." });
-        }
-
-        if (file.Length > 10 * 1024 * 1024)
-        {
-            return BadRequest(new { message = "Datoteka moze imati najvise 10 MB." });
-        }
-
-        var uploadsPath = Path.Combine(_webHostEnvironment.WebRootPath, "uploads", "voznje", voznjaId.ToString());
-        Directory.CreateDirectory(uploadsPath);
-
-        var safeExtension = Path.GetExtension(file.FileName);
-        var storedFileName = $"{Guid.NewGuid():N}{safeExtension}";
-        var diskPath = Path.Combine(uploadsPath, storedFileName);
-
-        await using (var stream = new FileStream(diskPath, FileMode.CreateNew))
-        {
-            await file.CopyToAsync(stream);
-        }
-
-        var attachment = new VoznjaAttachment
-        {
-            VoznjaId = voznjaId,
-            FileName = Path.GetFileName(file.FileName),
-            FilePath = $"/uploads/voznje/{voznjaId}/{storedFileName}",
-            ContentType = string.IsNullOrWhiteSpace(file.ContentType) ? "application/octet-stream" : file.ContentType,
-            FileSize = file.Length,
-            CreatedAt = DateTime.UtcNow
-        };
-
-        _db.VoznjaAttachments.Add(attachment);
-        await _db.SaveChangesAsync();
-
-        return Json(new { success = true, attachmentId = attachment.Id });
-    }
-
-    [HttpPost]
-    public async Task<IActionResult> DeleteAttachment(int id)
-    {
-        var attachment = await _db.VoznjaAttachments
-            .Include(a => a.Voznja)
-            .FirstOrDefaultAsync(a => a.Id == id);
-        if (attachment is null)
-        {
-            return NotFound();
-        }
-
-        if (!CanManageRide(attachment.Voznja))
-        {
-            return Forbid();
-        }
-
-        var relativePath = attachment.FilePath.TrimStart('/').Replace('/', Path.DirectorySeparatorChar);
-        var diskPath = Path.Combine(_webHostEnvironment.WebRootPath, relativePath);
-        if (System.IO.File.Exists(diskPath))
-        {
-            System.IO.File.Delete(diskPath);
-        }
-
-        _db.VoznjaAttachments.Remove(attachment);
-        await _db.SaveChangesAsync();
-
-        return Json(new { success = true });
     }
 
     private VoznjaFormViewModel BuildFormViewModel(bool isAdmin, int currentUserId)

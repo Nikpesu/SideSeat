@@ -1,0 +1,17 @@
+@model IEnumerable<SideSeat.Models.Ocjena.OcjenaSlikaViewModel>
+
+@if (Model?.Any() == true)
+{
+    <div class="ss-review-images">
+        @foreach (var slika in Model)
+        {
+            <button type="button"
+                    class="ss-review-thumb"
+                    data-ss-image-preview="@slika.FilePath"
+                    data-ss-image-title="@slika.FileName"
+                    aria-label="Uvecaj sliku @slika.FileName">
+                <img src="@slika.FilePath" alt="@slika.FileName" loading="lazy" />
+            </button>
+        }
+    </div>
+}

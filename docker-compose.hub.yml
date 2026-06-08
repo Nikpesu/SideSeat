@@ -2,6 +2,10 @@ services:
   sideseat-db:
     image: mcr.microsoft.com/mssql/server:2022-latest
     container_name: sideseat-db
+    labels:
+      org.opencontainers.image.title: "SideSeat SQL Server"
+      org.opencontainers.image.version: "${SIDESEAT_DB_VERSION:-2022-latest}"
+      com.sideseat.container.version: "${SIDESEAT_DB_VERSION:-2022-latest}"
     environment:
       ACCEPT_EULA: "Y"
       MSSQL_SA_PASSWORD: "${SA_PASSWORD:-SideSeat123!}"
@@ -18,8 +22,12 @@ services:
       start_period: 20s
 
   sideseat-web:
-    image: "${DOCKERHUB_IMAGE:-nikolica/sideseat:v0.1}"
+    image: "${DOCKERHUB_IMAGE:-nikolica/sideseat:v0.14}"
     container_name: sideseat-web
+    labels:
+      org.opencontainers.image.title: "SideSeat Web"
+      org.opencontainers.image.version: "${SIDESEAT_VERSION:-v0.14}"
+      com.sideseat.container.version: "${SIDESEAT_VERSION:-v0.14}"
     depends_on:
       sideseat-db:
         condition: service_healthy
@@ -29,6 +37,8 @@ services:
       ConnectionStrings__SideSeatDbContext: "Server=sideseat-db,1433;Database=SideSeat;User Id=sa;Password=${SA_PASSWORD:-SideSeat123!};TrustServerCertificate=True;MultipleActiveResultSets=true"
       Authentication__Google__ClientId: "${GOOGLE_CLIENT_ID:-}"
       Authentication__Google__ClientSecret: "${GOOGLE_CLIENT_SECRET:-}"
+      DUMMY_DATA: "${DUMMY_DATA:-false}"
+      SIDESEAT_VERSION: "${SIDESEAT_VERSION:-v0.14}"
     ports:
       - "8080:8080"
     volumes:

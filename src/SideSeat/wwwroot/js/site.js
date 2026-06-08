@@ -12,20 +12,33 @@
   const toggleButton = document.getElementById("ss-theme-toggle");
 
   const getPreferredTheme = () => {
-    const stored = localStorage.getItem(storageKey);
-    if (stored === "light" || stored === "dark") {
-      return stored;
-    }
+    try {
+      const stored = localStorage.getItem(storageKey);
+      if (stored === "light" || stored === "dark") {
+        return stored;
+      }
+    } catch {}
 
     return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
   };
 
   const setTheme = (theme) => {
     root.setAttribute("data-theme", theme);
-    localStorage.setItem(storageKey, theme);
+    try {
+      localStorage.setItem(storageKey, theme);
+    } catch {}
 
     if (toggleButton) {
-      toggleButton.textContent = theme === "dark" ? "Tema: Dark" : "Tema: Light";
+      const isDark = theme === "dark";
+      const icon = toggleButton.querySelector(".ss-theme-toggle-icon");
+      const label = toggleButton.querySelector(".ss-theme-toggle-label");
+      if (icon) {
+        icon.textContent = isDark ? "☾" : "☀";
+      }
+      if (label) {
+        label.textContent = isDark ? "Dark" : "Light";
+      }
+      toggleButton.title = isDark ? "Prebaci na svijetlu temu" : "Prebaci na tamnu temu";
       toggleButton.setAttribute("aria-pressed", theme === "dark" ? "true" : "false");
     }
   };
@@ -76,6 +89,157 @@
         window.history.replaceState({}, "", cleanUrl);
       }
 
+  }
+
+  const ensureImagePreviewModal = () => {
+    let modal = document.getElementById("ssImagePreviewModal");
+    if (modal) {
+      return modal;
+    }
+
+    modal = document.createElement("div");
+    modal.className = "modal fade";
+    modal.id = "ssImagePreviewModal";
+    modal.tabIndex = -1;
+    modal.setAttribute("aria-hidden", "true");
+    modal.innerHTML = `
+      <div class="modal-dialog modal-dialog-centered modal-xl">
+        <div class="modal-content ss-auth-shell">
+          <div class="d-flex justify-content-between align-items-center gap-3 mb-3">
+            <h2 class="h5 m-0" id="ssImagePreviewTitle">Slika recenzije</h2>
+            <button type="button" class="btn-close ss-auth-close" data-bs-dismiss="modal" aria-label="Zatvori"></button>
+          </div>
+          <div class="text-center">
+            <img id="ssImagePreviewImage" class="ss-image-preview" src="" alt="Slika recenzije" />
+          </div>
+        </div>
+      </div>`;
+    document.body.appendChild(modal);
+    return modal;
+  };
+
+  document.addEventListener("click", (event) => {
+    const trigger = event.target.closest("[data-ss-image-preview]");
+    if (!trigger) {
+      return;
+    }
+
+    const modal = ensureImagePreviewModal();
+    const image = modal.querySelector("#ssImagePreviewImage");
+    const title = modal.querySelector("#ssImagePreviewTitle");
+    const imageUrl = trigger.getAttribute("data-ss-image-preview") || "";
+    const imageTitle = trigger.getAttribute("data-ss-image-title") || "Slika recenzije";
+
+    image.src = imageUrl;
+    image.alt = imageTitle;
+    title.textContent = imageTitle;
+    bootstrap.Modal.getOrCreateInstance(modal).show();
+  });
+
+  document.querySelectorAll("[data-ss-file-picker]").forEach((input) => {
+    const container = input.closest(".ss-file-picker");
+    const status = container?.querySelector("[data-ss-file-picker-status]");
+    if (!status) {
+      return;
+    }
+
+    input.addEventListener("change", () => {
+      const count = input.files?.length ?? 0;
+      status.textContent = count === 0
+        ? "Nijedna slika nije odabrana."
+        : count === 1
+          ? input.files[0].name
+          : `Odabrano slika: ${count}`;
+    });
+  });
+
+  const paymentMethodInputs = document.querySelectorAll('input[name="NacinPlacanja"]');
+  const cardFields = document.querySelector("[data-payment-card-fields]");
+  const externalFields = document.querySelector("[data-payment-external-fields]");
+  const externalProviderName = document.querySelector("[data-external-provider-name]");
+  const externalAccountName = document.querySelector("[data-external-account-name]");
+  const externalPaymentConfirmed = document.querySelector("[data-external-payment-confirmed]");
+  if (paymentMethodInputs.length > 0 && cardFields && externalFields) {
+    const updatePaymentFields = () => {
+      const selected = document.querySelector('input[name="NacinPlacanja"]:checked');
+      const isCard = selected?.value === "Kartica";
+      cardFields.hidden = !isCard;
+      externalFields.hidden = isCard;
+      cardFields.querySelectorAll("input").forEach((input) => {
+        input.disabled = !isCard;
+      });
+      externalFields.querySelectorAll("input").forEach((input) => {
+        input.disabled = isCard;
+      });
+      if (externalProviderName && !isCard) {
+        externalProviderName.textContent = `${selected?.value ?? "Vanjski"} račun`;
+      }
+      if (externalAccountName) {
+        externalAccountName.required = !isCard;
+      }
+      if (externalPaymentConfirmed) {
+        externalPaymentConfirmed.value = "false";
+      }
+    };
+
+    paymentMethodInputs.forEach((input) => input.addEventListener("change", updatePaymentFields));
+    updatePaymentFields();
+  }
+
+  const cardNumberInput = document.querySelector("[data-card-number]");
+  cardNumberInput?.addEventListener("input", () => {
+    const digits = cardNumberInput.value.replace(/\D/g, "").slice(0, 16);
+    cardNumberInput.value = digits.replace(/(\d{4})(?=\d)/g, "$1 ");
+  });
+
+  const cardExpiryInput = document.querySelector("[data-card-expiry]");
+  cardExpiryInput?.addEventListener("input", () => {
+    const digits = cardExpiryInput.value.replace(/\D/g, "").slice(0, 4);
+    cardExpiryInput.value = digits.length > 2
+      ? `${digits.slice(0, 2)}/${digits.slice(2)}`
+      : digits;
+  });
+
+  const cardCvvInput = document.querySelector("[data-card-cvv]");
+  cardCvvInput?.addEventListener("input", () => {
+    cardCvvInput.value = cardCvvInput.value.replace(/\D/g, "").slice(0, 4);
+  });
+
+  const paymentForm = document.querySelector("[data-payment-form]");
+  const externalPaymentModalElement = document.querySelector("#externalPaymentModal");
+  if (paymentForm && externalPaymentModalElement && externalPaymentConfirmed) {
+    document.body.appendChild(externalPaymentModalElement);
+    const modal = bootstrap.Modal.getOrCreateInstance(externalPaymentModalElement);
+    const modalTitle = externalPaymentModalElement.querySelector("[data-external-modal-title]");
+    const modalMessage = externalPaymentModalElement.querySelector("[data-external-modal-message]");
+    const completeButton = externalPaymentModalElement.querySelector("[data-external-payment-complete]");
+
+    paymentForm.addEventListener("submit", (event) => {
+      const selected = document.querySelector('input[name="NacinPlacanja"]:checked')?.value;
+      if (selected === "Kartica" || externalPaymentConfirmed.value === "true") {
+        return;
+      }
+
+      event.preventDefault();
+      if (!paymentForm.reportValidity()) {
+        return;
+      }
+
+      const providerUrl = selected === "PayPal"
+        ? "https://www.paypal.com/"
+        : "https://www.revolut.com/";
+      const providerLabel = selected === "PayPal" ? "PayPal Pay" : "Revolut Pay";
+      window.open(providerUrl, "_blank", "noopener,noreferrer");
+      modalTitle.textContent = `Otvoren ${providerLabel}`;
+      modalMessage.textContent = `${providerLabel} otvoren je u novoj kartici.`;
+      modal.show();
+    });
+
+    completeButton?.addEventListener("click", () => {
+      externalPaymentConfirmed.value = "true";
+      modal.hide();
+      paymentForm.requestSubmit();
+    });
   }
 
   const escapeHtml = (value) => String(value ?? "")

@@ -6,6 +6,7 @@ using SideSeat.Models;
 using SideSeat.Models.Lab3;
 using SideSeat.Models.ViewModels;
 using SideSeat.Security;
+using SideSeat.Services;
 
 namespace SideSeat.Controllers;
 
@@ -13,18 +14,42 @@ namespace SideSeat.Controllers;
 public class RezervacijaController : Controller
 {
     private readonly SideSeatDbContext _db;
+    private readonly INotificationService _notifications;
 
-    public RezervacijaController(SideSeatDbContext db)
+    public RezervacijaController(SideSeatDbContext db, INotificationService notifications)
     {
         _db = db;
+        _notifications = notifications;
     }
 
-    public IActionResult Index(string? search, DateTime? date, int? pageSize)
+    public IActionResult Index(string? view, string? status, string? search, DateTime? date, int? pageSize)
     {
         var userId = User.GetKorisnikId();
         if (userId is null)
         {
             return Challenge();
+        }
+
+        var isAdmin = User.IsInRole("Admin");
+        var korisnikTip = _db.Korisnici
+            .AsNoTracking()
+            .Where(k => k.Id == userId.Value)
+            .Select(k => (TipKorisnika?)k.Tip)
+            .FirstOrDefault();
+        var canViewRideReservations = isAdmin
+                                      || User.IsInRole("Driver")
+                                      || korisnikTip is TipKorisnika.Vozac or TipKorisnika.VozacIPutnik;
+        var selectedView = NormalizeReservationView(view, isAdmin);
+        var selectedStatus = NormalizeStatusFilter(status);
+
+        if (!isAdmin && selectedView == "all")
+        {
+            return Forbid();
+        }
+
+        if (!canViewRideReservations && selectedView == "my-rides")
+        {
+            return Forbid();
         }
 
         var query = _db.Rezervacije
@@ -36,15 +61,31 @@ public class RezervacijaController : Controller
             .ThenInclude(v => v.OdredisniGrad)
             .Include(r => r.Voznja)
             .ThenInclude(v => v.Vozac)
-            .OrderByDescending(r => r.VrijemeRezervacije)
             .AsQueryable();
 
-        if (!User.IsInRole("Admin"))
+        query = selectedView switch
         {
-            query = query.Where(r => r.PutnikId == userId.Value || r.Voznja.VozacId == userId.Value);
-        }
+            "mine" => query.Where(r => r.PutnikId == userId.Value),
+            "my-rides" => query.Where(r => r.Voznja.VozacId == userId.Value),
+            _ => query
+        };
 
-        var rezervacije = query.ToList();
+        var statusCounts = query
+            .Select(r => r.Status)
+            .ToList();
+
+        query = selectedStatus switch
+        {
+            "pending" => query.Where(r => r.Status == StatusRezervacije.UProcesuPotvrde),
+            "confirmed" => query.Where(r => r.Status == StatusRezervacije.Potvrdena),
+            "rejected" => query.Where(r => r.Status == StatusRezervacije.Odbijena),
+            "completed" => query.Where(r => r.Status == StatusRezervacije.Zavrsena),
+            _ => query
+        };
+
+        var rezervacije = query
+            .OrderByDescending(r => r.VrijemeRezervacije)
+            .ToList();
         if (!string.IsNullOrWhiteSpace(search))
         {
             var normalizedSearch = search.Trim();
@@ -70,7 +111,7 @@ public class RezervacijaController : Controller
         var items = rezervacije.Select(rezervacija =>
         {
             var canRate = rezervacija.Voznja?.Status == StatusVoznje.Zavrsena
-                          && rezervacija.Status != StatusRezervacije.Otkazana
+                          && rezervacija.Status == StatusRezervacije.Zavrsena
                           && (rezervacija.PutnikId == userId.Value || rezervacija.Voznja?.VozacId == userId.Value)
                           && !ratedReservationIds.Contains(rezervacija.Id);
 
@@ -96,8 +137,54 @@ public class RezervacijaController : Controller
             }
         }
 
-        return View(items);
+        var display = GetReservationViewDisplay(selectedView);
+        return View(new RezervacijaListViewModel
+        {
+            Rezervacije = items,
+            SelectedView = selectedView,
+            Title = display.Title,
+            Description = display.Description,
+            EmptyMessage = display.EmptyMessage,
+            IsAdmin = isAdmin,
+            CanViewRideReservations = canViewRideReservations,
+            SelectedStatus = selectedStatus,
+            AllCount = statusCounts.Count,
+            PendingCount = statusCounts.Count(value => value == StatusRezervacije.UProcesuPotvrde),
+            ConfirmedCount = statusCounts.Count(value => value == StatusRezervacije.Potvrdena),
+            RejectedCount = statusCounts.Count(value => value == StatusRezervacije.Odbijena),
+            CompletedCount = statusCounts.Count(value => value == StatusRezervacije.Zavrsena)
+        });
     }
+
+    private static string NormalizeStatusFilter(string? status) =>
+        status?.Trim().ToLowerInvariant() switch
+        {
+            "pending" => "pending",
+            "confirmed" => "confirmed",
+            "rejected" => "rejected",
+            "completed" => "completed",
+            _ => "all"
+        };
+
+    private static string NormalizeReservationView(string? view, bool isAdmin)
+    {
+        var normalized = view?.Trim().ToLowerInvariant();
+        return normalized switch
+        {
+            "all" => "all",
+            "mine" => "mine",
+            "my-rides" => "my-rides",
+            _ => isAdmin ? "all" : "mine"
+        };
+    }
+
+    private static (string Title, string Description, string EmptyMessage) GetReservationViewDisplay(string view) =>
+        view switch
+        {
+            "mine" => ("Moje rezervacije", "Rezervacije koje si napravio kao putnik.", "Nemas vlastitih rezervacija."),
+            "my-rides" => ("Rezervacije mojih voznji", "Rezervacije putnika na voznjama koje vozis.", "Nema rezervacija na tvojim voznjama."),
+            _ => ("Sve rezervacije", "Administratorski pregled svih rezervacija.", "Nema unesenih rezervacija.")
+        };
 
     public IActionResult Details(int id)
     {
@@ -196,27 +283,75 @@ public class RezervacijaController : Controller
             return View(model);
         }
 
+        var cijenaNoveRezervacije = voznja.CijenaPoMjestu * model.BrojMjesta;
+        var korisnik = _db.Korisnici
+            .AsNoTracking()
+            .FirstOrDefault(k => k.Id == userId.Value);
+        if (korisnik is null)
+        {
+            return NotFound();
+        }
+
+        var rezerviranaSredstva = GetCommittedReservationAmount(userId.Value);
+        var potrebanSaldo = rezerviranaSredstva + cijenaNoveRezervacije;
+        if (korisnik.Saldo < potrebanSaldo)
+        {
+            var nedostaje = potrebanSaldo - korisnik.Saldo;
+            TempData["FundsToastMessage"] =
+                $"Za ovu rezervaciju i već zakazane rezervacije nedostaje ti {nedostaje:0.00} EUR.";
+            TempData["FundsToastHref"] = Url.Action(
+                "Uplata",
+                "Korisnik",
+                new
+                {
+                    amount = nedostaje,
+                    returnUrl = Url.Action(nameof(Create), "Rezervacija", new { voznjaId = voznja.Id })
+                });
+
+            ViewBag.Voznja = _db.Voznje
+                .AsNoTracking()
+                .Include(v => v.PolazniGrad)
+                .Include(v => v.OdredisniGrad)
+                .First(v => v.Id == model.VoznjaId);
+            return View(model);
+        }
+
         var rezervacija = new Rezervacija
         {
             VoznjaId = voznja.Id,
             PutnikId = userId.Value,
             BrojMjesta = model.BrojMjesta,
-            CijenaUkupno = voznja.CijenaPoMjestu * model.BrojMjesta,
+            CijenaUkupno = cijenaNoveRezervacije,
             VrijemeRezervacije = DateTime.UtcNow,
-            Status = StatusRezervacije.Aktivna,
+            Status = StatusRezervacije.UProcesuPotvrde,
             Napomena = model.Napomena.Trim()
         };
 
-        voznja.SlobodnaMjesta -= model.BrojMjesta;
         _db.Rezervacije.Add(rezervacija);
+        _db.SaveChanges();
+        _notifications.Add(
+            voznja.VozacId,
+            "Nova rezervacija",
+            $"Nova rezervacija #{rezervacija.Id} čeka tvoju potvrdu.",
+            "Rezervacija",
+            $"/Voznja/Details/{voznja.Id}");
         _db.SaveChanges();
 
         return RedirectToAction("Reservation", "Confirmation", new { id = rezervacija.Id });
     }
 
+    private decimal GetCommittedReservationAmount(int korisnikId) =>
+        _db.Rezervacije
+            .AsNoTracking()
+            .Where(r =>
+                r.PutnikId == korisnikId &&
+                (r.Status == StatusRezervacije.UProcesuPotvrde ||
+                 r.Status == StatusRezervacije.Potvrdena))
+            .Sum(r => (decimal?)r.CijenaUkupno) ?? 0m;
+
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public IActionResult Confirm(int id)
+    public IActionResult Confirm(int id, string? returnUrl)
     {
         var userId = User.GetKorisnikId();
         if (userId is null)
@@ -238,10 +373,69 @@ public class RezervacijaController : Controller
             return Forbid();
         }
 
+        if (rezervacija.Status != StatusRezervacije.UProcesuPotvrde)
+        {
+            TempData["ReservationStatus"] = "Samo rezervacija u procesu potvrde može biti potvrđena.";
+            return RedirectToAction(nameof(Details), new { id });
+        }
+
+        if (rezervacija.Voznja.SlobodnaMjesta < rezervacija.BrojMjesta)
+        {
+            TempData["ReservationStatus"] = "Nema dovoljno slobodnih mjesta za potvrdu rezervacije.";
+            return RedirectToAction(nameof(Details), new { id });
+        }
+
+        rezervacija.Voznja.SlobodnaMjesta -= rezervacija.BrojMjesta;
         rezervacija.Status = StatusRezervacije.Potvrdena;
+        _notifications.Add(
+            rezervacija.PutnikId,
+            "Rezervacija potvrđena",
+            $"Vozač je potvrdio rezervaciju #{rezervacija.Id}.",
+            "Rezervacija",
+            $"/Rezervacija/Details/{rezervacija.Id}");
         _db.SaveChanges();
 
-        return RedirectToAction(nameof(Details), new { id });
+        return RedirectAfterReservationAction(returnUrl, id);
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public IActionResult Reject(int id, string? returnUrl)
+    {
+        var userId = User.GetKorisnikId();
+        if (userId is null)
+        {
+            return Challenge();
+        }
+
+        var rezervacija = _db.Rezervacije
+            .Include(r => r.Voznja)
+            .FirstOrDefault(r => r.Id == id);
+        if (rezervacija is null)
+        {
+            return NotFound();
+        }
+
+        if (!User.IsInRole("Admin") && rezervacija.Voznja.VozacId != userId.Value)
+        {
+            return Forbid();
+        }
+
+        if (rezervacija.Status != StatusRezervacije.UProcesuPotvrde)
+        {
+            TempData["ReservationStatus"] = "Samo rezervacija u procesu potvrde može biti odbijena.";
+            return RedirectToAction(nameof(Details), new { id });
+        }
+
+        rezervacija.Status = StatusRezervacije.Odbijena;
+        _notifications.Add(
+            rezervacija.PutnikId,
+            "Rezervacija odbijena",
+            $"Vozač je odbio rezervaciju #{rezervacija.Id}.",
+            "Rezervacija",
+            $"/Rezervacija/Details/{rezervacija.Id}");
+        _db.SaveChanges();
+        return RedirectAfterReservationAction(returnUrl, id);
     }
 
     [Authorize(Roles = "Admin")]
@@ -249,7 +443,7 @@ public class RezervacijaController : Controller
     {
         return View(new RezervacijaAdminFormViewModel
         {
-            Status = StatusRezervacije.Aktivna,
+            Status = StatusRezervacije.UProcesuPotvrde,
             VrijemeRezervacije = DateTime.UtcNow
         });
     }
@@ -278,7 +472,8 @@ public class RezervacijaController : Controller
             return View(model);
         }
 
-        if (model.BrojMjesta > voznja.SlobodnaMjesta)
+        var reservedSeats = UsesRideCapacity(model.Status) ? model.BrojMjesta : 0;
+        if (reservedSeats > voznja.SlobodnaMjesta)
         {
             ModelState.AddModelError(nameof(model.BrojMjesta), "Nema dovoljno slobodnih mjesta.");
             return View(model);
@@ -295,8 +490,24 @@ public class RezervacijaController : Controller
             Napomena = model.Napomena.Trim()
         };
 
-        voznja.SlobodnaMjesta -= model.BrojMjesta;
+        voznja.SlobodnaMjesta -= reservedSeats;
         _db.Rezervacije.Add(rezervacija);
+        await _db.SaveChangesAsync();
+        _notifications.Add(
+            rezervacija.PutnikId,
+            "Rezervacija kreirana",
+            $"Administrator je kreirao rezervaciju #{rezervacija.Id}.",
+            "Rezervacija",
+            $"/Rezervacija/Details/{rezervacija.Id}");
+        if (rezervacija.Status == StatusRezervacije.UProcesuPotvrde)
+        {
+            _notifications.Add(
+                voznja.VozacId,
+                "Nova rezervacija",
+                $"Rezervacija #{rezervacija.Id} čeka tvoju potvrdu.",
+                "Rezervacija",
+                $"/Voznja/Details/{voznja.Id}");
+        }
         await _db.SaveChangesAsync();
 
         return RedirectToAction(nameof(Details), new { id = rezervacija.Id });
@@ -365,9 +576,13 @@ public class RezervacijaController : Controller
             return View(model);
         }
 
+        var oldStatus = rezervacija.Status;
+        var oldReservedSeats = UsesRideCapacity(rezervacija.Status) ? rezervacija.BrojMjesta : 0;
+        var newReservedSeats = UsesRideCapacity(model.Status) ? model.BrojMjesta : 0;
+
         if (rezervacija.VoznjaId == model.VoznjaId)
         {
-            var delta = model.BrojMjesta - rezervacija.BrojMjesta;
+            var delta = newReservedSeats - oldReservedSeats;
             if (delta > 0 && rezervacija.Voznja.SlobodnaMjesta < delta)
             {
                 ModelState.AddModelError(nameof(model.BrojMjesta), "Nema dovoljno slobodnih mjesta za povecanje.");
@@ -385,14 +600,14 @@ public class RezervacijaController : Controller
                 return View(model);
             }
 
-            if (novaVoznja.SlobodnaMjesta < model.BrojMjesta)
+            if (novaVoznja.SlobodnaMjesta < newReservedSeats)
             {
                 ModelState.AddModelError(nameof(model.BrojMjesta), "Nema dovoljno slobodnih mjesta na novoj voznji.");
                 return View(model);
             }
 
-            rezervacija.Voznja.SlobodnaMjesta += rezervacija.BrojMjesta;
-            novaVoznja.SlobodnaMjesta -= model.BrojMjesta;
+            rezervacija.Voznja.SlobodnaMjesta += oldReservedSeats;
+            novaVoznja.SlobodnaMjesta -= newReservedSeats;
             rezervacija.VoznjaId = model.VoznjaId;
             rezervacija.Voznja = novaVoznja;
         }
@@ -404,6 +619,15 @@ public class RezervacijaController : Controller
         rezervacija.Napomena = model.Napomena.Trim();
         rezervacija.CijenaUkupno = rezervacija.Voznja.CijenaPoMjestu * model.BrojMjesta;
 
+        if (oldStatus != model.Status)
+        {
+            _notifications.Add(
+                rezervacija.PutnikId,
+                "Promjena rezervacije",
+                $"Status rezervacije #{rezervacija.Id} promijenjen je u {model.Status.ToDisplayName()}.",
+                "Rezervacija",
+                $"/Rezervacija/Details/{rezervacija.Id}");
+        }
         await _db.SaveChangesAsync();
         return RedirectToAction(nameof(Details), new { id = rezervacija.Id });
     }
@@ -456,7 +680,15 @@ public class RezervacijaController : Controller
             _db.Placanja.RemoveRange(placanja);
         }
 
-        rezervacija.Voznja.SlobodnaMjesta += rezervacija.BrojMjesta;
+        if (UsesRideCapacity(rezervacija.Status))
+        {
+            rezervacija.Voznja.SlobodnaMjesta += rezervacija.BrojMjesta;
+        }
+        _notifications.Add(
+            rezervacija.PutnikId,
+            "Rezervacija obrisana",
+            $"Rezervacija #{rezervacija.Id} je obrisana.",
+            "Rezervacija");
         _db.Rezervacije.Remove(rezervacija);
         await _db.SaveChangesAsync();
 
@@ -531,5 +763,15 @@ public class RezervacijaController : Controller
             .ToList();
 
         return Json(results);
+    }
+
+    private static bool UsesRideCapacity(StatusRezervacije status) =>
+        status is StatusRezervacije.Potvrdena or StatusRezervacije.Zavrsena;
+
+    private IActionResult RedirectAfterReservationAction(string? returnUrl, int rezervacijaId)
+    {
+        return !string.IsNullOrWhiteSpace(returnUrl) && Url.IsLocalUrl(returnUrl)
+            ? LocalRedirect(returnUrl)
+            : RedirectToAction(nameof(Details), new { id = rezervacijaId });
     }
 }

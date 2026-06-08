@@ -1,0 +1,159 @@
+@model SideSeat.Models.Balance.MockTopUpViewModel
+@{
+    ViewData["Title"] = "Uplata sredstava";
+}
+
+<section class="ss-page">
+    <nav class="ss-breadcrumb" aria-label="Breadcrumb">
+        <a asp-controller="Home" asp-action="Index">Dashboard</a>
+        <span class="ss-breadcrumb-sep">/</span>
+        <a asp-controller="Korisnik" asp-action="Saldo">Saldo</a>
+        <span class="ss-breadcrumb-sep">/</span>
+        <span class="current" aria-current="page">Uplata</span>
+    </nav>
+
+    <div class="ss-page-head">
+        <h1>Uplati sredstva</h1>
+        <p>Mock checkout za testiranje. Kartica, PayPal i Revolut Pay neće biti stvarno terećeni.</p>
+    </div>
+
+    <form asp-action="Uplata" method="post" class="ss-payment-shell" data-payment-form>
+        @Html.AntiForgeryToken()
+        <input type="hidden" asp-for="ReturnUrl" />
+        <input type="hidden" asp-for="ExternalPaymentConfirmed" data-external-payment-confirmed />
+        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+        <div class="ss-detail-card">
+            <h2 class="h5">Iznos i način plaćanja</h2>
+
+            <div class="mb-3">
+                <label asp-for="Iznos" class="form-label"></label>
+                <div class="input-group">
+                    <input asp-for="Iznos" class="form-control" type="number" min="0.01" step="0.01" />
+                    <span class="input-group-text">EUR</span>
+                </div>
+                <span asp-validation-for="Iznos" class="text-danger"></span>
+            </div>
+
+            <div class="ss-payment-methods" role="radiogroup" aria-label="Način plaćanja">
+                @foreach (var method in new[] { "Kartica", "PayPal", "Revolut Pay" })
+                {
+                    <label class="ss-payment-method">
+                        <input asp-for="NacinPlacanja" type="radio" value="@method" />
+                        <span>@method</span>
+                    </label>
+                }
+            </div>
+            <span asp-validation-for="NacinPlacanja" class="text-danger"></span>
+        </div>
+
+        <div class="ss-detail-card" data-payment-card-fields data-has-saved-card="@(!string.IsNullOrWhiteSpace(Model.SavedCardDisplay) ? "true" : "false")">
+            <h2 class="h5">Podaci kartice</h2>
+            @if (!string.IsNullOrWhiteSpace(Model.SavedCardDisplay))
+            {
+                <p class="text-muted">Spremljena mock kartica: <strong>@Model.SavedCardDisplay</strong>. Broj kartice može ostati prazan.</p>
+            }
+            <div class="row g-3">
+                <div class="col-12">
+                    <label asp-for="CardholderName" class="form-label"></label>
+                    <input asp-for="CardholderName" class="form-control" autocomplete="cc-name" />
+                    <span asp-validation-for="CardholderName" class="text-danger"></span>
+                </div>
+                <div class="col-12">
+                    <label asp-for="CardNumber" class="form-label"></label>
+                    <input asp-for="CardNumber" class="form-control" inputmode="numeric" autocomplete="cc-number"
+                           placeholder="4242 4242 4242 4242" maxlength="19" pattern="[0-9]{4} [0-9]{4} [0-9]{4} [0-9]{4}"
+                           data-card-number />
+                    <span asp-validation-for="CardNumber" class="text-danger"></span>
+                </div>
+                <div class="col-md-6">
+                    <label asp-for="CardExpiry" class="form-label"></label>
+                    <input asp-for="CardExpiry" class="form-control" inputmode="numeric" autocomplete="cc-exp"
+                           placeholder="MM/GG" maxlength="5" pattern="[0-9]{2}/[0-9]{2}" data-card-expiry />
+                    <span asp-validation-for="CardExpiry" class="text-danger"></span>
+                </div>
+                <div class="col-md-6">
+                    <label asp-for="CardCvv" class="form-label"></label>
+                    <input asp-for="CardCvv" class="form-control" inputmode="numeric" autocomplete="cc-csc"
+                           placeholder="123" minlength="3" maxlength="4" pattern="[0-9]{3,4}" data-card-cvv />
+                    <span asp-validation-for="CardCvv" class="text-danger"></span>
+                </div>
+            </div>
+            <div class="form-check mt-3">
+                <input asp-for="SaveCard" class="form-check-input" />
+                <label asp-for="SaveCard" class="form-check-label"></label>
+            </div>
+            <small class="ss-datetime-help d-block mt-2">Mock opcija: puni broj kartice i CVV ne spremaju se u bazu.</small>
+        </div>
+
+        <div class="ss-detail-card" data-payment-external-fields hidden>
+            <h2 class="h5"><span data-external-provider-name>Vanjski račun</span></h2>
+            <label asp-for="ExternalAccountName" class="form-label"></label>
+            <input asp-for="ExternalAccountName" class="form-control" autocomplete="name" data-external-account-name />
+            <span asp-validation-for="ExternalAccountName" class="text-danger"></span>
+            <span asp-validation-for="ExternalPaymentConfirmed" class="text-danger d-block"></span>
+        </div>
+
+        <div class="ss-detail-card">
+            <h2 class="h5">Adresa plaćanja</h2>
+            <div class="row g-3">
+                <div class="col-md-8">
+                    <label asp-for="BillingStreet" class="form-label"></label>
+                    <input asp-for="BillingStreet" class="form-control" autocomplete="billing address-line1" />
+                    <span asp-validation-for="BillingStreet" class="text-danger"></span>
+                </div>
+                <div class="col-md-4">
+                    <label asp-for="BillingHouseNumber" class="form-label"></label>
+                    <input asp-for="BillingHouseNumber" class="form-control" autocomplete="billing address-line2" />
+                    <span asp-validation-for="BillingHouseNumber" class="text-danger"></span>
+                </div>
+                <div class="col-md-5">
+                    <label asp-for="BillingPostalCode" class="form-label"></label>
+                    <input asp-for="BillingPostalCode" class="form-control" inputmode="numeric" autocomplete="billing postal-code" />
+                    <span asp-validation-for="BillingPostalCode" class="text-danger"></span>
+                </div>
+                <div class="col-md-7">
+                    <label asp-for="BillingCountry" class="form-label"></label>
+                    <input asp-for="BillingCountry" class="form-control" autocomplete="billing country-name" />
+                    <span asp-validation-for="BillingCountry" class="text-danger"></span>
+                </div>
+            </div>
+            <div class="form-check mt-3">
+                <input asp-for="SaveBillingAddress" class="form-check-input" />
+                <label asp-for="SaveBillingAddress" class="form-check-label"></label>
+            </div>
+        </div>
+
+        <div class="ss-detail-card ss-payment-summary">
+            <strong>Mock naplata</strong>
+            <span>Sredstva će se dodati samo na SideSeat saldo. Vanjski račun neće biti terećen.</span>
+            <div class="ss-actions">
+                <button type="submit" class="ss-btn">Potvrdi mock uplatu</button>
+                <a class="ss-btn ss-btn-secondary" asp-action="Saldo">Odustani</a>
+            </div>
+        </div>
+    </form>
+</section>
+
+<div class="modal fade" id="externalPaymentModal" tabindex="-1" aria-labelledby="externalPaymentModalTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content ss-payment-provider-modal">
+            <div class="modal-header">
+                <h2 class="modal-title h5" id="externalPaymentModalTitle" data-external-modal-title>Otvoren vanjski servis</h2>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Zatvori"></button>
+            </div>
+            <div class="modal-body">
+                <p data-external-modal-message>Servis je otvoren u novoj kartici.</p>
+                <p class="mb-0">Kada završiš mock transakciju, potvrdi nastavak ili je otkaži.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="ss-btn ss-btn-secondary" data-bs-dismiss="modal">Otkaži</button>
+                <button type="button" class="ss-btn" data-external-payment-complete>Transakcija je gotova</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

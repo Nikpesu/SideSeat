@@ -1,0 +1,29 @@
+@model SideSeat.Models.Rides.VoznjaListViewModel
+
+<nav class="ss-ride-selector" aria-label="Vrsta pregleda voznji">
+    @if (Model.IsAdmin)
+    {
+        <a class="ss-ride-selector-link @(Model.SelectedView == "all" ? "is-active" : string.Empty)"
+           asp-controller="Voznja" asp-action="Index" asp-route-view="all" asp-route-status="@Model.SelectedStatus">Sve voznje</a>
+    }
+    <a class="ss-ride-selector-link @(Model.SelectedView == "available" ? "is-active" : string.Empty)"
+       asp-controller="Voznja" asp-action="Index" asp-route-view="available" asp-route-status="@Model.SelectedStatus">Dostupne vožnje</a>
+    @if (Model.CanViewDriving)
+    {
+        <a class="ss-ride-selector-link @(Model.SelectedView == "driving" ? "is-active" : string.Empty)"
+           asp-controller="Voznja" asp-action="Index" asp-route-view="driving" asp-route-status="@Model.SelectedStatus">Moje vožnje</a>
+    }
+    <a class="ss-ride-selector-link @(Model.SelectedView == "ridden" ? "is-active" : string.Empty)"
+       asp-controller="Voznja" asp-action="Index" asp-route-view="ridden" asp-route-status="@Model.SelectedStatus">Moja voženja</a>
+</nav>
+
+<nav class="ss-ride-selector" aria-label="Status voznji">
+    <a class="ss-ride-selector-link @(Model.SelectedStatus == "all" ? "is-active" : string.Empty)"
+       asp-controller="Voznja" asp-action="Index" asp-route-view="@Model.SelectedView" asp-route-status="all">Sve <span class="ss-selector-count">@Model.AllCount</span></a>
+    <a class="ss-ride-selector-link @(Model.SelectedStatus == "planned" ? "is-active" : string.Empty)"
+       asp-controller="Voznja" asp-action="Index" asp-route-view="@Model.SelectedView" asp-route-status="planned">Planirane <span class="ss-selector-count">@Model.PlannedCount</span></a>
+    <a class="ss-ride-selector-link @(Model.SelectedStatus == "completed" ? "is-active" : string.Empty)"
+       asp-controller="Voznja" asp-action="Index" asp-route-view="@Model.SelectedView" asp-route-status="completed">Završene <span class="ss-selector-count">@Model.CompletedCount</span></a>
+    <a class="ss-ride-selector-link @(Model.SelectedStatus == "cancelled" ? "is-active" : string.Empty)"
+       asp-controller="Voznja" asp-action="Index" asp-route-view="@Model.SelectedView" asp-route-status="cancelled">Otkazane <span class="ss-selector-count">@Model.CancelledCount</span></a>
+</nav>

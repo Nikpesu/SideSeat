@@ -14,6 +14,7 @@ public class SaldoTransakcija
 
     public decimal Iznos { get; set; }
     public string Tip { get; set; } = string.Empty; // uplata | isplata
+    public string Komentar { get; set; } = string.Empty;
     public decimal SaldoPrije { get; set; }
     public decimal SaldoPoslije { get; set; }
     public DateTime Vrijeme { get; set; }

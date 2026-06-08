@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using SideSeat.Data;
 using SideSeat.Models;
 using SideSeat.Models.Api;
+using SideSeat.Security;
 
 namespace SideSeat.Controllers.Api;
 
@@ -37,6 +38,17 @@ public class KorisniciApiController : ControllerBase
     [Authorize]
     public async Task<ActionResult<KorisnikDto>> Get(int id)
     {
+        var userId = User.GetKorisnikId();
+        if (userId is null)
+        {
+            return Challenge();
+        }
+
+        if (!User.IsInRole("Admin") && userId.Value != id)
+        {
+            return Forbid();
+        }
+
         var korisnik = await _db.Korisnici.AsNoTracking().FirstOrDefaultAsync(k => k.Id == id);
         return korisnik is null ? NotFound() : Ok(korisnik.ToDto());
     }

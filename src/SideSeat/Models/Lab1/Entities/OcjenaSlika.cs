@@ -3,14 +3,14 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace SideSeat.Models;
 
-public class VoznjaAttachment
+public class OcjenaSlika
 {
     [Key]
     public int Id { get; set; }
 
-    [ForeignKey(nameof(Voznja))]
-    public int VoznjaId { get; set; }
-    public virtual Voznja Voznja { get; set; } = null!;
+    [ForeignKey(nameof(OcjenaVoznje))]
+    public int OcjenaVoznjeId { get; set; }
+    public virtual OcjenaVoznje OcjenaVoznje { get; set; } = null!;
 
     [Required]
     [StringLength(260)]

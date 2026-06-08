@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using SideSeat.Data;
 using SideSeat.Models;
 using SideSeat.Models.Api;
+using SideSeat.Services;
 
 namespace SideSeat.Controllers.Api;
 
@@ -13,10 +14,12 @@ namespace SideSeat.Controllers.Api;
 public class PlacanjaApiController : ControllerBase
 {
     private readonly SideSeatDbContext _db;
+    private readonly INotificationService _notifications;
 
-    public PlacanjaApiController(SideSeatDbContext db)
+    public PlacanjaApiController(SideSeatDbContext db, INotificationService notifications)
     {
         _db = db;
+        _notifications = notifications;
     }
 
     [HttpGet]
@@ -43,7 +46,8 @@ public class PlacanjaApiController : ControllerBase
     [HttpPost]
     public async Task<ActionResult<PlacanjeDto>> Post(PlacanjeRequest request)
     {
-        if (!await _db.Rezervacije.AnyAsync(r => r.Id == request.RezervacijaId))
+        var rezervacija = await _db.Rezervacije.FirstOrDefaultAsync(r => r.Id == request.RezervacijaId);
+        if (rezervacija is null)
         {
             return BadRequest(new { message = "Rezervacija ne postoji." });
         }
@@ -51,6 +55,12 @@ public class PlacanjaApiController : ControllerBase
         var placanje = new Placanje();
         Apply(request, placanje);
         _db.Placanja.Add(placanje);
+        _notifications.Add(
+            rezervacija.PutnikId,
+            request.Uspjesno ? "Plaćanje evidentirano" : "Plaćanje nije uspjelo",
+            $"Plaćanje za rezervaciju #{rezervacija.Id}: {request.Iznos:0.00} EUR.",
+            "Naplata",
+            $"/Rezervacija/Details/{rezervacija.Id}");
         await _db.SaveChangesAsync();
         return CreatedAtAction(nameof(Get), new { id = placanje.Id }, placanje.ToDto());
     }

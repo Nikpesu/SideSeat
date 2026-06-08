@@ -24,20 +24,16 @@
     <div class="ss-detail-card mb-4">
         <h2 class="h5">Trenutno stanje</h2>
         <p class="mb-0"><strong>@Model.TrenutniSaldo.ToString("0.00") EUR</strong></p>
+        <div class="ss-actions mt-3">
+            <a class="ss-btn" asp-action="Uplata">Uplati sredstva</a>
+        </div>
     </div>
 
     <form asp-action="Saldo" method="post" class="ss-detail-card">
         @Html.AntiForgeryToken()
         <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-
-        <div class="mb-3">
-            <label asp-for="Akcija" class="form-label"></label>
-            <select asp-for="Akcija" class="form-select">
-                <option value="uplata">Uplata</option>
-                <option value="isplata">Isplata</option>
-            </select>
-            <span asp-validation-for="Akcija" class="text-danger"></span>
-        </div>
+        <input asp-for="Akcija" type="hidden" value="isplata" />
+        <h2 class="h5">Isplata sa salda</h2>
 
         <div class="mb-3">
             <label asp-for="Iznos" class="form-label"></label>
@@ -74,7 +70,7 @@
                     <tbody>
                     @foreach (var tx in Model.Transakcije)
                     {
-                        var isUplata = tx.Tip.Equals("uplata", StringComparison.OrdinalIgnoreCase);
+                        var isUplata = tx.Tip.StartsWith("uplata", StringComparison.OrdinalIgnoreCase);
                         var isIsplata = tx.Tip.Equals("isplata", StringComparison.OrdinalIgnoreCase);
                         var isRideOut = tx.Tip.StartsWith("naplata-rezervacije", StringComparison.OrdinalIgnoreCase);
                         var isRideIn = tx.Tip.StartsWith("priljev-voznja", StringComparison.OrdinalIgnoreCase);
@@ -84,7 +80,13 @@
                         var canOpenRide = isRideIn && tx.VoznjaId.HasValue;
                         <tr>
                             <td>@tx.Vrijeme.ToLocalTime().ToString("dd.MM.yyyy HH:mm")</td>
-                            <td>@tipLabel</td>
+                            <td>
+                                <span>@tipLabel</span>
+                                @if (!string.IsNullOrWhiteSpace(tx.ServisPlacanja))
+                                {
+                                    <small class="d-block text-muted">@tx.ServisPlacanja</small>
+                                }
+                            </td>
                             <td>
                                 @if (canOpenRide)
                                 {

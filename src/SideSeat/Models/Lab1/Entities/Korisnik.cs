@@ -22,6 +22,11 @@ public class Korisnik
     public string? KycBrojOsobne { get; set; }
     public string? KycBrojVozacke { get; set; }
     public DateTime? KycDatumRodenja { get; set; }
+    public string? ProfilnaSlikaPath { get; set; }
+    public string? SpremljenaKarticaIme { get; set; }
+    public string? SpremljenaKarticaZadnjeCetiri { get; set; }
+    public string? SpremljenaKarticaVrijediDo { get; set; }
+    public string? SpremljenaAdresaPlacanja { get; set; }
 
     [ForeignKey(nameof(Vozilo))]
     public int? VoziloId { get; set; }
@@ -29,4 +34,5 @@ public class Korisnik
     public virtual ICollection<Voznja> KreiraneVoznje { get; set; } = new List<Voznja>();
     public virtual ICollection<Rezervacija> Rezervacije { get; set; } = new List<Rezervacija>();
     public virtual ICollection<SaldoTransakcija> SaldoTransakcije { get; set; } = new List<SaldoTransakcija>();
+    public virtual ICollection<Obavijest> Obavijesti { get; set; } = new List<Obavijest>();
 }

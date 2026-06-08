@@ -1,0 +1,4 @@
+interface:
+  display_name: "Version Control + Docker Hub"
+  short_description: "Versionira i objavljuje Docker image tagove"
+  default_prompt: "Use $version-control-dockerhub to choose the next version and publish the Docker image as that version and latest."

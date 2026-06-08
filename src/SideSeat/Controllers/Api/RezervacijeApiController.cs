@@ -51,8 +51,15 @@ public class RezervacijeApiController : ControllerBase
             return BadRequest(new { message = "Voznja ili putnik ne postoji." });
         }
 
+        var reservedSeats = UsesRideCapacity(request.Status) ? request.BrojMjesta : 0;
+        if (reservedSeats > voznja.SlobodnaMjesta)
+        {
+            return BadRequest(new { message = "Nema dovoljno slobodnih mjesta." });
+        }
+
         var rezervacija = new Rezervacija();
         Apply(request, rezervacija, voznja.CijenaPoMjestu * request.BrojMjesta);
+        voznja.SlobodnaMjesta -= reservedSeats;
         _db.Rezervacije.Add(rezervacija);
         await _db.SaveChangesAsync();
         await _db.Entry(rezervacija).Reference(r => r.Putnik).LoadAsync();
@@ -63,7 +70,10 @@ public class RezervacijeApiController : ControllerBase
     [Authorize(Roles = "Admin")]
     public async Task<ActionResult<RezervacijaDto>> Put(int id, RezervacijaRequest request)
     {
-        var rezervacija = await _db.Rezervacije.Include(r => r.Putnik).FirstOrDefaultAsync(r => r.Id == id);
+        var rezervacija = await _db.Rezervacije
+            .Include(r => r.Putnik)
+            .Include(r => r.Voznja)
+            .FirstOrDefaultAsync(r => r.Id == id);
         var voznja = await _db.Voznje.FirstOrDefaultAsync(v => v.Id == request.VoznjaId);
         if (rezervacija is null)
         {
@@ -73,6 +83,29 @@ public class RezervacijeApiController : ControllerBase
         if (voznja is null || !await _db.Korisnici.AnyAsync(k => k.Id == request.PutnikId))
         {
             return BadRequest(new { message = "Voznja ili putnik ne postoji." });
+        }
+
+        var oldReservedSeats = UsesRideCapacity(rezervacija.Status) ? rezervacija.BrojMjesta : 0;
+        var newReservedSeats = UsesRideCapacity(request.Status) ? request.BrojMjesta : 0;
+        if (rezervacija.VoznjaId == request.VoznjaId)
+        {
+            var delta = newReservedSeats - oldReservedSeats;
+            if (delta > rezervacija.Voznja.SlobodnaMjesta)
+            {
+                return BadRequest(new { message = "Nema dovoljno slobodnih mjesta." });
+            }
+
+            rezervacija.Voznja.SlobodnaMjesta -= delta;
+        }
+        else
+        {
+            if (newReservedSeats > voznja.SlobodnaMjesta)
+            {
+                return BadRequest(new { message = "Nema dovoljno slobodnih mjesta." });
+            }
+
+            rezervacija.Voznja.SlobodnaMjesta += oldReservedSeats;
+            voznja.SlobodnaMjesta -= newReservedSeats;
         }
 
         Apply(request, rezervacija, voznja.CijenaPoMjestu * request.BrojMjesta);
@@ -85,7 +118,9 @@ public class RezervacijeApiController : ControllerBase
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Delete(int id)
     {
-        var rezervacija = await _db.Rezervacije.FirstOrDefaultAsync(r => r.Id == id);
+        var rezervacija = await _db.Rezervacije
+            .Include(r => r.Voznja)
+            .FirstOrDefaultAsync(r => r.Id == id);
         if (rezervacija is null)
         {
             return NotFound();
@@ -95,6 +130,11 @@ public class RezervacijeApiController : ControllerBase
         if (inUse)
         {
             return UnprocessableEntity(new { message = "Rezervacija ima placanja ili ocjene." });
+        }
+
+        if (UsesRideCapacity(rezervacija.Status))
+        {
+            rezervacija.Voznja.SlobodnaMjesta += rezervacija.BrojMjesta;
         }
 
         _db.Rezervacije.Remove(rezervacija);
@@ -112,4 +152,7 @@ public class RezervacijeApiController : ControllerBase
         rezervacija.Status = request.Status;
         rezervacija.Napomena = request.Napomena.Trim();
     }
+
+    private static bool UsesRideCapacity(StatusRezervacije status) =>
+        status is StatusRezervacije.Potvrdena or StatusRezervacije.Zavrsena;
 }

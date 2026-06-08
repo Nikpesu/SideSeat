@@ -56,6 +56,20 @@ public class SideSeatTestFactory : WebApplicationFactory<Program>, IDisposable
         return client;
     }
 
+    public HttpClient CreatePassengerClient()
+    {
+        var client = CreateClient();
+        client.DefaultRequestHeaders.Add("X-Test-Auth", "passenger");
+        return client;
+    }
+
+    public HttpClient CreateDriverClient()
+    {
+        var client = CreateClient();
+        client.DefaultRequestHeaders.Add("X-Test-Auth", "driver");
+        return client;
+    }
+
     public async Task SeedAsync()
     {
         using var scope = Services.CreateScope();
@@ -98,7 +112,7 @@ public class SideSeatTestFactory : WebApplicationFactory<Program>, IDisposable
         db.Rezervacije.Add(new Rezervacija
         {
             Id = 1, VoznjaId = 1, PutnikId = 2, BrojMjesta = 1, CijenaUkupno = 20,
-            VrijemeRezervacije = DateTime.UtcNow, Status = StatusRezervacije.Aktivna, Napomena = "Seed rezervacija"
+            VrijemeRezervacije = DateTime.UtcNow, Status = StatusRezervacije.UProcesuPotvrde, Napomena = "Seed rezervacija"
         });
 
         db.Placanja.Add(new Placanje

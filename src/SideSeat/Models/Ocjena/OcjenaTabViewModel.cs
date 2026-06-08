@@ -27,4 +27,5 @@ public class OcjenaHistoryItemViewModel
     public string Komentar { get; set; } = string.Empty;
     public DateTime Kreirano { get; set; }
     public string RouteLabel { get; set; } = string.Empty;
+    public List<OcjenaSlikaViewModel> Slike { get; set; } = new();
 }

@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Text.RegularExpressions;
 using SideSeat.Data;
 using SideSeat.Models;
 using SideSeat.Models.Auth;
@@ -18,15 +19,31 @@ namespace SideSeat.Controllers;
 [Authorize]
 public class KorisnikController : Controller
 {
+    private const long MaxProfileImageBytes = 5 * 1024 * 1024;
+    private static readonly HashSet<string> AllowedProfileImageExtensions =
+        new(StringComparer.OrdinalIgnoreCase) { ".jpg", ".jpeg", ".png", ".gif", ".webp" };
+    private static readonly Regex CardNumberPattern = new(@"^\d{4} \d{4} \d{4} \d{4}$", RegexOptions.Compiled);
+    private static readonly Regex CardExpiryPattern = new(@"^\d{2}/\d{2}$", RegexOptions.Compiled);
+    private static readonly Regex CardCvvPattern = new(@"^\d{3,4}$", RegexOptions.Compiled);
+
     private readonly SideSeatEfRepository _repository;
     private readonly SideSeatDbContext _db;
     private readonly IPasswordHashingService _passwordHashingService;
+    private readonly IWebHostEnvironment _webHostEnvironment;
+    private readonly INotificationService _notifications;
 
-    public KorisnikController(SideSeatEfRepository repository, SideSeatDbContext db, IPasswordHashingService passwordHashingService)
+    public KorisnikController(
+        SideSeatEfRepository repository,
+        SideSeatDbContext db,
+        IPasswordHashingService passwordHashingService,
+        IWebHostEnvironment webHostEnvironment,
+        INotificationService notifications)
     {
         _repository = repository;
         _db = db;
         _passwordHashingService = passwordHashingService;
+        _webHostEnvironment = webHostEnvironment;
+        _notifications = notifications;
     }
 
     public IActionResult Index(string? search, int? pageSize)
@@ -78,20 +95,36 @@ public class KorisnikController : Controller
             return Challenge();
         }
 
-        var korisnik = _db.Korisnici
-            .AsNoTracking()
-            .Include(k => k.Vozilo)
-            .Include(k => k.KreiraneVoznje)
-            .Include(k => k.Rezervacije)
-            .FirstOrDefault(k => k.Id == id);
+        var canViewFullDetails = User.IsInRole("Admin") || userId.Value == id;
+
+        var korisnikQuery = _db.Korisnici.AsNoTracking().AsQueryable();
+        if (canViewFullDetails)
+        {
+            korisnikQuery = korisnikQuery
+                .Include(k => k.Vozilo)
+                .Include(k => k.KreiraneVoznje)
+                .Include(k => k.Rezervacije);
+        }
+
+        var korisnik = korisnikQuery.FirstOrDefault(k => k.Id == id);
         if (korisnik is null)
         {
             return NotFound();
         }
 
+        if (!canViewFullDetails)
+        {
+            return View(new KorisnikProfileViewModel
+            {
+                User = korisnik,
+                CanViewFullDetails = false
+            });
+        }
+
         var ocjene = _db.Ocjene
             .AsNoTracking()
             .Include(o => o.Autor)
+            .Include(o => o.Slike)
             .Include(o => o.Rezervacija)
             .ThenInclude(r => r.Putnik)
             .Include(o => o.Rezervacija)
@@ -110,7 +143,15 @@ public class KorisnikController : Controller
                     : $"{o.Rezervacija.Voznja.Vozac.Ime} {o.Rezervacija.Voznja.Vozac.Prezime}",
                 BrojZvjezdica = o.BrojZvjezdica,
                 Komentar = o.Komentar,
-                Kreirano = o.Kreirano
+                Kreirano = o.Kreirano,
+                Slike = o.Slike
+                    .OrderBy(s => s.CreatedAt)
+                    .Select(s => new SideSeat.Models.Ocjena.OcjenaSlikaViewModel
+                    {
+                        FileName = s.FileName,
+                        FilePath = s.FilePath
+                    })
+                    .ToList()
             })
             .ToList();
 
@@ -131,7 +172,15 @@ public class KorisnikController : Controller
                     : $"{o.Rezervacija.Voznja.Vozac.Ime} {o.Rezervacija.Voznja.Vozac.Prezime}",
                 BrojZvjezdica = o.BrojZvjezdica,
                 Komentar = o.Komentar,
-                Kreirano = o.Kreirano
+                Kreirano = o.Kreirano,
+                Slike = o.Slike
+                    .OrderBy(s => s.CreatedAt)
+                    .Select(s => new SideSeat.Models.Ocjena.OcjenaSlikaViewModel
+                    {
+                        FileName = s.FileName,
+                        FilePath = s.FilePath
+                    })
+                    .ToList()
             })
             .ToList();
 
@@ -140,6 +189,7 @@ public class KorisnikController : Controller
         return View(new KorisnikProfileViewModel
         {
             User = korisnik,
+            CanViewFullDetails = true,
             ProsjecnaOcjena = prosjek,
             BrojPrimljenihOcjena = primljene.Count,
             PrimljeneOcjene = primljene,
@@ -355,7 +405,8 @@ public class KorisnikController : Controller
             IsRider = korisnik.Tip is TipKorisnika.Putnik or TipKorisnika.VozacIPutnik,
             KycPodnesen = korisnik.KycPodnesen,
             CanDisableDriver = korisnik.Tip is not (TipKorisnika.Vozac or TipKorisnika.VozacIPutnik),
-            CanDisableRider = korisnik.Tip is not (TipKorisnika.Putnik or TipKorisnika.VozacIPutnik)
+            CanDisableRider = korisnik.Tip is not (TipKorisnika.Putnik or TipKorisnika.VozacIPutnik),
+            CurrentProfileImagePath = korisnik.ProfilnaSlikaPath
         };
 
         return View(model);
@@ -377,6 +428,8 @@ public class KorisnikController : Controller
             return NotFound();
         }
         ApplySettingsRoleLocks(model, korisnik);
+        model.CurrentProfileImagePath = korisnik.ProfilnaSlikaPath;
+        ValidateProfileImage(model.ProfileImage);
 
         if (!ModelState.IsValid)
         {
@@ -440,6 +493,13 @@ public class KorisnikController : Controller
         }
 
         korisnik.Tip = ResolveTip(korisnik.Tip, model.IsDriver, model.IsRider);
+        if (model.ProfileImage is { Length: > 0 })
+        {
+            korisnik.ProfilnaSlikaPath = await SaveProfileImageAsync(
+                korisnik.Id,
+                model.ProfileImage,
+                korisnik.ProfilnaSlikaPath);
+        }
         await _db.SaveChangesAsync();
 
         TempData["SettingsSaved"] = wantsPasswordChange
@@ -513,29 +573,25 @@ public class KorisnikController : Controller
         }
 
         var akcija = (model.Akcija ?? string.Empty).Trim().ToLowerInvariant();
-        if (akcija is not ("uplata" or "isplata"))
+        if (akcija != "isplata")
         {
-            ModelState.AddModelError(nameof(model.Akcija), "Neispravna akcija.");
+            ModelState.AddModelError(nameof(model.Akcija), "Uplata se izvršava kroz mock checkout stranicu.");
             return View(BuildSaldoModel(korisnik.Id, korisnik.Saldo, model));
         }
 
         var saldoPrije = korisnik.Saldo;
-        if (akcija == "uplata")
+        var rezerviranaSredstva = GetCommittedReservationAmount(korisnik.Id);
+        var raspolozivoZaIsplatu = korisnik.Saldo - rezerviranaSredstva;
+        if (raspolozivoZaIsplatu < model.Iznos)
         {
-            korisnik.Saldo += model.Iznos;
-            TempData["SaldoSaved"] = $"Uplata uspjesna: +{model.Iznos:0.00} EUR.";
+            ModelState.AddModelError(
+                nameof(model.Iznos),
+                $"Za zakazane rezervacije rezervirano je {rezerviranaSredstva:0.00} EUR. Raspoloživo za isplatu: {Math.Max(0, raspolozivoZaIsplatu):0.00} EUR.");
+            return View(BuildSaldoModel(korisnik.Id, korisnik.Saldo, model));
         }
-        else
-        {
-            if (korisnik.Saldo < model.Iznos)
-            {
-                ModelState.AddModelError(nameof(model.Iznos), "Nedovoljan saldo za isplatu.");
-                return View(BuildSaldoModel(korisnik.Id, korisnik.Saldo, model));
-            }
 
-            korisnik.Saldo -= model.Iznos;
-            TempData["SaldoSaved"] = $"Isplata uspjesna: -{model.Iznos:0.00} EUR.";
-        }
+        korisnik.Saldo -= model.Iznos;
+        TempData["SaldoSaved"] = $"Isplata uspješna: -{model.Iznos:0.00} EUR.";
 
         _db.SaldoTransakcije.Add(new SaldoTransakcija
         {
@@ -546,10 +602,231 @@ public class KorisnikController : Controller
             SaldoPoslije = korisnik.Saldo,
             Vrijeme = DateTime.UtcNow
         });
+        _notifications.Add(
+            korisnik.Id,
+            "Isplata sa salda",
+            $"Isplaćeno je {model.Iznos:0.00} EUR. Novi saldo: {korisnik.Saldo:0.00} EUR.",
+            "Saldo",
+            "/Korisnik/Saldo");
 
         await _db.SaveChangesAsync();
         return RedirectToAction(nameof(Saldo));
     }
+
+    [HttpGet]
+    public IActionResult Uplata(decimal? amount, string? returnUrl)
+    {
+        var userId = User.GetKorisnikId();
+        if (userId is null)
+        {
+            return Challenge();
+        }
+
+        var korisnik = _db.Korisnici.AsNoTracking().FirstOrDefault(k => k.Id == userId.Value);
+        if (korisnik is null)
+        {
+            return NotFound();
+        }
+
+        var billingAddress = ParseBillingAddress(korisnik.SpremljenaAdresaPlacanja ?? korisnik.Adresa);
+        return View(new MockTopUpViewModel
+        {
+            Iznos = amount.GetValueOrDefault() > 0 ? amount.GetValueOrDefault() : 20m,
+            CardholderName = korisnik.SpremljenaKarticaIme,
+            CardExpiry = korisnik.SpremljenaKarticaVrijediDo,
+            BillingStreet = billingAddress.Street,
+            BillingHouseNumber = billingAddress.HouseNumber,
+            BillingPostalCode = billingAddress.PostalCode,
+            BillingCountry = billingAddress.Country,
+            SavedCardDisplay = string.IsNullOrWhiteSpace(korisnik.SpremljenaKarticaZadnjeCetiri)
+                ? null
+                : $"•••• {korisnik.SpremljenaKarticaZadnjeCetiri}",
+            ReturnUrl = Url.IsLocalUrl(returnUrl) ? returnUrl : Url.Action(nameof(Saldo))
+        });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Uplata(MockTopUpViewModel model)
+    {
+        var userId = User.GetKorisnikId();
+        if (userId is null)
+        {
+            return Challenge();
+        }
+
+        var korisnik = await _db.Korisnici.FirstOrDefaultAsync(k => k.Id == userId.Value);
+        if (korisnik is null)
+        {
+            return NotFound();
+        }
+
+        var nacinPlacanja = model.NacinPlacanja.Trim();
+        var supportedMethods = new[] { "Kartica", "PayPal", "Revolut Pay" };
+        if (!supportedMethods.Contains(nacinPlacanja, StringComparer.Ordinal))
+        {
+            ModelState.AddModelError(nameof(model.NacinPlacanja), "Odaberi podržani način plaćanja.");
+        }
+
+        if (nacinPlacanja == "Kartica")
+        {
+            if (string.IsNullOrWhiteSpace(model.CardholderName))
+            {
+                ModelState.AddModelError(nameof(model.CardholderName), "Unesi ime na kartici.");
+            }
+
+            var hasSavedCard = !string.IsNullOrWhiteSpace(korisnik.SpremljenaKarticaZadnjeCetiri);
+            var enteredNewCard = !string.IsNullOrWhiteSpace(model.CardNumber);
+            if ((!hasSavedCard || enteredNewCard) && !CardNumberPattern.IsMatch(model.CardNumber?.Trim() ?? string.Empty))
+            {
+                ModelState.AddModelError(nameof(model.CardNumber), "Broj kartice mora biti u formatu 4444 4444 4444 4444.");
+            }
+
+            if (!CardExpiryPattern.IsMatch(model.CardExpiry?.Trim() ?? string.Empty))
+            {
+                ModelState.AddModelError(nameof(model.CardExpiry), "Datum isteka mora biti u formatu MM/GG.");
+            }
+
+            if (!CardCvvPattern.IsMatch(model.CardCvv?.Trim() ?? string.Empty))
+            {
+                ModelState.AddModelError(nameof(model.CardCvv), "CVV mora imati 3 ili 4 znamenke.");
+            }
+        }
+        else if (nacinPlacanja is "PayPal" or "Revolut Pay")
+        {
+            if (string.IsNullOrWhiteSpace(model.ExternalAccountName))
+            {
+                ModelState.AddModelError(nameof(model.ExternalAccountName), "Unesi ime računa.");
+            }
+
+            if (!model.ExternalPaymentConfirmed)
+            {
+                ModelState.AddModelError(nameof(model.ExternalPaymentConfirmed), "Potvrdi da je mock transakcija završena.");
+            }
+        }
+
+        if (string.IsNullOrWhiteSpace(model.BillingStreet))
+        {
+            ModelState.AddModelError(nameof(model.BillingStreet), "Unesi ulicu.");
+        }
+
+        if (string.IsNullOrWhiteSpace(model.BillingHouseNumber))
+        {
+            ModelState.AddModelError(nameof(model.BillingHouseNumber), "Unesi kućni broj.");
+        }
+
+        if (string.IsNullOrWhiteSpace(model.BillingPostalCode))
+        {
+            ModelState.AddModelError(nameof(model.BillingPostalCode), "Unesi poštanski broj.");
+        }
+
+        if (string.IsNullOrWhiteSpace(model.BillingCountry))
+        {
+            ModelState.AddModelError(nameof(model.BillingCountry), "Unesi državu.");
+        }
+
+        if (!ModelState.IsValid)
+        {
+            model.SavedCardDisplay = string.IsNullOrWhiteSpace(korisnik.SpremljenaKarticaZadnjeCetiri)
+                ? null
+                : $"•••• {korisnik.SpremljenaKarticaZadnjeCetiri}";
+            return View(model);
+        }
+
+        if (nacinPlacanja == "Kartica" && model.SaveCard)
+        {
+            var cardDigits = new string((model.CardNumber ?? string.Empty).Where(char.IsDigit).ToArray());
+            if (cardDigits.Length >= 4)
+            {
+                korisnik.SpremljenaKarticaZadnjeCetiri = cardDigits[^4..];
+            }
+
+            korisnik.SpremljenaKarticaIme = model.CardholderName?.Trim();
+            korisnik.SpremljenaKarticaVrijediDo = model.CardExpiry?.Trim();
+        }
+
+        if (model.SaveBillingAddress)
+        {
+            korisnik.SpremljenaAdresaPlacanja = FormatBillingAddress(model);
+        }
+
+        var saldoPrije = korisnik.Saldo;
+        korisnik.Saldo += model.Iznos;
+        var komentar = BuildTopUpComment(nacinPlacanja, model, korisnik);
+        _db.SaldoTransakcije.Add(new SaldoTransakcija
+        {
+            KorisnikId = korisnik.Id,
+            Iznos = model.Iznos,
+            Tip = $"uplata-{NormalizePaymentMethod(nacinPlacanja)}",
+            Komentar = komentar,
+            SaldoPrije = saldoPrije,
+            SaldoPoslije = korisnik.Saldo,
+            Vrijeme = DateTime.UtcNow
+        });
+        _notifications.Add(
+            korisnik.Id,
+            "Mock uplata na saldo",
+            $"Saldo je povećan za {model.Iznos:0.00} EUR. {komentar}. Vanjska naplata nije izvršena.",
+            "Saldo",
+            "/Korisnik/Saldo");
+
+        await _db.SaveChangesAsync();
+
+        TempData["SaldoSaved"] =
+            $"Mock uplata uspješna: +{model.Iznos:0.00} EUR. Nije izvršena stvarna naplata.";
+
+        var returnUrl = Url.IsLocalUrl(model.ReturnUrl) ? model.ReturnUrl : Url.Action(nameof(Saldo));
+        return Redirect(returnUrl!);
+    }
+
+    private static string NormalizePaymentMethod(string value) =>
+        value.ToLowerInvariant().Replace(" ", "-", StringComparison.Ordinal);
+
+    private static string BuildTopUpComment(string nacinPlacanja, MockTopUpViewModel model, Korisnik korisnik)
+    {
+        if (nacinPlacanja == "Kartica")
+        {
+            var digits = new string((model.CardNumber ?? string.Empty).Where(char.IsDigit).ToArray());
+            var lastFour = digits.Length >= 4
+                ? digits[^4..]
+                : korisnik.SpremljenaKarticaZadnjeCetiri ?? "----";
+            return $"Uplaćeno sa *{lastFour} kartice";
+        }
+
+        return $"Uplaćeno sa {model.ExternalAccountName?.Trim()} računa";
+    }
+
+    private static string FormatBillingAddress(MockTopUpViewModel model) =>
+        $"{model.BillingStreet?.Trim()} {model.BillingHouseNumber?.Trim()}, {model.BillingPostalCode?.Trim()}, {model.BillingCountry?.Trim()}";
+
+    private static (string Street, string HouseNumber, string PostalCode, string Country) ParseBillingAddress(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return (string.Empty, string.Empty, string.Empty, "Hrvatska");
+        }
+
+        var sections = value.Split(',', StringSplitOptions.TrimEntries);
+        if (sections.Length < 3)
+        {
+            return (value.Trim(), string.Empty, string.Empty, "Hrvatska");
+        }
+
+        var streetAndNumber = sections[0];
+        var lastSpace = streetAndNumber.LastIndexOf(' ');
+        return lastSpace > 0
+            ? (streetAndNumber[..lastSpace], streetAndNumber[(lastSpace + 1)..], sections[1], sections[2])
+            : (streetAndNumber, string.Empty, sections[1], sections[2]);
+    }
+
+    private decimal GetCommittedReservationAmount(int korisnikId) =>
+        _db.Rezervacije
+            .AsNoTracking()
+            .Where(r =>
+                r.PutnikId == korisnikId &&
+                (r.Status == StatusRezervacije.UProcesuPotvrde ||
+                 r.Status == StatusRezervacije.Potvrdena))
+            .Sum(r => (decimal?)r.CijenaUkupno) ?? 0m;
 
     private SaldoViewModel BuildSaldoModel(int korisnikId, decimal saldo, SaldoViewModel? current = null)
     {
@@ -588,7 +865,10 @@ public class KorisnikController : Controller
                     SaldoPrije = t.SaldoPrije,
                     SaldoPoslije = t.SaldoPoslije,
                     VoznjaId = voznjaId,
-                    Komentar = BuildTransactionComment(t.Tip, voznjaId)
+                    Komentar = string.IsNullOrWhiteSpace(t.Komentar)
+                        ? BuildTransactionComment(t.Tip, voznjaId)
+                        : t.Komentar,
+                    ServisPlacanja = GetPaymentService(t.Tip)
                 };
             })
             .ToList();
@@ -642,6 +922,26 @@ public class KorisnikController : Controller
         }
 
         return "-";
+    }
+
+    private static string? GetPaymentService(string tip)
+    {
+        if (tip.Equals("uplata-kartica", StringComparison.OrdinalIgnoreCase))
+        {
+            return "Kartica";
+        }
+
+        if (tip.Equals("uplata-paypal", StringComparison.OrdinalIgnoreCase))
+        {
+            return "PayPal";
+        }
+
+        if (tip.Equals("uplata-revolut-pay", StringComparison.OrdinalIgnoreCase))
+        {
+            return "Revolut Pay";
+        }
+
+        return null;
     }
 
     [HttpPost]
@@ -704,6 +1004,65 @@ public class KorisnikController : Controller
         }
 
         return TipKorisnika.Putnik;
+    }
+
+    private void ValidateProfileImage(IFormFile? image)
+    {
+        if (image is null || image.Length == 0)
+        {
+            return;
+        }
+
+        var extension = Path.GetExtension(image.FileName);
+        var isImage = !string.IsNullOrWhiteSpace(image.ContentType)
+                      && image.ContentType.StartsWith("image/", StringComparison.OrdinalIgnoreCase);
+        if (!isImage || !AllowedProfileImageExtensions.Contains(extension))
+        {
+            ModelState.AddModelError(nameof(UserSettingsViewModel.ProfileImage),
+                "Dopuštene su samo slike: JPG, PNG, GIF ili WEBP.");
+        }
+
+        if (image.Length > MaxProfileImageBytes)
+        {
+            ModelState.AddModelError(nameof(UserSettingsViewModel.ProfileImage),
+                "Profilna slika može imati najviše 5 MB.");
+        }
+    }
+
+    private async Task<string> SaveProfileImageAsync(int korisnikId, IFormFile image, string? oldRelativePath)
+    {
+        var webRootPath = _webHostEnvironment.WebRootPath
+                          ?? Path.Combine(_webHostEnvironment.ContentRootPath, "wwwroot");
+        var uploadDirectory = Path.Combine(webRootPath, "uploads", "profili", korisnikId.ToString());
+        Directory.CreateDirectory(uploadDirectory);
+
+        var extension = Path.GetExtension(image.FileName).ToLowerInvariant();
+        var storedFileName = $"{Guid.NewGuid():N}{extension}";
+        var diskPath = Path.Combine(uploadDirectory, storedFileName);
+        await using (var stream = new FileStream(diskPath, FileMode.CreateNew))
+        {
+            await image.CopyToAsync(stream);
+        }
+
+        DeleteOldProfileImage(korisnikId, oldRelativePath, webRootPath);
+        return $"/uploads/profili/{korisnikId}/{storedFileName}";
+    }
+
+    private static void DeleteOldProfileImage(int korisnikId, string? relativePath, string webRootPath)
+    {
+        var expectedPrefix = $"/uploads/profili/{korisnikId}/";
+        if (string.IsNullOrWhiteSpace(relativePath)
+            || !relativePath.StartsWith(expectedPrefix, StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
+
+        var fileName = Path.GetFileName(relativePath);
+        var diskPath = Path.Combine(webRootPath, "uploads", "profili", korisnikId.ToString(), fileName);
+        if (System.IO.File.Exists(diskPath))
+        {
+            System.IO.File.Delete(diskPath);
+        }
     }
 
     private static void ApplySettingsRoleLocks(UserSettingsViewModel model, Korisnik korisnik)

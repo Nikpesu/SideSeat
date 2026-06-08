@@ -7,6 +7,7 @@ using SideSeat.Models.Ocjena;
 using SideSeat.Models.ViewModels;
 using SideSeat.Repositories;
 using SideSeat.Security;
+using SideSeat.Services;
 
 namespace SideSeat.Controllers;
 
@@ -16,13 +17,32 @@ namespace SideSeat.Controllers;
 [Authorize]
 public class OcjenaController : Controller
 {
+    private const int MaxReviewImageCount = 5;
+    private const long MaxReviewImageBytes = 5 * 1024 * 1024;
+    private static readonly HashSet<string> AllowedImageExtensions = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ".jpg",
+        ".jpeg",
+        ".png",
+        ".gif",
+        ".webp"
+    };
+
     private readonly SideSeatEfRepository _repository;
     private readonly SideSeatDbContext _db;
+    private readonly IWebHostEnvironment _webHostEnvironment;
+    private readonly INotificationService _notifications;
 
-    public OcjenaController(SideSeatEfRepository repository, SideSeatDbContext db)
+    public OcjenaController(
+        SideSeatEfRepository repository,
+        SideSeatDbContext db,
+        IWebHostEnvironment webHostEnvironment,
+        INotificationService notifications)
     {
         _repository = repository;
         _db = db;
+        _webHostEnvironment = webHostEnvironment;
+        _notifications = notifications;
     }
 
     public IActionResult Index()
@@ -49,6 +69,7 @@ public class OcjenaController : Controller
         var ratings = _db.Ocjene
             .AsNoTracking()
             .Include(o => o.Autor)
+            .Include(o => o.Slike)
             .Include(o => o.Rezervacija)
             .ThenInclude(r => r.Putnik)
             .Include(o => o.Rezervacija)
@@ -86,7 +107,7 @@ public class OcjenaController : Controller
         var pending = relevantReservations
             .Where(r =>
                 r.Voznja.Status == StatusVoznje.Zavrsena &&
-                r.Status != StatusRezervacije.Otkazana &&
+                r.Status == StatusRezervacije.Zavrsena &&
                 !ratedByMeIds.Contains(r.Id))
             .OrderByDescending(r => r.Voznja.Polazak)
             .Select(r => new OcjenaPendingItemViewModel
@@ -133,14 +154,20 @@ public class OcjenaController : Controller
             BrojZvjezdica = o.BrojZvjezdica,
             Komentar = o.Komentar,
             Kreirano = o.Kreirano,
-            RouteLabel = $"{o.Rezervacija.Voznja.PolazniGrad.Naziv} -> {o.Rezervacija.Voznja.OdredisniGrad.Naziv}"
+            RouteLabel = $"{o.Rezervacija.Voznja.PolazniGrad.Naziv} -> {o.Rezervacija.Voznja.OdredisniGrad.Naziv}",
+            Slike = MapImages(o.Slike)
         };
     }
 
     [Authorize(Roles = "Admin")]
     public IActionResult Details(int id)
     {
-        var ocjena = _repository.GetOcjenaById(id);
+        var ocjena = _db.Ocjene
+            .AsNoTracking()
+            .Include(o => o.Autor)
+            .Include(o => o.Slike)
+            .Include(o => o.Rezervacija)
+            .FirstOrDefault(o => o.Id == id);
         if (ocjena is null)
         {
             return NotFound();
@@ -168,7 +195,7 @@ public class OcjenaController : Controller
             return NotFound();
         }
 
-        if (rezervacija.Voznja.Status != StatusVoznje.Zavrsena || rezervacija.Status == StatusRezervacije.Otkazana)
+        if (rezervacija.Voznja.Status != StatusVoznje.Zavrsena || rezervacija.Status != StatusRezervacije.Zavrsena)
         {
             return BadRequest("Ocjenjivanje nije dostupno za ovu voznju.");
         }
@@ -215,7 +242,7 @@ public class OcjenaController : Controller
             return NotFound();
         }
 
-        if (rezervacija.Voznja.Status != StatusVoznje.Zavrsena || rezervacija.Status == StatusRezervacije.Otkazana)
+        if (rezervacija.Voznja.Status != StatusVoznje.Zavrsena || rezervacija.Status != StatusRezervacije.Zavrsena)
         {
             return BadRequest("Ocjenjivanje nije dostupno za ovu voznju.");
         }
@@ -239,15 +266,35 @@ public class OcjenaController : Controller
             return View(model);
         }
 
-        _db.Ocjene.Add(new OcjenaVoznje
+        if (!ValidateReviewImages(model.Slike, nameof(model.Slike)))
+        {
+            model.TargetName = rezervacija.Voznja.VozacId == userId.Value
+                ? $"{rezervacija.Putnik.Ime} {rezervacija.Putnik.Prezime}"
+                : $"{rezervacija.Voznja.Vozac.Ime} {rezervacija.Voznja.Vozac.Prezime}";
+            return View(model);
+        }
+
+        var ocjena = new OcjenaVoznje
         {
             RezervacijaId = model.RezervacijaId,
             AutorId = userId.Value,
             BrojZvjezdica = model.BrojZvjezdica,
             Komentar = model.Komentar.Trim(),
             Kreirano = DateTime.UtcNow
-        });
+        };
 
+        _db.Ocjene.Add(ocjena);
+        await _db.SaveChangesAsync();
+        await SaveReviewImagesAsync(ocjena.Id, model.Slike);
+        var targetId = rezervacija.Voznja.VozacId == userId.Value
+            ? rezervacija.PutnikId
+            : rezervacija.Voznja.VozacId;
+        _notifications.Add(
+            targetId,
+            "Nova ocjena",
+            $"Dobio si ocjenu {model.BrojZvjezdica}/5 za rezervaciju #{rezervacija.Id}.",
+            "Ocjena",
+            $"/Ocjena/Details/{ocjena.Id}");
         await _db.SaveChangesAsync();
         return RedirectToAction("Index", "Rezervacija");
     }
@@ -285,15 +332,16 @@ public class OcjenaController : Controller
             return View(model);
         }
 
-        _db.Ocjene.Add(new OcjenaVoznje
+        var ocjena = new OcjenaVoznje
         {
             RezervacijaId = model.RezervacijaId,
             AutorId = model.AutorId,
             BrojZvjezdica = model.BrojZvjezdica,
             Komentar = model.Komentar.Trim(),
             Kreirano = model.Kreirano
-        });
+        };
 
+        _db.Ocjene.Add(ocjena);
         await _db.SaveChangesAsync();
         return RedirectToAction(nameof(Index));
     }
@@ -366,7 +414,11 @@ public class OcjenaController : Controller
     [Authorize(Roles = "Admin")]
     public IActionResult AdminDelete(int id)
     {
-        var ocjena = _repository.GetOcjenaById(id);
+        var ocjena = _db.Ocjene
+            .AsNoTracking()
+            .Include(o => o.Autor)
+            .Include(o => o.Slike)
+            .FirstOrDefault(o => o.Id == id);
         if (ocjena is null)
         {
             return NotFound();
@@ -380,12 +432,15 @@ public class OcjenaController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> AdminDeleteConfirmed(int id)
     {
-        var ocjena = await _db.Ocjene.FirstOrDefaultAsync(o => o.Id == id);
+        var ocjena = await _db.Ocjene
+            .Include(o => o.Slike)
+            .FirstOrDefaultAsync(o => o.Id == id);
         if (ocjena is null)
         {
             return NotFound();
         }
 
+        DeleteReviewImageFiles(ocjena.Slike);
         _db.Ocjene.Remove(ocjena);
         await _db.SaveChangesAsync();
         return RedirectToAction(nameof(Index));
@@ -463,5 +518,102 @@ public class OcjenaController : Controller
             .ToList();
 
         return Json(results);
+    }
+
+    private static List<OcjenaSlikaViewModel> MapImages(IEnumerable<OcjenaSlika> slike) =>
+        slike
+            .OrderBy(s => s.CreatedAt)
+            .Select(s => new OcjenaSlikaViewModel
+            {
+                FileName = s.FileName,
+                FilePath = s.FilePath
+            })
+            .ToList();
+
+    private bool ValidateReviewImages(IEnumerable<IFormFile>? files, string fieldName)
+    {
+        var images = files?.Where(f => f.Length > 0).ToList() ?? new List<IFormFile>();
+        if (images.Count == 0)
+        {
+            return true;
+        }
+
+        if (images.Count > MaxReviewImageCount)
+        {
+            ModelState.AddModelError(fieldName, $"Mozes dodati najvise {MaxReviewImageCount} slika.");
+            return false;
+        }
+
+        foreach (var image in images)
+        {
+            var extension = Path.GetExtension(image.FileName);
+            var isImage = !string.IsNullOrWhiteSpace(image.ContentType) &&
+                image.ContentType.StartsWith("image/", StringComparison.OrdinalIgnoreCase);
+            if (!isImage || !AllowedImageExtensions.Contains(extension))
+            {
+                ModelState.AddModelError(fieldName, "Dopustene su samo slike: JPG, PNG, GIF ili WEBP.");
+                return false;
+            }
+
+            if (image.Length > MaxReviewImageBytes)
+            {
+                ModelState.AddModelError(fieldName, "Jedna slika moze imati najvise 5 MB.");
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private async Task SaveReviewImagesAsync(int ocjenaId, IEnumerable<IFormFile>? files)
+    {
+        var images = files?.Where(f => f.Length > 0).ToList() ?? new List<IFormFile>();
+        if (images.Count == 0)
+        {
+            return;
+        }
+
+        var webRootPath = _webHostEnvironment.WebRootPath ??
+            Path.Combine(_webHostEnvironment.ContentRootPath, "wwwroot");
+        var uploadsPath = Path.Combine(webRootPath, "uploads", "ocjene", ocjenaId.ToString());
+        Directory.CreateDirectory(uploadsPath);
+
+        foreach (var image in images)
+        {
+            var extension = Path.GetExtension(image.FileName).ToLowerInvariant();
+            var storedFileName = $"{Guid.NewGuid():N}{extension}";
+            var diskPath = Path.Combine(uploadsPath, storedFileName);
+
+            await using (var stream = new FileStream(diskPath, FileMode.CreateNew))
+            {
+                await image.CopyToAsync(stream);
+            }
+
+            _db.OcjenaSlike.Add(new OcjenaSlika
+            {
+                OcjenaVoznjeId = ocjenaId,
+                FileName = Path.GetFileName(image.FileName),
+                FilePath = $"/uploads/ocjene/{ocjenaId}/{storedFileName}",
+                ContentType = image.ContentType,
+                FileSize = image.Length,
+                CreatedAt = DateTime.UtcNow
+            });
+        }
+    }
+
+    private void DeleteReviewImageFiles(IEnumerable<OcjenaSlika> slike)
+    {
+        var webRootPath = _webHostEnvironment.WebRootPath ??
+            Path.Combine(_webHostEnvironment.ContentRootPath, "wwwroot");
+
+        foreach (var slika in slike)
+        {
+            var relativePath = slika.FilePath.TrimStart('/').Replace('/', Path.DirectorySeparatorChar);
+            var diskPath = Path.Combine(webRootPath, relativePath);
+            if (System.IO.File.Exists(diskPath))
+            {
+                System.IO.File.Delete(diskPath);
+            }
+        }
     }
 }

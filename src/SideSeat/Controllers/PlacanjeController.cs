@@ -5,6 +5,7 @@ using SideSeat.Data;
 using SideSeat.Models;
 using SideSeat.Models.ViewModels;
 using SideSeat.Repositories;
+using SideSeat.Services;
 
 namespace SideSeat.Controllers;
 
@@ -16,11 +17,16 @@ public class PlacanjeController : Controller
 {
     private readonly SideSeatEfRepository _repository;
     private readonly SideSeatDbContext _db;
+    private readonly INotificationService _notifications;
 
-    public PlacanjeController(SideSeatEfRepository repository, SideSeatDbContext db)
+    public PlacanjeController(
+        SideSeatEfRepository repository,
+        SideSeatDbContext db,
+        INotificationService notifications)
     {
         _repository = repository;
         _db = db;
+        _notifications = notifications;
     }
 
     public IActionResult Index(string? search, DateTime? date, int? pageSize)
@@ -103,6 +109,12 @@ public class PlacanjeController : Controller
         };
 
         _db.Placanja.Add(placanje);
+        _notifications.Add(
+            rezervacija.PutnikId,
+            model.Uspjesno ? "Plaćanje evidentirano" : "Plaćanje nije uspjelo",
+            $"Plaćanje za rezervaciju #{rezervacija.Id}: {model.Iznos:0.00} EUR.",
+            "Naplata",
+            $"/Rezervacija/Details/{rezervacija.Id}");
         await _db.SaveChangesAsync();
 
         return RedirectToAction(nameof(Details), new { id = placanje.Id });

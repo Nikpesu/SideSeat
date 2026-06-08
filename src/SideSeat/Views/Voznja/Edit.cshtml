@@ -17,75 +17,19 @@
         <p>Azurirajte raspored, cijenu i status voznje.</p>
     </div>
 
-    <div class="row g-4">
-        <div class="col-lg-7">
-            <form asp-action="Edit" method="post">
-                @Html.AntiForgeryToken()
-                <input type="hidden" asp-for="Id" />
-                <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-                <partial name="_Form" model="Model" />
+    <form asp-action="Edit" method="post">
+        @Html.AntiForgeryToken()
+        <input type="hidden" asp-for="Id" />
+        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+        <partial name="_Form" model="Model" />
 
-                <div class="ss-actions">
-                    <button type="submit" class="ss-btn">Spremi promjene</button>
-                    <a class="ss-btn ss-btn-secondary" asp-controller="Voznja" asp-action="Details" asp-route-id="@Model.Id">Odustani</a>
-                </div>
-            </form>
+        <div class="ss-actions">
+            <button type="submit" class="ss-btn">Spremi promjene</button>
+            <a class="ss-btn ss-btn-secondary" asp-controller="Voznja" asp-action="Details" asp-route-id="@Model.Id">Odustani</a>
         </div>
-
-        <div class="col-lg-5">
-            <div class="ss-detail-card">
-                <h2 class="h5">Datoteke voznje</h2>
-                <p class="ss-empty">Prilozite dokumente vezane uz ovu voznju. Upload radi asinkrono.</p>
-                <form id="attachmentDz"
-                      asp-controller="Voznja"
-                      asp-action="UploadAttachment"
-                      asp-route-voznjaId="@Model.Id"
-                      enctype="multipart/form-data"
-                      class="dropzone">
-                </form>
-                <div id="attachmentList" class="mt-3"></div>
-            </div>
-        </div>
-    </div>
+    </form>
 </section>
 
 @section Scripts {
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/dropzone@6.0.0-beta.2/dist/dropzone.css" />
-    <script src="https://cdn.jsdelivr.net/npm/dropzone@6.0.0-beta.2/dist/dropzone-min.js"></script>
-    <script>
-        Dropzone.autoDiscover = false;
-
-        const attachmentListUrl = '@Url.Action("GetAttachments", "Voznja", new { voznjaId = Model.Id })';
-        const deleteAttachmentUrl = '@Url.Action("DeleteAttachment", "Voznja")';
-
-        function loadAttachments() {
-            $("#attachmentList").load(attachmentListUrl);
-        }
-
-        $(function () {
-            new Dropzone("#attachmentDz", {
-                paramName: "file",
-                maxFilesize: 10,
-                acceptedFiles: ".pdf,.png,.jpg,.jpeg,.txt,.doc,.docx",
-                success: function () {
-                    loadAttachments();
-                }
-            });
-
-            loadAttachments();
-
-            $("#attachmentList").on("click", "[data-delete-attachment]", function () {
-                const id = $(this).data("delete-attachment");
-                if (!confirm("Obrisati ovu datoteku?")) {
-                    return;
-                }
-
-                $.post(deleteAttachmentUrl, { id: id })
-                    .done(loadAttachments)
-                    .fail(function () {
-                        alert("Brisanje datoteke nije uspjelo.");
-                    });
-            });
-        });
-    </script>
+    <partial name="_ValidationScriptsPartial" />
 }

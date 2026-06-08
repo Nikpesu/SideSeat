@@ -2,6 +2,9 @@
 @{
     ViewData["Title"] = "Detalji korisnika";
     var isAdmin = User.IsInRole("Admin");
+    var profileImage = string.IsNullOrWhiteSpace(Model.User.ProfilnaSlikaPath)
+        ? Url.Content("~/images/profile-placeholder.svg")
+        : Model.User.ProfilnaSlikaPath;
 }
 
 <section class="ss-page">
@@ -14,72 +17,72 @@
     </nav>
 
     <div class="ss-page-head">
+        <img class="ss-profile-avatar" src="@profileImage" alt="Profilna slika korisnika @Model.User.Ime @Model.User.Prezime" />
         <h1>Detalji korisnika</h1>
-        <p>Profil, status i povezani podaci korisnika.</p>
+        <p>@(Model.CanViewFullDetails ? "Profil, status i povezani podaci korisnika." : "Osnovni kontakt podaci putnika.")</p>
     </div>
 
     <div class="ss-detail-card">
         <dl class="ss-detail-grid">
             <div>
-                <dt>ID</dt>
-                <dd>@Model.User.Id</dd>
-            </div>
-            <div>
                 <dt>Ime i prezime</dt>
                 <dd>@Model.User.Ime @Model.User.Prezime</dd>
             </div>
             <div>
-                <dt>Tip korisnika</dt>
-                <dd>@Model.User.Tip</dd>
-            </div>
-            <div>
-                <dt>Status</dt>
-                <dd>
-                    <span class="ss-badge @(Model.User.JeAktivan ? "is-ok" : "is-off")">
-                        @(Model.User.JeAktivan ? "Aktivan" : "Neaktivan")
-                    </span>
-                </dd>
-            </div>
-            <div>
-                <dt>Email</dt>
-                <dd>@Model.User.Email</dd>
-            </div>
-            <div>
-                <dt>Adresa</dt>
-                <dd>@Model.User.Adresa</dd>
-            </div>
-            <div>
                 <dt>Broj mobitela</dt>
-                <dd>@Model.User.BrojMobitela</dd>
+                <dd><a href="tel:@Model.User.BrojMobitela">@Model.User.BrojMobitela</a></dd>
             </div>
-            <div>
-                <dt>Datum registracije</dt>
-                <dd>@Model.User.DatumRegistracije.ToString("dd.MM.yyyy")</dd>
-            </div>
-            <div>
-                <dt>Vozilo</dt>
-                <dd>@(Model.User.Vozilo is null ? "Nema povezano vozilo" : $"{Model.User.Vozilo.Marka} {Model.User.Vozilo.Model}")</dd>
-            </div>
-            <div>
-                <dt>KYC status</dt>
-                <dd>@(Model.User.KycPodnesen ? "Ispunjen" : "Nije ispunjen")</dd>
-            </div>
-            <div>
-                <dt>Kreirane voznje</dt>
-                <dd>@(Model.User.KreiraneVoznje?.Count ?? 0)</dd>
-            </div>
-            <div>
-                <dt>Rezervacije</dt>
-                <dd>@(Model.User.Rezervacije?.Count ?? 0)</dd>
-            </div>
-            <div>
-                <dt>Prosjecna ocjena</dt>
-                <dd>@(Model.BrojPrimljenihOcjena == 0 ? "Nema ocjena" : Model.ProsjecnaOcjena.ToString("0.0"))</dd>
-            </div>
-            <div>
-                <dt>Primljene ocjene</dt>
-                <dd>@Model.BrojPrimljenihOcjena</dd>
-            </div>
+            @if (Model.CanViewFullDetails)
+            {
+                <div>
+                    <dt>ID</dt>
+                    <dd>@Model.User.Id</dd>
+                </div>
+                <div>
+                    <dt>Tip korisnika</dt>
+                    <dd>@Model.User.Tip</dd>
+                </div>
+                <div>
+                    <dt>Status</dt>
+                    <dd><span class="ss-badge @(Model.User.JeAktivan ? "is-ok" : "is-off")">@(Model.User.JeAktivan ? "Aktivan" : "Neaktivan")</span></dd>
+                </div>
+                <div>
+                    <dt>Email</dt>
+                    <dd>@Model.User.Email</dd>
+                </div>
+                <div>
+                    <dt>Adresa</dt>
+                    <dd>@Model.User.Adresa</dd>
+                </div>
+                <div>
+                    <dt>Datum registracije</dt>
+                    <dd>@Model.User.DatumRegistracije.ToString("dd.MM.yyyy")</dd>
+                </div>
+                <div>
+                    <dt>Vozilo</dt>
+                    <dd>@(Model.User.Vozilo is null ? "Nema povezano vozilo" : $"{Model.User.Vozilo.Marka} {Model.User.Vozilo.Model}")</dd>
+                </div>
+                <div>
+                    <dt>KYC status</dt>
+                    <dd>@(Model.User.KycPodnesen ? "Ispunjen" : "Nije ispunjen")</dd>
+                </div>
+                <div>
+                    <dt>Kreirane voznje</dt>
+                    <dd>@(Model.User.KreiraneVoznje?.Count ?? 0)</dd>
+                </div>
+                <div>
+                    <dt>Rezervacije</dt>
+                    <dd>@(Model.User.Rezervacije?.Count ?? 0)</dd>
+                </div>
+                <div>
+                    <dt>Prosjecna ocjena</dt>
+                    <dd>@(Model.BrojPrimljenihOcjena == 0 ? "Nema ocjena" : Model.ProsjecnaOcjena.ToString("0.0"))</dd>
+                </div>
+                <div>
+                    <dt>Primljene ocjene</dt>
+                    <dd>@Model.BrojPrimljenihOcjena</dd>
+                </div>
+            }
         </dl>
 
         <div class="ss-actions">
@@ -88,11 +91,16 @@
                 <a class="ss-btn" asp-controller="Korisnik" asp-action="Edit" asp-route-id="@Model.User.Id">Uredi korisnika</a>
                 <a class="ss-btn ss-btn-secondary" asp-controller="Korisnik" asp-action="Delete" asp-route-id="@Model.User.Id">Obrisi korisnika</a>
             }
-            <a class="ss-btn ss-btn-secondary" asp-controller="Korisnik" asp-action="Index">Natrag na korisnike</a>
+            @if (Model.CanViewFullDetails)
+            {
+                <a class="ss-btn ss-btn-secondary" asp-controller="Korisnik" asp-action="Index">Natrag na korisnike</a>
+            }
             <a class="ss-btn" asp-controller="Home" asp-action="Index">Dashboard</a>
         </div>
     </div>
 
+    @if (Model.CanViewFullDetails)
+    {
     <div class="ss-detail-card">
         <h2>Primljeni komentari</h2>
         @if (Model.PrimljeneOcjene.Count == 0)
@@ -106,7 +114,10 @@
                 {
                     <div>
                         <dt>@ocjena.Autor (@ocjena.BrojZvjezdica/5)</dt>
-                        <dd>@ocjena.Komentar</dd>
+                        <dd>
+                            @ocjena.Komentar
+                            <partial name="_OcjenaSlike" model="ocjena.Slike" />
+                        </dd>
                     </div>
                 }
             </div>
@@ -126,10 +137,14 @@
                 {
                     <div>
                         <dt>@ocjena.Primatelj (@ocjena.BrojZvjezdica/5)</dt>
-                        <dd>@ocjena.Komentar</dd>
+                        <dd>
+                            @ocjena.Komentar
+                            <partial name="_OcjenaSlike" model="ocjena.Slike" />
+                        </dd>
                     </div>
                 }
             </div>
         }
     </div>
+    }
 </section>

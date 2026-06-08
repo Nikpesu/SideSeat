@@ -26,15 +26,26 @@ public class TestAuthHandler : AuthenticationHandler<AuthenticationSchemeOptions
             return Task.FromResult(AuthenticateResult.NoResult());
         }
 
-        var claims = new[]
+        var authType = Request.Headers["X-Test-Auth"].ToString();
+        var isAdmin = authType == "admin";
+        var isDriver = authType == "driver";
+        var korisnikId = isAdmin || isDriver ? "1" : "2";
+        var claims = new List<Claim>
         {
-            new Claim(ClaimTypes.NameIdentifier, "1"),
-            new Claim(SideSeatClaimTypes.KorisnikId, "1"),
-            new Claim(ClaimTypes.Name, "admin@example.com"),
-            new Claim(ClaimTypes.Role, "Admin"),
-            new Claim(ClaimTypes.Role, "Driver"),
-            new Claim(ClaimTypes.Role, "Passenger")
+            new(ClaimTypes.NameIdentifier, korisnikId),
+            new(SideSeatClaimTypes.KorisnikId, korisnikId),
+            new(ClaimTypes.Name, isAdmin || isDriver ? "admin@example.com" : "putnik@example.com"),
+            new(ClaimTypes.Role, "Passenger")
         };
+        if (isAdmin)
+        {
+            claims.Add(new Claim(ClaimTypes.Role, "Admin"));
+        }
+        if (isAdmin || isDriver)
+        {
+            claims.Add(new Claim(ClaimTypes.Role, "Driver"));
+        }
+
         var identity = new ClaimsIdentity(claims, SchemeName);
         var principal = new ClaimsPrincipal(identity);
         return Task.FromResult(AuthenticateResult.Success(new AuthenticationTicket(principal, SchemeName)));

@@ -97,7 +97,10 @@
                             <td>@row.RouteLabel</td>
                             <td>@row.TargetName</td>
                             <td>@row.BrojZvjezdica/5</td>
-                            <td>@row.Komentar</td>
+                            <td>
+                                @row.Komentar
+                                <partial name="_OcjenaSlike" model="row.Slike" />
+                            </td>
                             <td>@row.Kreirano.ToString("dd.MM.yyyy HH:mm")</td>
                         </tr>
                     }
@@ -137,7 +140,10 @@
                             <td>@row.RouteLabel</td>
                             <td>@row.AuthorName</td>
                             <td>@row.BrojZvjezdica/5</td>
-                            <td>@row.Komentar</td>
+                            <td>
+                                @row.Komentar
+                                <partial name="_OcjenaSlike" model="row.Slike" />
+                            </td>
                             <td>@row.Kreirano.ToString("dd.MM.yyyy HH:mm")</td>
                         </tr>
                     }

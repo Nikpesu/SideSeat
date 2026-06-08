@@ -1,4 +1,5 @@
 @model SideSeat.Models.OcjenaVoznje
+@using SideSeat.Models.Ocjena
 @{
     ViewData["Title"] = "Detalji ocjene";
     var isAdmin = User.IsInRole("Admin");
@@ -38,7 +39,10 @@
             </div>
             <div>
                 <dt>Komentar</dt>
-                <dd>@Model.Komentar</dd>
+                <dd>
+                    @Model.Komentar
+                    <partial name="_OcjenaSlike" model="Model.Slike.Select(s => new OcjenaSlikaViewModel { FileName = s.FileName, FilePath = s.FilePath }).ToList()" />
+                </dd>
             </div>
             <div>
                 <dt>Kreirano</dt>

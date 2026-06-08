@@ -27,5 +27,4 @@ public class Voznja
     public string Opis { get; set; } = string.Empty;
     public StatusVoznje Status { get; set; }
     public virtual ICollection<Rezervacija> Rezervacije { get; set; } = new List<Rezervacija>();
-    public virtual ICollection<VoznjaAttachment> Attachments { get; set; } = new List<VoznjaAttachment>();
 }

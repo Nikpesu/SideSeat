@@ -32,6 +32,10 @@
 		{
 			<div class="alert alert-info" role="status">@rideExecutedMessage</div>
 		}
+		@if (TempData["ReservationStatus"] is string reservationStatusMessage)
+		{
+			<div class="alert alert-info" role="status">@reservationStatusMessage</div>
+		}
 
 		<dl class="ss-detail-grid">
 			<div>
@@ -101,6 +105,10 @@
 							<th>Mjesta</th>
 							<th>Ocjena putnika</th>
 							<th>Ocjena vozaca</th>
+							@if (canEdit)
+							{
+								<th>Akcija</th>
+							}
 						</tr>
 					</thead>
 					<tbody>
@@ -111,10 +119,36 @@
 							<td>
 								<a asp-controller="Korisnik" asp-action="Details" asp-route-id="@putnik.PutnikId">@putnik.PutnikIme</a>
 							</td>
-							<td>@putnik.Status</td>
+							<td>@putnik.Status.ToDisplayName()</td>
 							<td>@putnik.BrojMjesta</td>
 							<td>@(putnik.PutnikJeOcijenio ? "Da" : "Ne")</td>
 							<td>@(putnik.VozacJeOcijenio ? "Da" : "Ne")</td>
+							@if (canEdit)
+							{
+								<td>
+									@if (putnik.Status == SideSeat.Models.StatusRezervacije.UProcesuPotvrde)
+									{
+										<div class="ss-actions">
+											<form asp-controller="Rezervacija" asp-action="Confirm" method="post">
+												@Html.AntiForgeryToken()
+												<input type="hidden" name="id" value="@putnik.RezervacijaId" />
+												<input type="hidden" name="returnUrl" value="/Voznja/Details/@voznja.Id" />
+												<button type="submit" class="ss-btn">Potvrdi</button>
+											</form>
+											<form asp-controller="Rezervacija" asp-action="Reject" method="post">
+												@Html.AntiForgeryToken()
+												<input type="hidden" name="id" value="@putnik.RezervacijaId" />
+												<input type="hidden" name="returnUrl" value="/Voznja/Details/@voznja.Id" />
+												<button type="submit" class="ss-btn ss-btn-secondary">Odbij</button>
+											</form>
+										</div>
+									}
+									else
+									{
+										<a class="ss-btn ss-btn-secondary" asp-controller="Rezervacija" asp-action="Details" asp-route-id="@putnik.RezervacijaId">Detalji</a>
+									}
+								</td>
+							}
 						</tr>
 					}
 					</tbody>
@@ -150,7 +184,10 @@
 							<td>@ocjena.AutorIme</td>
 							<td>@ocjena.PrimateljIme</td>
 							<td>@ocjena.BrojZvjezdica</td>
-							<td>@ocjena.Komentar</td>
+							<td>
+								@ocjena.Komentar
+								<partial name="_OcjenaSlike" model="ocjena.Slike" />
+							</td>
 						</tr>
 					}
 					</tbody>
@@ -184,7 +221,10 @@
 							<td>#@ocjena.RezervacijaId</td>
 							<td>@ocjena.AutorIme</td>
 							<td>@ocjena.BrojZvjezdica</td>
-							<td>@ocjena.Komentar</td>
+							<td>
+								@ocjena.Komentar
+								<partial name="_OcjenaSlike" model="ocjena.Slike" />
+							</td>
 						</tr>
 					}
 					</tbody>

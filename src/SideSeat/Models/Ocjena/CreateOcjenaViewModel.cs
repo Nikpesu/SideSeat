@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using Microsoft.AspNetCore.Http;
 
 namespace SideSeat.Models.Ocjena;
 
@@ -13,4 +14,6 @@ public class CreateOcjenaViewModel
     [Required(ErrorMessage = "Komentar je obavezan.")]
     [StringLength(500, ErrorMessage = "Komentar moze imati najvise 500 znakova.")]
     public string Komentar { get; set; } = string.Empty;
+
+    public List<IFormFile> Slike { get; set; } = new();
 }

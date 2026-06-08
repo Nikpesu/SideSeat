@@ -1,4 +1,5 @@
 using SideSeat.Models;
+using SideSeat.Models.Ocjena;
 
 namespace SideSeat.Models.Rides;
 
@@ -34,4 +35,5 @@ public class VoznjaRatingRow
     public int BrojZvjezdica { get; set; }
     public string Komentar { get; set; } = string.Empty;
     public DateTime Kreirano { get; set; }
+    public List<OcjenaSlikaViewModel> Slike { get; set; } = new();
 }

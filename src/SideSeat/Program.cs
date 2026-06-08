@@ -23,6 +23,7 @@ namespace SideSeat
                 options.UseSqlServer(builder.Configuration.GetConnectionString("SideSeatDbContext")));
             builder.Services.AddScoped<SideSeatEfRepository>();
             builder.Services.AddScoped<IPasswordHashingService, PasswordHashingService>();
+            builder.Services.AddScoped<INotificationService, NotificationService>();
             builder.Services
                 .AddIdentity<AppUser, IdentityRole<int>>(options =>
                 {
@@ -77,6 +78,7 @@ namespace SideSeat
             builder.Services.AddAuthorization();
 
             var app = builder.Build();
+            var useDummyData = builder.Configuration.GetValue<bool>("DUMMY_DATA");
 
             var supportedCultures = new[]
             {
@@ -100,6 +102,7 @@ namespace SideSeat
             }
 
             app.UseHttpsRedirection();
+            app.UseStaticFiles();
             app.UseRouting();
 
             app.UseAuthentication();
@@ -112,6 +115,11 @@ namespace SideSeat
                 if (app.Environment.IsEnvironment("Docker"))
                 {
                     await dbContext.Database.MigrateAsync();
+                }
+
+                if (app.Environment.IsEnvironment("Docker") && !useDummyData)
+                {
+                    await DummyDataCleaner.RemoveAsync(dbContext);
                 }
 
                 await IdentityDataSeeder.SeedAsync(scope.ServiceProvider);
@@ -143,7 +151,10 @@ namespace SideSeat
                 pattern: "{controller=Home}/{action=Index}/{id?}")
                 .WithStaticAssets();
 
-            await Models.Lab1Demo.RunAsync();
+            if (useDummyData)
+            {
+                await Models.Lab1Demo.RunAsync();
+            }
 
             app.Run();
         }

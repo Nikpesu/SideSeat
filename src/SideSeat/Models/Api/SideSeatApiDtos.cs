@@ -141,7 +141,7 @@ public class RezervacijaRequest
     public int PutnikId { get; set; }
     [Range(1, 10)]
     public int BrojMjesta { get; set; } = 1;
-    public StatusRezervacije Status { get; set; } = StatusRezervacije.Aktivna;
+    public StatusRezervacije Status { get; set; } = StatusRezervacije.UProcesuPotvrde;
     [StringLength(500)]
     public string Napomena { get; set; } = string.Empty;
 }
@@ -175,6 +175,7 @@ public class OcjenaDto
     public int BrojZvjezdica { get; set; }
     public string Komentar { get; set; } = string.Empty;
     public DateTime Kreirano { get; set; }
+    public List<OcjenaSlikaDto> Slike { get; set; } = new();
 }
 
 public class OcjenaRequest
@@ -210,10 +211,10 @@ public class SaldoTransakcijaRequest
     public string Tip { get; set; } = string.Empty;
 }
 
-public class VoznjaAttachmentDto
+public class OcjenaSlikaDto
 {
     public int Id { get; set; }
-    public int VoznjaId { get; set; }
+    public int OcjenaVoznjeId { get; set; }
     public string FileName { get; set; } = string.Empty;
     public string FilePath { get; set; } = string.Empty;
     public string ContentType { get; set; } = string.Empty;
