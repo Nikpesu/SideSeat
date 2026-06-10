@@ -71,4 +71,22 @@
         <textarea asp-for="Komentar" class="form-control" rows="3"></textarea>
         <span asp-validation-for="Komentar" class="text-danger"></span>
     </div>
+
+    @if (Model.PostojeceSlike.Count > 0)
+    {
+        <div class="mt-3">
+            <strong>Postojeće slike</strong>
+            <partial name="_OcjenaSlike" model="Model.PostojeceSlike" />
+        </div>
+    }
+
+    <div class="mt-3">
+        <label asp-for="Slike" class="form-label">Dodaj slike</label>
+        <div class="ss-file-picker">
+            <input asp-for="Slike" type="file" class="ss-file-picker-input" accept="image/*" multiple data-ss-file-picker />
+            <label for="Slike" class="ss-file-picker-button">Odaberi slike</label>
+            <span class="ss-file-picker-status" data-ss-file-picker-status>Nijedna slika nije odabrana.</span>
+        </div>
+        <span asp-validation-for="Slike" class="text-danger"></span>
+    </div>
 </div>

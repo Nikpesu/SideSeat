@@ -115,6 +115,10 @@ build_metadata.AdditionalFiles.CssScope =
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcS29yaXNuaWtcU2V0dGluZ3MuY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
+[C:/Users/nikpe/Documents/GitHub/SideSeat/src/SideSeat/Views/Korisnik/Uplata.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcS29yaXNuaWtcVXBsYXRhLmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
 [C:/Users/nikpe/Documents/GitHub/SideSeat/src/SideSeat/Views/Korisnik/_Form.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcS29yaXNuaWtcX0Zvcm0uY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
@@ -131,6 +135,10 @@ build_metadata.AdditionalFiles.CssScope =
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcT2NqZW5hXEFkbWluRWRpdC5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
+[C:/Users/nikpe/Documents/GitHub/SideSeat/src/SideSeat/Views/Ocjena/Attachments.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcT2NqZW5hXEF0dGFjaG1lbnRzLmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
 [C:/Users/nikpe/Documents/GitHub/SideSeat/src/SideSeat/Views/Ocjena/Create.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcT2NqZW5hXENyZWF0ZS5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
@@ -139,12 +147,20 @@ build_metadata.AdditionalFiles.CssScope =
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcT2NqZW5hXERldGFpbHMuY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
+[C:/Users/nikpe/Documents/GitHub/SideSeat/src/SideSeat/Views/Ocjena/Edit.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcT2NqZW5hXEVkaXQuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
 [C:/Users/nikpe/Documents/GitHub/SideSeat/src/SideSeat/Views/Ocjena/Index.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcT2NqZW5hXEluZGV4LmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
 [C:/Users/nikpe/Documents/GitHub/SideSeat/src/SideSeat/Views/Ocjena/_AdminForm.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcT2NqZW5hXF9BZG1pbkZvcm0uY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/nikpe/Documents/GitHub/SideSeat/src/SideSeat/Views/Ocjena/_AttachmentList.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcT2NqZW5hXF9BdHRhY2htZW50TGlzdC5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
 [C:/Users/nikpe/Documents/GitHub/SideSeat/src/SideSeat/Views/Placanje/Create.cshtml]
@@ -169,14 +185,6 @@ build_metadata.AdditionalFiles.CssScope =
 
 [C:/Users/nikpe/Documents/GitHub/SideSeat/src/SideSeat/Views/Placanje/_Form.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcUGxhY2FuamVcX0Zvcm0uY3NodG1s
-build_metadata.AdditionalFiles.CssScope = 
-
-[C:/Users/nikpe/Documents/GitHub/SideSeat/src/SideSeat/Views/Plachanje/Details.cshtml]
-build_metadata.AdditionalFiles.TargetPath = Vmlld3NcUGxhY2hhbmplXERldGFpbHMuY3NodG1s
-build_metadata.AdditionalFiles.CssScope = 
-
-[C:/Users/nikpe/Documents/GitHub/SideSeat/src/SideSeat/Views/Plachanje/Index.cshtml]
-build_metadata.AdditionalFiles.TargetPath = Vmlld3NcUGxhY2hhbmplXEluZGV4LmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
 [C:/Users/nikpe/Documents/GitHub/SideSeat/src/SideSeat/Views/Rezervacija/AdminCreate.cshtml]
@@ -207,6 +215,14 @@ build_metadata.AdditionalFiles.CssScope =
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcUmV6ZXJ2YWNpamFcX0FkbWluRm9ybS5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
+[C:/Users/nikpe/Documents/GitHub/SideSeat/src/SideSeat/Views/Rezervacija/_ReservationViewSelector.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcUmV6ZXJ2YWNpamFcX1Jlc2VydmF0aW9uVmlld1NlbGVjdG9yLmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/nikpe/Documents/GitHub/SideSeat/src/SideSeat/Views/Shared/Components/ObavijestiBell/Default.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcU2hhcmVkXENvbXBvbmVudHNcT2JhdmlqZXN0aUJlbGxcRGVmYXVsdC5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
 [C:/Users/nikpe/Documents/GitHub/SideSeat/src/SideSeat/Views/Shared/Error.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcU2hhcmVkXEVycm9yLmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
@@ -217,6 +233,14 @@ build_metadata.AdditionalFiles.CssScope =
 
 [C:/Users/nikpe/Documents/GitHub/SideSeat/src/SideSeat/Views/Shared/_DateTimeInput.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcU2hhcmVkXF9EYXRlVGltZUlucHV0LmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/nikpe/Documents/GitHub/SideSeat/src/SideSeat/Views/Shared/_OcjenaSlike.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcU2hhcmVkXF9PY2plbmFTbGlrZS5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/nikpe/Documents/GitHub/SideSeat/src/SideSeat/Views/Shared/_RouteMapBackground.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcU2hhcmVkXF9Sb3V0ZU1hcEJhY2tncm91bmQuY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
 [C:/Users/nikpe/Documents/GitHub/SideSeat/src/SideSeat/Views/Shared/_ValidationScriptsPartial.cshtml]
@@ -271,12 +295,12 @@ build_metadata.AdditionalFiles.CssScope =
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcVm96bmphXEluZGV4LmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/nikpe/Documents/GitHub/SideSeat/src/SideSeat/Views/Voznja/_Attachments.cshtml]
-build_metadata.AdditionalFiles.TargetPath = Vmlld3NcVm96bmphXF9BdHRhY2htZW50cy5jc2h0bWw=
-build_metadata.AdditionalFiles.CssScope = 
-
 [C:/Users/nikpe/Documents/GitHub/SideSeat/src/SideSeat/Views/Voznja/_Form.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcVm96bmphXF9Gb3JtLmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/nikpe/Documents/GitHub/SideSeat/src/SideSeat/Views/Voznja/_RideViewSelector.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcVm96bmphXF9SaWRlVmlld1NlbGVjdG9yLmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
 [C:/Users/nikpe/Documents/GitHub/SideSeat/src/SideSeat/Views/_ViewImports.cshtml]

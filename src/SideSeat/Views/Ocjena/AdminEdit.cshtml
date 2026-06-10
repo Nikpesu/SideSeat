@@ -17,7 +17,7 @@
         <p>Azurirajte zvjezdice, komentar i datum unosa.</p>
     </div>
 
-    <form asp-action="AdminEdit" method="post">
+    <form asp-action="AdminEdit" method="post" enctype="multipart/form-data">
         @Html.AntiForgeryToken()
         <input type="hidden" asp-for="Id" />
         <div asp-validation-summary="ModelOnly" class="text-danger"></div>

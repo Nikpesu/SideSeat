@@ -83,6 +83,8 @@ public static class ApiMapper
         BrojZvjezdica = ocjena.BrojZvjezdica,
         Komentar = ocjena.Komentar,
         Kreirano = ocjena.Kreirano,
+        Uredeno = ocjena.Uredeno,
+        Administratorska = ocjena.Administratorska,
         Slike = ocjena.Slike.Select(s => s.ToDto()).ToList()
     };
 

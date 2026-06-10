@@ -7,6 +7,7 @@ public class CreateOcjenaViewModel
 {
     public int RezervacijaId { get; set; }
     public string TargetName { get; set; } = string.Empty;
+    public bool IsAdditional { get; set; }
 
     [Range(1, 5, ErrorMessage = "Ocjena mora biti izmedu 1 i 5.")]
     public int BrojZvjezdica { get; set; } = 5;

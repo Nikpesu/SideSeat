@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Localization;
+using Microsoft.Data.SqlClient;
 using SideSeat.Data;
 using SideSeat.Models;
 using SideSeat.Repositories;
@@ -16,11 +17,25 @@ namespace SideSeat
         public static async Task Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
+            var connectionString = builder.Configuration.GetConnectionString("SideSeatDbContext");
+            if (builder.Environment.IsEnvironment("Docker") &&
+                string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("ConnectionStrings__SideSeatDbContext")))
+            {
+                connectionString = new SqlConnectionStringBuilder
+                {
+                    DataSource = "sideseat-db,1433",
+                    InitialCatalog = "SideSeat",
+                    UserID = "sa",
+                    Password = builder.Configuration["SA_PASSWORD"] ?? "SideSeat123!",
+                    TrustServerCertificate = true,
+                    MultipleActiveResultSets = true
+                }.ConnectionString;
+            }
 
             // Add services to the container.
             builder.Services.AddControllersWithViews();
             builder.Services.AddDbContext<SideSeatDbContext>(options =>
-                options.UseSqlServer(builder.Configuration.GetConnectionString("SideSeatDbContext")));
+                options.UseSqlServer(connectionString));
             builder.Services.AddScoped<SideSeatEfRepository>();
             builder.Services.AddScoped<IPasswordHashingService, PasswordHashingService>();
             builder.Services.AddScoped<INotificationService, NotificationService>();
@@ -69,12 +84,17 @@ namespace SideSeat
                     return Task.CompletedTask;
                 };
             });
-            builder.Services.AddAuthentication()
-                .AddGoogle(options =>
+            var authentication = builder.Services.AddAuthentication();
+            var googleClientId = builder.Configuration["Authentication:Google:ClientId"];
+            var googleClientSecret = builder.Configuration["Authentication:Google:ClientSecret"];
+            if (!string.IsNullOrWhiteSpace(googleClientId) && !string.IsNullOrWhiteSpace(googleClientSecret))
+            {
+                authentication.AddGoogle(options =>
                 {
-                    options.ClientId = builder.Configuration["Authentication:Google:ClientId"] ?? string.Empty;
-                    options.ClientSecret = builder.Configuration["Authentication:Google:ClientSecret"] ?? string.Empty;
+                    options.ClientId = googleClientId;
+                    options.ClientSecret = googleClientSecret;
                 });
+            }
             builder.Services.AddAuthorization();
 
             var app = builder.Build();
@@ -112,7 +132,7 @@ namespace SideSeat
             using (var scope = app.Services.CreateScope())
             {
                 var dbContext = scope.ServiceProvider.GetRequiredService<SideSeatDbContext>();
-                if (app.Environment.IsEnvironment("Docker"))
+                if (app.Environment.IsDevelopment() || app.Environment.IsEnvironment("Docker"))
                 {
                     await dbContext.Database.MigrateAsync();
                 }

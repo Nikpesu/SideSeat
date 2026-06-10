@@ -16,10 +16,13 @@ RUN dotnet publish "src/SideSeat/SideSeat.csproj" \
     /p:UseAppHost=false
 
 FROM base AS final
-ARG APP_VERSION=v0.14
+ARG APP_VERSION=v0.15
 LABEL org.opencontainers.image.title="SideSeat Web"
 LABEL org.opencontainers.image.version="${APP_VERSION}"
 LABEL com.sideseat.container.version="${APP_VERSION}"
+ENV ASPNETCORE_ENVIRONMENT=Docker \
+    ASPNETCORE_URLS=http://+:8080 \
+    SIDESEAT_VERSION=${APP_VERSION}
 WORKDIR /app
 COPY --from=build /app/publish .
 ENTRYPOINT ["dotnet", "SideSeat.dll"]

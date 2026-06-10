@@ -22,7 +22,6 @@ C:\Users\nikpe\Documents\GitHub\SideSeat\src\SideSeat\obj\Debug\net10.0\rjsmcsht
 C:\Users\nikpe\Documents\GitHub\SideSeat\src\SideSeat\obj\Debug\net10.0\scopedcss\Views\Shared\_Layout.cshtml.rz.scp.css
 C:\Users\nikpe\Documents\GitHub\SideSeat\src\SideSeat\obj\Debug\net10.0\scopedcss\bundle\SideSeat.styles.css
 C:\Users\nikpe\Documents\GitHub\SideSeat\src\SideSeat\obj\Debug\net10.0\scopedcss\projectbundle\SideSeat.bundle.scp.css
-C:\Users\nikpe\Documents\GitHub\SideSeat\src\SideSeat\obj\Debug\net10.0\compressed\enqnzennzg-{0}-61n19gt1b8-61n19gt1b8.gz
 C:\Users\nikpe\Documents\GitHub\SideSeat\src\SideSeat\obj\Debug\net10.0\compressed\vfg2n6iihd-{0}-bqjiyaj88i-bqjiyaj88i.gz
 C:\Users\nikpe\Documents\GitHub\SideSeat\src\SideSeat\obj\Debug\net10.0\compressed\mt5rg1zb48-{0}-c2jlpeoesf-c2jlpeoesf.gz
 C:\Users\nikpe\Documents\GitHub\SideSeat\src\SideSeat\obj\Debug\net10.0\compressed\oqp8q8sw2g-{0}-erw9l3u2r3-erw9l3u2r3.gz
@@ -473,8 +472,12 @@ c:\Users\nikpe\Documents\GitHub\SideSeat\artifacts\verify-build\SideSeat.deps.js
 c:\Users\nikpe\Documents\GitHub\SideSeat\artifacts\verify-build\SideSeat.runtimeconfig.json
 c:\Users\nikpe\Documents\GitHub\SideSeat\artifacts\verify-build\SideSeat.dll
 c:\Users\nikpe\Documents\GitHub\SideSeat\artifacts\verify-build\SideSeat.pdb
-C:\Users\nikpe\Documents\GitHub\SideSeat\src\SideSeat\obj\Debug\net10.0\compressed\panfg2bemx-{0}-5p4hhfkhce-5p4hhfkhce.gz
-C:\Users\nikpe\Documents\GitHub\SideSeat\src\SideSeat\obj\Debug\net10.0\compressed\2jeb1sp3qf-{0}-o6morf1kzo-o6morf1kzo.gz
 C:\Users\nikpe\Documents\GitHub\SideSeat\src\SideSeat\bin\Debug\net10.0\Microsoft.AspNetCore.Authentication.Google.dll
 C:\Users\nikpe\Documents\GitHub\SideSeat\src\SideSeat\bin\Debug\net10.0\Microsoft.AspNetCore.Identity.EntityFrameworkCore.dll
 C:\Users\nikpe\Documents\GitHub\SideSeat\src\SideSeat\bin\Debug\net10.0\appsettings.Docker.json
+C:\Users\nikpe\Documents\GitHub\SideSeat\src\SideSeat\obj\Debug\net10.0\compressed\buslpy2202-{0}-qn2wjdnv2y-qn2wjdnv2y.gz
+C:\Users\nikpe\Documents\GitHub\SideSeat\src\SideSeat\obj\Debug\net10.0\compressed\2jeb1sp3qf-{0}-b504sk5smm-b504sk5smm.gz
+C:\Users\nikpe\Documents\GitHub\SideSeat\src\SideSeat\obj\Debug\net10.0\compressed\panfg2bemx-{0}-1igncvaitt-1igncvaitt.gz
+C:\Users\nikpe\Documents\GitHub\SideSeat\src\SideSeat\obj\Debug\net10.0\compressed\enqnzennzg-{0}-21as5omtek-21as5omtek.gz
+C:\Users\nikpe\Documents\GitHub\SideSeat\src\SideSeat\obj\Debug\net10.0\staticwebassets.upToDateCheck.txt
+C:\Users\nikpe\Documents\GitHub\SideSeat\src\SideSeat\obj\Debug\net10.0\compressed\2jeb1sp3qf-{0}-kqyj56zx3d-kqyj56zx3d.gz

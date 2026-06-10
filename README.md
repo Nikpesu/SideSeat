@@ -14,6 +14,7 @@ SideSeat povezuje vozače i putnike kroz objavu vožnji, rezervacije, potvrđiva
 - [Mogućnosti](#mogućnosti)
 - [Tehnologije](#tehnologije)
 - [Brzi start preko Docker Huba](#brzi-start-preko-docker-huba)
+- [Visual Studio](#visual-studio)
 - [Lokalno pokretanje](#lokalno-pokretanje)
 - [Konfiguracija](#konfiguracija)
 - [Plaćanja i saldo](#plaćanja-i-saldo)
@@ -98,6 +99,26 @@ Za brisanje baze i uploada:
 docker compose down -v
 ```
 
+## Visual Studio
+
+Otvori root solution `SideSeat.slnx` u Visual Studio 2022 s instaliranim workloadovima **ASP.NET and web development** i, za Docker način rada, **Container development tools**.
+
+### Pokretanje bez Dockera
+
+1. Kao startup projekt odaberi `SideSeat`.
+2. U gornjem izborniku odaberi profil `https`.
+3. Pokreni projekt tipkom `F5` ili `Ctrl+F5`.
+
+Aplikacija koristi SQL Server LocalDB i pri pokretanju automatski primjenjuje EF Core migracije. Otvara se na `https://localhost:7119`.
+
+### Pokretanje kroz Docker Compose
+
+1. Pokreni Docker Desktop u Linux container načinu rada.
+2. Desnim klikom na `docker-compose` odaberi **Set as Startup Project**.
+3. Pokreni projekt tipkom `F5` ili `Ctrl+F5`.
+
+Visual Studio tada pokreće i `sideseat-web` i `sideseat-db`. Aplikacija je dostupna na `http://localhost:8080`, a podaci i slike ostaju spremljeni u Docker volumeima.
+
 ## Lokalno pokretanje
 
 ### Preduvjeti
@@ -139,12 +160,12 @@ Najvažnije varijable:
 
 ```dotenv
 SA_PASSWORD=SideSeat123!
-DOCKERHUB_IMAGE=nikolica/sideseat:v0.14
-SIDESEAT_VERSION=v0.14
 GOOGLE_CLIENT_ID=
 GOOGLE_CLIENT_SECRET=
 DUMMY_DATA=false
 ```
+
+Verzija, `ASPNETCORE_ENVIRONMENT` i `ASPNETCORE_URLS` ugrađeni su u Docker image. Aplikacija u Dockeru automatski sastavlja connection string za `sideseat-db`; preko `.env` mijenja se samo `SA_PASSWORD`. Napredni overrideovi ostavljeni su zakomentirani u Compose datotekama.
 
 `DUMMY_DATA` je zadano `false`. Za Docker demonstraciju sa seedanim testnim podacima postavi:
 

@@ -18,5 +18,7 @@ public class OcjenaVoznje
     public int BrojZvjezdica { get; set; }
     public string Komentar { get; set; } = string.Empty;
     public DateTime Kreirano { get; set; }
+    public DateTime? Uredeno { get; set; }
+    public bool Administratorska { get; set; }
     public virtual ICollection<OcjenaSlika> Slike { get; set; } = new List<OcjenaSlika>();
 }

@@ -2,10 +2,6 @@ services:
   sideseat-db:
     image: mcr.microsoft.com/mssql/server:2022-latest
     container_name: sideseat-db
-    labels:
-      org.opencontainers.image.title: "SideSeat SQL Server"
-      org.opencontainers.image.version: "${SIDESEAT_DB_VERSION:-2022-latest}"
-      com.sideseat.container.version: "${SIDESEAT_DB_VERSION:-2022-latest}"
     environment:
       ACCEPT_EULA: "Y"
       MSSQL_SA_PASSWORD: "${SA_PASSWORD:-SideSeat123!}"
@@ -25,24 +21,18 @@ services:
     build:
       context: .
       dockerfile: src/SideSeat/Dockerfile
-      args:
-        APP_VERSION: "${SIDESEAT_VERSION:-v0.14}"
     container_name: sideseat-web
-    labels:
-      org.opencontainers.image.title: "SideSeat Web"
-      org.opencontainers.image.version: "${SIDESEAT_VERSION:-v0.14}"
-      com.sideseat.container.version: "${SIDESEAT_VERSION:-v0.14}"
     depends_on:
       sideseat-db:
         condition: service_healthy
     environment:
-      ASPNETCORE_ENVIRONMENT: "Docker"
-      ASPNETCORE_URLS: "http://+:8080"
-      ConnectionStrings__SideSeatDbContext: "Server=sideseat-db,1433;Database=SideSeat;User Id=sa;Password=${SA_PASSWORD:-SideSeat123!};TrustServerCertificate=True;MultipleActiveResultSets=true"
+      SA_PASSWORD: "${SA_PASSWORD:-SideSeat123!}"
       Authentication__Google__ClientId: "${GOOGLE_CLIENT_ID:-}"
       Authentication__Google__ClientSecret: "${GOOGLE_CLIENT_SECRET:-}"
       DUMMY_DATA: "${DUMMY_DATA:-false}"
-      SIDESEAT_VERSION: "${SIDESEAT_VERSION:-v0.14}"
+      # ASPNETCORE_ENVIRONMENT: "Docker"
+      # ASPNETCORE_URLS: "http://+:8080"
+      # ConnectionStrings__SideSeatDbContext: "Server=drugi-db,1433;Database=SideSeat;User Id=sa;Password=lozinka;TrustServerCertificate=True;MultipleActiveResultSets=true"
     ports:
       - "8080:8080"
     volumes:

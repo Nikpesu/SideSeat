@@ -66,7 +66,8 @@ public class OcjenaController : Controller
             .ToList();
 
         var reservationIds = relevantReservations.Select(r => r.Id).ToHashSet();
-        var ratings = _db.Ocjene
+        var isAdmin = User.IsInRole("Admin");
+        var ratingsQuery = _db.Ocjene
             .AsNoTracking()
             .Include(o => o.Autor)
             .Include(o => o.Slike)
@@ -81,13 +82,19 @@ public class OcjenaController : Controller
             .Include(o => o.Rezervacija)
             .ThenInclude(r => r.Voznja)
             .ThenInclude(v => v.OdredisniGrad)
-            .Where(o => reservationIds.Contains(o.RezervacijaId))
+            .AsQueryable();
+        if (!isAdmin)
+        {
+            ratingsQuery = ratingsQuery.Where(o => reservationIds.Contains(o.RezervacijaId));
+        }
+
+        var ratings = ratingsQuery
             .OrderByDescending(o => o.Kreirano)
             .ToList();
 
         var given = ratings
             .Where(o => o.AutorId == userId.Value)
-            .Select(MapHistoryRow)
+            .Select(o => MapHistoryRow(o, canDeleteImages: true))
             .ToList();
 
         var received = ratings
@@ -96,7 +103,7 @@ public class OcjenaController : Controller
                 var targetId = ResolveTargetId(o);
                 return targetId == userId.Value;
             })
-            .Select(MapHistoryRow)
+            .Select(o => MapHistoryRow(o, canDeleteImages: isAdmin))
             .ToList();
 
         var ratedByMeIds = ratings
@@ -126,6 +133,9 @@ public class OcjenaController : Controller
             Pending = pending,
             Given = given,
             Received = received,
+            AdminAll = isAdmin
+                ? ratings.Select(o => MapHistoryRow(o, canDeleteImages: true)).ToList()
+                : new List<OcjenaHistoryItemViewModel>(),
             GivenAverage = given.Count == 0 ? 0 : given.Average(x => x.BrojZvjezdica),
             ReceivedAverage = received.Count == 0 ? 0 : received.Average(x => x.BrojZvjezdica)
         };
@@ -138,7 +148,7 @@ public class OcjenaController : Controller
             ? o.Rezervacija.PutnikId
             : o.Rezervacija.Voznja.VozacId;
 
-    private static OcjenaHistoryItemViewModel MapHistoryRow(OcjenaVoznje o)
+    private static OcjenaHistoryItemViewModel MapHistoryRow(OcjenaVoznje o, bool canDeleteImages)
     {
         var targetIsPassenger = o.AutorId == o.Rezervacija.Voznja.VozacId;
         var targetName = targetIsPassenger
@@ -154,23 +164,37 @@ public class OcjenaController : Controller
             BrojZvjezdica = o.BrojZvjezdica,
             Komentar = o.Komentar,
             Kreirano = o.Kreirano,
+            Uredeno = o.Uredeno,
+            Administratorska = o.Administratorska,
             RouteLabel = $"{o.Rezervacija.Voznja.PolazniGrad.Naziv} -> {o.Rezervacija.Voznja.OdredisniGrad.Naziv}",
-            Slike = MapImages(o.Slike)
+            Slike = MapImages(o.Slike, canDeleteImages)
         };
     }
 
-    [Authorize(Roles = "Admin")]
     public IActionResult Details(int id)
     {
+        var userId = User.GetKorisnikId();
+        if (userId is null)
+        {
+            return Challenge();
+        }
+
         var ocjena = _db.Ocjene
             .AsNoTracking()
             .Include(o => o.Autor)
             .Include(o => o.Slike)
             .Include(o => o.Rezervacija)
+            .ThenInclude(r => r.Voznja)
             .FirstOrDefault(o => o.Id == id);
         if (ocjena is null)
         {
             return NotFound();
+        }
+
+        var targetId = ResolveTargetId(ocjena);
+        if (!User.IsInRole("Admin") && ocjena.AutorId != userId.Value && targetId != userId.Value)
+        {
+            return Forbid();
         }
 
         return View(ocjena);
@@ -205,11 +229,7 @@ public class OcjenaController : Controller
             return Forbid();
         }
 
-        var alreadyRated = _db.Ocjene.Any(o => o.RezervacijaId == rezervacijaId && o.AutorId == userId.Value);
-        if (alreadyRated)
-        {
-            return RedirectToAction("Index", "Rezervacija");
-        }
+        var previousReviewCount = _db.Ocjene.Count(o => o.RezervacijaId == rezervacijaId && o.AutorId == userId.Value);
 
         var targetName = rezervacija.Voznja.VozacId == userId.Value
             ? $"{rezervacija.Putnik.Ime} {rezervacija.Putnik.Prezime}"
@@ -218,7 +238,8 @@ public class OcjenaController : Controller
         return View(new CreateOcjenaViewModel
         {
             RezervacijaId = rezervacijaId,
-            TargetName = targetName
+            TargetName = targetName,
+            IsAdditional = previousReviewCount > 0
         });
     }
 
@@ -250,12 +271,6 @@ public class OcjenaController : Controller
         if (rezervacija.PutnikId != userId.Value && rezervacija.Voznja.VozacId != userId.Value)
         {
             return Forbid();
-        }
-
-        var alreadyRated = await _db.Ocjene.AnyAsync(o => o.RezervacijaId == model.RezervacijaId && o.AutorId == userId.Value);
-        if (alreadyRated)
-        {
-            return RedirectToAction("Index", "Rezervacija");
         }
 
         if (!ModelState.IsValid)
@@ -299,6 +314,94 @@ public class OcjenaController : Controller
         return RedirectToAction("Index", "Rezervacija");
     }
 
+    public async Task<IActionResult> Edit(int id)
+    {
+        var userId = User.GetKorisnikId();
+        if (userId is null)
+        {
+            return Challenge();
+        }
+
+        var ocjena = await _db.Ocjene
+            .AsNoTracking()
+            .Include(o => o.Slike)
+            .Include(o => o.Rezervacija)
+            .ThenInclude(r => r.Putnik)
+            .Include(o => o.Rezervacija)
+            .ThenInclude(r => r.Voznja)
+            .ThenInclude(v => v.Vozac)
+            .FirstOrDefaultAsync(o => o.Id == id);
+        if (ocjena is null)
+        {
+            return NotFound();
+        }
+
+        if (ocjena.AutorId != userId.Value)
+        {
+            return Forbid();
+        }
+
+        return View(new EditOcjenaViewModel
+        {
+            Id = ocjena.Id,
+            RezervacijaId = ocjena.RezervacijaId,
+            TargetName = ResolveTargetName(ocjena.Rezervacija, userId.Value),
+            BrojZvjezdica = ocjena.BrojZvjezdica,
+            Komentar = ocjena.Komentar,
+            PostojeceSlike = MapImages(ocjena.Slike, canDelete: true)
+        });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Edit(int id, EditOcjenaViewModel model)
+    {
+        var userId = User.GetKorisnikId();
+        if (userId is null)
+        {
+            return Challenge();
+        }
+
+        if (id != model.Id)
+        {
+            return BadRequest();
+        }
+
+        var ocjena = await _db.Ocjene
+            .Include(o => o.Slike)
+            .Include(o => o.Rezervacija)
+            .ThenInclude(r => r.Putnik)
+            .Include(o => o.Rezervacija)
+            .ThenInclude(r => r.Voznja)
+            .ThenInclude(v => v.Vozac)
+            .FirstOrDefaultAsync(o => o.Id == id);
+        if (ocjena is null)
+        {
+            return NotFound();
+        }
+
+        if (ocjena.AutorId != userId.Value)
+        {
+            return Forbid();
+        }
+
+        model.TargetName = ResolveTargetName(ocjena.Rezervacija, userId.Value);
+        model.PostojeceSlike = MapImages(ocjena.Slike, canDelete: true);
+        if (!ModelState.IsValid ||
+            !ValidateReviewImages(model.Slike, nameof(model.Slike), ocjena.Slike.Count))
+        {
+            return View(model);
+        }
+
+        ocjena.BrojZvjezdica = model.BrojZvjezdica;
+        ocjena.Komentar = model.Komentar.Trim();
+        ocjena.Uredeno = DateTime.UtcNow;
+        await SaveReviewImagesAsync(ocjena.Id, model.Slike);
+        await _db.SaveChangesAsync();
+
+        return RedirectToAction(nameof(Index));
+    }
+
     [Authorize(Roles = "Admin")]
     public IActionResult AdminCreate()
     {
@@ -314,6 +417,11 @@ public class OcjenaController : Controller
     public async Task<IActionResult> AdminCreate(OcjenaAdminFormViewModel model)
     {
         if (!ModelState.IsValid)
+        {
+            return View(model);
+        }
+
+        if (!ValidateReviewImages(model.Slike, nameof(model.Slike)))
         {
             return View(model);
         }
@@ -338,10 +446,13 @@ public class OcjenaController : Controller
             AutorId = model.AutorId,
             BrojZvjezdica = model.BrojZvjezdica,
             Komentar = model.Komentar.Trim(),
-            Kreirano = model.Kreirano
+            Kreirano = model.Kreirano,
+            Administratorska = true
         };
 
         _db.Ocjene.Add(ocjena);
+        await _db.SaveChangesAsync();
+        await SaveReviewImagesAsync(ocjena.Id, model.Slike);
         await _db.SaveChangesAsync();
         return RedirectToAction(nameof(Index));
     }
@@ -349,7 +460,10 @@ public class OcjenaController : Controller
     [Authorize(Roles = "Admin")]
     public IActionResult AdminEdit(int id)
     {
-        var ocjena = _db.Ocjene.AsNoTracking().FirstOrDefault(o => o.Id == id);
+        var ocjena = _db.Ocjene
+            .AsNoTracking()
+            .Include(o => o.Slike)
+            .FirstOrDefault(o => o.Id == id);
         if (ocjena is null)
         {
             return NotFound();
@@ -362,7 +476,8 @@ public class OcjenaController : Controller
             AutorId = ocjena.AutorId,
             BrojZvjezdica = ocjena.BrojZvjezdica,
             Komentar = ocjena.Komentar,
-            Kreirano = ocjena.Kreirano
+            Kreirano = ocjena.Kreirano,
+            PostojeceSlike = MapImages(ocjena.Slike, canDelete: true)
         });
     }
 
@@ -376,15 +491,18 @@ public class OcjenaController : Controller
             return BadRequest();
         }
 
-        if (!ModelState.IsValid)
-        {
-            return View(model);
-        }
-
-        var ocjena = await _db.Ocjene.FirstOrDefaultAsync(o => o.Id == id);
+        var ocjena = await _db.Ocjene
+            .Include(o => o.Slike)
+            .FirstOrDefaultAsync(o => o.Id == id);
         if (ocjena is null)
         {
             return NotFound();
+        }
+
+        model.PostojeceSlike = MapImages(ocjena.Slike, canDelete: true);
+        if (!ModelState.IsValid)
+        {
+            return View(model);
         }
 
         var rezervacijaExists = await _db.Rezervacije.AnyAsync(r => r.Id == model.RezervacijaId);
@@ -401,12 +519,19 @@ public class OcjenaController : Controller
             return View(model);
         }
 
+        if (!ValidateReviewImages(model.Slike, nameof(model.Slike), ocjena.Slike.Count))
+        {
+            return View(model);
+        }
+
         ocjena.RezervacijaId = model.RezervacijaId;
         ocjena.AutorId = model.AutorId;
         ocjena.BrojZvjezdica = model.BrojZvjezdica;
         ocjena.Komentar = model.Komentar.Trim();
         ocjena.Kreirano = model.Kreirano;
+        ocjena.Uredeno = DateTime.UtcNow;
 
+        await SaveReviewImagesAsync(ocjena.Id, model.Slike);
         await _db.SaveChangesAsync();
         return RedirectToAction(nameof(Details), new { id = ocjena.Id });
     }
@@ -444,6 +569,68 @@ public class OcjenaController : Controller
         _db.Ocjene.Remove(ocjena);
         await _db.SaveChangesAsync();
         return RedirectToAction(nameof(Index));
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> DeleteImage(int id)
+    {
+        var userId = User.GetKorisnikId();
+        if (userId is null)
+        {
+            return Unauthorized();
+        }
+
+        var slika = await _db.OcjenaSlike
+            .Include(s => s.OcjenaVoznje)
+            .FirstOrDefaultAsync(s => s.Id == id);
+        if (slika is null)
+        {
+            return NotFound();
+        }
+
+        if (!User.IsInRole("Admin") && slika.OcjenaVoznje.AutorId != userId.Value)
+        {
+            return Forbid();
+        }
+
+        DeleteReviewImageFile(slika);
+        _db.OcjenaSlike.Remove(slika);
+        slika.OcjenaVoznje.Uredeno = DateTime.UtcNow;
+        await _db.SaveChangesAsync();
+
+        return Json(new { success = true, imageId = id });
+    }
+
+    [Authorize(Roles = "Admin")]
+    public IActionResult Attachments()
+    {
+        return View();
+    }
+
+    [HttpGet]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> AttachmentList()
+    {
+        var attachments = await _db.OcjenaSlike
+            .AsNoTracking()
+            .Include(s => s.OcjenaVoznje)
+            .ThenInclude(o => o.Autor)
+            .OrderByDescending(s => s.CreatedAt)
+            .Select(s => new AdminOcjenaAttachmentViewModel
+            {
+                ImageId = s.Id,
+                OcjenaId = s.OcjenaVoznjeId,
+                RezervacijaId = s.OcjenaVoznje.RezervacijaId,
+                Autor = $"{s.OcjenaVoznje.Autor.Ime} {s.OcjenaVoznje.Autor.Prezime}",
+                FileName = s.FileName,
+                FilePath = s.FilePath,
+                FileSize = s.FileSize,
+                CreatedAt = s.CreatedAt
+            })
+            .ToListAsync();
+
+        return PartialView("_AttachmentList", attachments);
     }
 
     [HttpGet]
@@ -520,17 +707,20 @@ public class OcjenaController : Controller
         return Json(results);
     }
 
-    private static List<OcjenaSlikaViewModel> MapImages(IEnumerable<OcjenaSlika> slike) =>
+    private static List<OcjenaSlikaViewModel> MapImages(IEnumerable<OcjenaSlika> slike, bool canDelete = false) =>
         slike
             .OrderBy(s => s.CreatedAt)
             .Select(s => new OcjenaSlikaViewModel
             {
+                Id = s.Id,
+                OcjenaVoznjeId = s.OcjenaVoznjeId,
                 FileName = s.FileName,
-                FilePath = s.FilePath
+                FilePath = s.FilePath,
+                CanDelete = canDelete
             })
             .ToList();
 
-    private bool ValidateReviewImages(IEnumerable<IFormFile>? files, string fieldName)
+    private bool ValidateReviewImages(IEnumerable<IFormFile>? files, string fieldName, int existingCount = 0)
     {
         var images = files?.Where(f => f.Length > 0).ToList() ?? new List<IFormFile>();
         if (images.Count == 0)
@@ -538,9 +728,9 @@ public class OcjenaController : Controller
             return true;
         }
 
-        if (images.Count > MaxReviewImageCount)
+        if (existingCount + images.Count > MaxReviewImageCount)
         {
-            ModelState.AddModelError(fieldName, $"Mozes dodati najvise {MaxReviewImageCount} slika.");
+            ModelState.AddModelError(fieldName, $"Recenzija moze imati najvise {MaxReviewImageCount} slika.");
             return false;
         }
 
@@ -608,12 +798,25 @@ public class OcjenaController : Controller
 
         foreach (var slika in slike)
         {
-            var relativePath = slika.FilePath.TrimStart('/').Replace('/', Path.DirectorySeparatorChar);
-            var diskPath = Path.Combine(webRootPath, relativePath);
-            if (System.IO.File.Exists(diskPath))
-            {
-                System.IO.File.Delete(diskPath);
-            }
+            DeleteReviewImageFile(slika, webRootPath);
         }
     }
+
+    private void DeleteReviewImageFile(OcjenaSlika slika, string? webRootPath = null)
+    {
+        webRootPath ??= _webHostEnvironment.WebRootPath ??
+            Path.Combine(_webHostEnvironment.ContentRootPath, "wwwroot");
+        var relativePath = slika.FilePath.TrimStart('/').Replace('/', Path.DirectorySeparatorChar);
+        var diskPath = Path.GetFullPath(Path.Combine(webRootPath, relativePath));
+        var uploadsRoot = Path.GetFullPath(Path.Combine(webRootPath, "uploads", "ocjene"));
+        if (diskPath.StartsWith(uploadsRoot, StringComparison.OrdinalIgnoreCase) && System.IO.File.Exists(diskPath))
+        {
+            System.IO.File.Delete(diskPath);
+        }
+    }
+
+    private static string ResolveTargetName(Rezervacija rezervacija, int authorId) =>
+        rezervacija.Voznja.VozacId == authorId
+            ? $"{rezervacija.Putnik.Ime} {rezervacija.Putnik.Prezime}".Trim()
+            : $"{rezervacija.Voznja.Vozac.Ime} {rezervacija.Voznja.Vozac.Prezime}".Trim();
 }

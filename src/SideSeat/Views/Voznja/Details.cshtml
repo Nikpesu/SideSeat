@@ -186,6 +186,14 @@
 							<td>@ocjena.BrojZvjezdica</td>
 							<td>
 								@ocjena.Komentar
+								@if (ocjena.Administratorska)
+								{
+									<small class="d-block ss-datetime-help">Administratorska recenzija</small>
+								}
+								@if (ocjena.Uredeno.HasValue)
+								{
+									<small class="d-block ss-datetime-help">Uređena recenzija</small>
+								}
 								<partial name="_OcjenaSlike" model="ocjena.Slike" />
 							</td>
 						</tr>
@@ -223,6 +231,14 @@
 							<td>@ocjena.BrojZvjezdica</td>
 							<td>
 								@ocjena.Komentar
+								@if (ocjena.Administratorska)
+								{
+									<small class="d-block ss-datetime-help">Administratorska recenzija</small>
+								}
+								@if (ocjena.Uredeno.HasValue)
+								{
+									<small class="d-block ss-datetime-help">Uređena recenzija</small>
+								}
 								<partial name="_OcjenaSlike" model="ocjena.Slike" />
 							</td>
 						</tr>

@@ -15,15 +15,18 @@ public class AuthController : Controller
     private readonly SideSeatDbContext _db;
     private readonly UserManager<AppUser> _userManager;
     private readonly SignInManager<AppUser> _signInManager;
+    private readonly IConfiguration _configuration;
 
     public AuthController(
         SideSeatDbContext db,
         UserManager<AppUser> userManager,
-        SignInManager<AppUser> signInManager)
+        SignInManager<AppUser> signInManager,
+        IConfiguration configuration)
     {
         _db = db;
         _userManager = userManager;
         _signInManager = signInManager;
+        _configuration = configuration;
     }
 
     [AllowAnonymous]
@@ -135,6 +138,12 @@ public class AuthController : Controller
     [ValidateAntiForgeryToken]
     public IActionResult ExternalLogin(string provider, string? returnUrl = null)
     {
+        if (!string.Equals(provider, "Google", StringComparison.Ordinal) || !IsGoogleConfigured())
+        {
+            TempData["AuthError"] = "Google prijava nije konfigurirana.";
+            return RedirectToAction("Index", "Home", new { auth = "login", returnUrl = GetSafeReturnUrl(returnUrl) });
+        }
+
         var redirectUrl = Url.Action(nameof(ExternalLoginCallback), "Auth", new { returnUrl = GetSafeReturnUrl(returnUrl) });
         var properties = _signInManager.ConfigureExternalAuthenticationProperties(provider, redirectUrl);
         return Challenge(properties, provider);
@@ -292,6 +301,10 @@ public class AuthController : Controller
 
         return RedirectToAction("Index", "Home");
     }
+
+    private bool IsGoogleConfigured() =>
+        !string.IsNullOrWhiteSpace(_configuration["Authentication:Google:ClientId"]) &&
+        !string.IsNullOrWhiteSpace(_configuration["Authentication:Google:ClientSecret"]);
 
     private void AddIdentityErrors(IdentityResult result)
     {

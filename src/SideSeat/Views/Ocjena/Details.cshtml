@@ -1,8 +1,10 @@
 @model SideSeat.Models.OcjenaVoznje
 @using SideSeat.Models.Ocjena
+@using SideSeat.Security
 @{
     ViewData["Title"] = "Detalji ocjene";
     var isAdmin = User.IsInRole("Admin");
+    var canEdit = User.GetKorisnikId() == Model.AutorId;
 }
 
 <section class="ss-page">
@@ -41,7 +43,15 @@
                 <dt>Komentar</dt>
                 <dd>
                     @Model.Komentar
-                    <partial name="_OcjenaSlike" model="Model.Slike.Select(s => new OcjenaSlikaViewModel { FileName = s.FileName, FilePath = s.FilePath }).ToList()" />
+                    @if (Model.Administratorska)
+                    {
+                        <small class="d-block ss-datetime-help">Administratorska recenzija</small>
+                    }
+                    @if (Model.Uredeno.HasValue)
+                    {
+                        <small class="d-block ss-datetime-help">Uređena recenzija @Model.Uredeno.Value.ToString("dd.MM.yyyy HH:mm")</small>
+                    }
+                    <partial name="_OcjenaSlike" model="Model.Slike.Select(s => new OcjenaSlikaViewModel { Id = s.Id, OcjenaVoznjeId = s.OcjenaVoznjeId, FileName = s.FileName, FilePath = s.FilePath, CanDelete = canEdit || isAdmin }).ToList()" />
                 </dd>
             </div>
             <div>
@@ -51,6 +61,11 @@
         </dl>
 
         <div class="ss-actions">
+            @if (canEdit)
+            {
+                <a class="ss-btn" asp-controller="Ocjena" asp-action="Edit" asp-route-id="@Model.Id">Uredi recenziju</a>
+                <a class="ss-btn ss-btn-secondary" asp-controller="Ocjena" asp-action="Create" asp-route-rezervacijaId="@Model.RezervacijaId">Dodatna recenzija</a>
+            }
             @if (isAdmin)
             {
                 <a class="ss-btn" asp-controller="Ocjena" asp-action="AdminEdit" asp-route-id="@Model.Id">Uredi ocjenu</a>

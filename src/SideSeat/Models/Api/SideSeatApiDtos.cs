@@ -175,6 +175,8 @@ public class OcjenaDto
     public int BrojZvjezdica { get; set; }
     public string Komentar { get; set; } = string.Empty;
     public DateTime Kreirano { get; set; }
+    public DateTime? Uredeno { get; set; }
+    public bool Administratorska { get; set; }
     public List<OcjenaSlikaDto> Slike { get; set; } = new();
 }
 

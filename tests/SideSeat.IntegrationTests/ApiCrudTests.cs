@@ -278,8 +278,8 @@ public class ApiCrudTests : IClassFixture<SideSeatTestFactory>
 
         foreach (var payment in new[]
                  {
-                     new { Method = "PayPal", Account = "putnik@paypal.test", Tip = "uplata-paypal" },
-                     new { Method = "Revolut Pay", Account = "@putnik-revolut", Tip = "uplata-revolut-pay" }
+                     new { Method = "PayPal", Account = "putnik@paypal.test", Provider = "PayPal", Tip = "uplata-paypal" },
+                     new { Method = "Revolut Pay", Account = "@putnik-revolut", Provider = "Revolut", Tip = "uplata-revolut-pay" }
                  })
         {
             var page = await passenger.GetStringAsync("/Korisnik/Uplata?amount=10");
@@ -306,7 +306,7 @@ public class ApiCrudTests : IClassFixture<SideSeatTestFactory>
             Assert.Contains(await db.SaldoTransakcije.ToListAsync(), transaction =>
                 transaction.KorisnikId == 2 &&
                 transaction.Tip == payment.Tip &&
-                transaction.Komentar == $"Uplaćeno sa {payment.Account} računa");
+                transaction.Komentar == $"Uplaćeno sa {payment.Account} {payment.Provider} računa");
         }
 
         using var finalScope = _factory.Services.CreateScope();
@@ -640,6 +640,8 @@ public class ApiCrudTests : IClassFixture<SideSeatTestFactory>
         Assert.True(created.IsSuccessStatusCode);
 
         string imagePath;
+        int imageId;
+        int reviewId;
         using (var scope = _factory.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<SideSeatDbContext>();
@@ -647,6 +649,8 @@ public class ApiCrudTests : IClassFixture<SideSeatTestFactory>
             Assert.StartsWith("/uploads/ocjene/", slika.FilePath);
             Assert.True(File.Exists(Path.Combine(_factory.WebRootPath, slika.FilePath.TrimStart('/').Replace('/', Path.DirectorySeparatorChar))));
             imagePath = slika.FilePath;
+            imageId = slika.Id;
+            reviewId = slika.OcjenaVoznjeId;
         }
 
         var imageResponse = await client.GetAsync(imagePath);
@@ -656,6 +660,74 @@ public class ApiCrudTests : IClassFixture<SideSeatTestFactory>
         var api = await client.GetStringAsync("/api/ocjene");
         Assert.Contains("recenzija.png", api);
         Assert.Contains("/uploads/ocjene/", api);
+
+        var editPage = await client.GetStringAsync($"/Ocjena/Edit/{reviewId}");
+        Assert.Contains("Uredi recenziju", editPage);
+        var editToken = ExtractAntiforgeryToken(editPage);
+        using (var editForm = new FormUrlEncodedContent(new Dictionary<string, string>
+               {
+                   ["__RequestVerificationToken"] = editToken,
+                   ["Id"] = reviewId.ToString(),
+                   ["RezervacijaId"] = "1",
+                   ["BrojZvjezdica"] = "4",
+                   ["Komentar"] = "Uređena recenzija"
+               }))
+        {
+            var edited = await client.PostAsync($"/Ocjena/Edit/{reviewId}", editForm);
+            Assert.True(edited.IsSuccessStatusCode);
+        }
+
+        var additionalPage = await client.GetStringAsync("/Ocjena/Create?rezervacijaId=1");
+        Assert.Contains("Dodaj dodatnu recenziju", additionalPage);
+        using (var additionalForm = new FormUrlEncodedContent(new Dictionary<string, string>
+               {
+                   ["__RequestVerificationToken"] = ExtractAntiforgeryToken(additionalPage),
+                   ["RezervacijaId"] = "1",
+                   ["IsAdditional"] = "true",
+                   ["BrojZvjezdica"] = "5",
+                   ["Komentar"] = "Dodatna recenzija"
+               }))
+        {
+            var additional = await client.PostAsync("/Ocjena/Create", additionalForm);
+            Assert.True(additional.IsSuccessStatusCode);
+        }
+
+        var adminCreatePage = await client.GetStringAsync("/Ocjena/AdminCreate");
+        using (var adminForm = new FormUrlEncodedContent(new Dictionary<string, string>
+               {
+                   ["__RequestVerificationToken"] = ExtractAntiforgeryToken(adminCreatePage),
+                   ["RezervacijaId"] = "1",
+                   ["AutorId"] = "1",
+                   ["BrojZvjezdica"] = "3",
+                   ["Komentar"] = "Administratorska recenzija",
+                   ["Kreirano"] = DateTime.UtcNow.ToString("O")
+               }))
+        {
+            var adminCreated = await client.PostAsync("/Ocjena/AdminCreate", adminForm);
+            Assert.True(adminCreated.IsSuccessStatusCode);
+        }
+
+        var attachmentList = await client.GetStringAsync("/Ocjena/AttachmentList");
+        Assert.Contains("recenzija.png", attachmentList);
+
+        using (var deleteRequest = new HttpRequestMessage(HttpMethod.Post, $"/Ocjena/DeleteImage/{imageId}"))
+        {
+            deleteRequest.Headers.Add("RequestVerificationToken", editToken);
+            var deleted = await client.SendAsync(deleteRequest);
+            deleted.EnsureSuccessStatusCode();
+        }
+
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<SideSeatDbContext>();
+            var editedReview = await db.Ocjene.SingleAsync(o => o.Id == reviewId);
+            Assert.Equal(4, editedReview.BrojZvjezdica);
+            Assert.NotNull(editedReview.Uredeno);
+            Assert.Equal(3, await db.Ocjene.CountAsync(o => o.RezervacijaId == 1 && o.AutorId == 1));
+            Assert.Contains(await db.Ocjene.ToListAsync(), o => o.Administratorska);
+            Assert.False(await db.OcjenaSlike.AnyAsync(s => s.Id == imageId));
+            Assert.False(File.Exists(Path.Combine(_factory.WebRootPath, imagePath.TrimStart('/').Replace('/', Path.DirectorySeparatorChar))));
+        }
     }
 
     [Fact]

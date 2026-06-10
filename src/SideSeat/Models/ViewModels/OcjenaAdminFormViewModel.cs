@@ -1,4 +1,6 @@
 using System.ComponentModel.DataAnnotations;
+using Microsoft.AspNetCore.Http;
+using SideSeat.Models.Ocjena;
 
 namespace SideSeat.Models.ViewModels;
 
@@ -27,6 +29,8 @@ public class OcjenaAdminFormViewModel
     [Display(Name = "Kreirano")]
     public DateTime Kreirano { get; set; } = DateTime.UtcNow;
 
+    public List<IFormFile> Slike { get; set; } = new();
+    public List<OcjenaSlikaViewModel> PostojeceSlike { get; set; } = new();
     public string RezervacijaLabel { get; set; } = string.Empty;
     public string AutorNaziv { get; set; } = string.Empty;
 }

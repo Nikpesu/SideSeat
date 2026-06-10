@@ -55,6 +55,7 @@ public class OcjeneApiController : ControllerBase
 
         var ocjena = new OcjenaVoznje();
         Apply(request, ocjena);
+        ocjena.Administratorska = true;
         _db.Ocjene.Add(ocjena);
         await _db.SaveChangesAsync();
         await _db.Entry(ocjena).Reference(o => o.Autor).LoadAsync();
@@ -79,6 +80,7 @@ public class OcjeneApiController : ControllerBase
         }
 
         Apply(request, ocjena);
+        ocjena.Uredeno = DateTime.UtcNow;
         await _db.SaveChangesAsync();
         await _db.Entry(ocjena).Reference(o => o.Autor).LoadAsync();
         await _db.Entry(ocjena).Collection(o => o.Slike).LoadAsync();

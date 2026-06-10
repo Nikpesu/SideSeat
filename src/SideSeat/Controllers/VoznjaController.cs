@@ -226,10 +226,14 @@ public class VoznjaController : Controller
             BrojZvjezdica = o.BrojZvjezdica,
             Komentar = o.Komentar,
             Kreirano = o.Kreirano,
+            Uredeno = o.Uredeno,
+            Administratorska = o.Administratorska,
             Slike = o.Slike
                 .OrderBy(s => s.CreatedAt)
                 .Select(s => new SideSeat.Models.Ocjena.OcjenaSlikaViewModel
                 {
+                    Id = s.Id,
+                    OcjenaVoznjeId = s.OcjenaVoznjeId,
                     FileName = s.FileName,
                     FilePath = s.FilePath
                 })
@@ -255,10 +259,14 @@ public class VoznjaController : Controller
             BrojZvjezdica = o.BrojZvjezdica,
             Komentar = o.Komentar,
             Kreirano = o.Kreirano,
+            Uredeno = o.Uredeno,
+            Administratorska = o.Administratorska,
             Slike = o.Slike
                 .OrderBy(s => s.CreatedAt)
                 .Select(s => new SideSeat.Models.Ocjena.OcjenaSlikaViewModel
                 {
+                    Id = s.Id,
+                    OcjenaVoznjeId = s.OcjenaVoznjeId,
                     FileName = s.FileName,
                     FilePath = s.FilePath
                 })

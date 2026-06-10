@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/SideSeat/SideSeat.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/SideSeat.IntegrationTests/SideSeat.IntegrationTests.csproj" />
+  </Folder>
+  <Project Path="docker-compose.dcproj" />
+</Solution>

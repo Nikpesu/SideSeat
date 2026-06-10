@@ -1,0 +1,52 @@
+@model IReadOnlyList<SideSeat.Models.Ocjena.AdminOcjenaAttachmentViewModel>
+@using SideSeat.Models.Ocjena
+
+@if (Model.Count == 0)
+{
+    <p class="ss-empty">Nema spremljenih privitaka recenzija.</p>
+}
+else
+{
+    <div class="ss-table-shell" role="region" aria-label="Privitci recenzija" tabindex="0">
+        <table class="ss-table">
+            <thead>
+                <tr>
+                    <th>Slika</th>
+                    <th>Datoteka</th>
+                    <th>Recenzija</th>
+                    <th>Autor</th>
+                    <th>Veličina</th>
+                    <th>Dodano</th>
+                </tr>
+            </thead>
+            <tbody>
+            @foreach (var item in Model)
+            {
+                <tr data-ss-attachment-row="@item.ImageId">
+                    <td>
+                        <partial name="_OcjenaSlike"
+                                 model="@(new[] { new OcjenaSlikaViewModel
+                                 {
+                                     Id = item.ImageId,
+                                     OcjenaVoznjeId = item.OcjenaId,
+                                     FileName = item.FileName,
+                                     FilePath = item.FilePath,
+                                     CanDelete = true
+                                 } })" />
+                    </td>
+                    <td>@item.FileName</td>
+                    <td>
+                        <a asp-controller="Ocjena" asp-action="Details" asp-route-id="@item.OcjenaId">
+                            Ocjena #@item.OcjenaId
+                        </a>
+                        <small class="d-block ss-datetime-help">Rezervacija #@item.RezervacijaId</small>
+                    </td>
+                    <td>@item.Autor</td>
+                    <td>@((item.FileSize / 1024d).ToString("0.0")) KB</td>
+                    <td>@item.CreatedAt.ToString("dd.MM.yyyy HH:mm")</td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+}

@@ -1,0 +1,24 @@
+@{
+    ViewData["Title"] = "Privitci recenzija";
+}
+
+<section class="ss-page">
+    <nav class="ss-breadcrumb" aria-label="Breadcrumb">
+        <a asp-controller="Home" asp-action="Index">Dashboard</a>
+        <span class="ss-breadcrumb-sep">/</span>
+        <a asp-controller="Ocjena" asp-action="Index">Ocjene</a>
+        <span class="ss-breadcrumb-sep">/</span>
+        <span class="current" aria-current="page">Privitci</span>
+    </nav>
+
+    <div class="ss-page-head">
+        <h1>Privitci recenzija</h1>
+        <p>Administratorski AJAX popis svih slika spremljenih uz recenzije.</p>
+    </div>
+
+    <div class="ss-detail-card"
+         data-ss-attachment-list
+         data-ss-attachment-list-url="@Url.Action("AttachmentList", "Ocjena")">
+        <div class="ss-attachment-loading">Učitavanje privitaka...</div>
+    </div>
+</section>

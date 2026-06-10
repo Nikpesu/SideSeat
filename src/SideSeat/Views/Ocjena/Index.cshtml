@@ -1,6 +1,7 @@
 @model SideSeat.Models.Ocjena.OcjenaTabViewModel
 @{
     ViewData["Title"] = "Ocjene";
+    var isAdmin = User.IsInRole("Admin");
 }
 
 <section class="ss-page">
@@ -13,6 +14,13 @@
     <div class="ss-page-head">
         <h1>Moje ocjene</h1>
         <p>Ocijeni odvozene voznje i prati dane/primljene ocjene.</p>
+        @if (isAdmin)
+        {
+            <div class="ss-actions mt-3">
+                <a class="ss-btn" asp-action="AdminCreate">Dodaj administratorsku recenziju</a>
+                <a class="ss-btn ss-btn-secondary" asp-action="Attachments">Privitci recenzija</a>
+            </div>
+        }
     </div>
 
     <div class="ss-detail-card mb-4">
@@ -86,6 +94,7 @@
                             <th>Zvjezdice</th>
                             <th>Komentar</th>
                             <th>Datum</th>
+                            <th>Akcije</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -99,9 +108,23 @@
                             <td>@row.BrojZvjezdica/5</td>
                             <td>
                                 @row.Komentar
+                                @if (row.Administratorska)
+                                {
+                                    <small class="d-block ss-datetime-help">Administratorska recenzija</small>
+                                }
+                                @if (row.Uredeno.HasValue)
+                                {
+                                    <small class="d-block ss-datetime-help">Uređena recenzija @row.Uredeno.Value.ToString("dd.MM.yyyy HH:mm")</small>
+                                }
                                 <partial name="_OcjenaSlike" model="row.Slike" />
                             </td>
                             <td>@row.Kreirano.ToString("dd.MM.yyyy HH:mm")</td>
+                            <td>
+                                <div class="ss-actions">
+                                    <a class="ss-btn ss-btn-secondary" asp-action="Edit" asp-route-id="@row.OcjenaId">Uredi</a>
+                                    <a class="ss-btn" asp-action="Create" asp-route-rezervacijaId="@row.RezervacijaId">Dodatna recenzija</a>
+                                </div>
+                            </td>
                         </tr>
                     }
                     </tbody>
@@ -142,6 +165,14 @@
                             <td>@row.BrojZvjezdica/5</td>
                             <td>
                                 @row.Komentar
+                                @if (row.Administratorska)
+                                {
+                                    <small class="d-block ss-datetime-help">Administratorska recenzija</small>
+                                }
+                                @if (row.Uredeno.HasValue)
+                                {
+                                    <small class="d-block ss-datetime-help">Uređena recenzija @row.Uredeno.Value.ToString("dd.MM.yyyy HH:mm")</small>
+                                }
                                 <partial name="_OcjenaSlike" model="row.Slike" />
                             </td>
                             <td>@row.Kreirano.ToString("dd.MM.yyyy HH:mm")</td>
@@ -152,4 +183,63 @@
             </div>
         }
     </div>
+
+    @if (isAdmin)
+    {
+        <div class="ss-detail-card mt-4">
+            <h2 class="h5">Sve recenzije (admin)</h2>
+            @if (Model.AdminAll.Count == 0)
+            {
+                <p class="ss-empty">Nema recenzija.</p>
+            }
+            else
+            {
+                <div class="ss-table-shell" role="region" aria-label="Sve recenzije" tabindex="0">
+                    <table class="ss-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Rezervacija</th>
+                                <th>Autor</th>
+                                <th>Primatelj</th>
+                                <th>Ocjena</th>
+                                <th>Komentar</th>
+                                <th>Akcije</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        @foreach (var row in Model.AdminAll)
+                        {
+                            <tr>
+                                <td>#@row.OcjenaId</td>
+                                <td>#@row.RezervacijaId</td>
+                                <td>@row.AuthorName</td>
+                                <td>@row.TargetName</td>
+                                <td>@row.BrojZvjezdica/5</td>
+                                <td>
+                                    @row.Komentar
+                                    @if (row.Administratorska)
+                                    {
+                                        <small class="d-block ss-datetime-help">Administratorska recenzija</small>
+                                    }
+                                    @if (row.Uredeno.HasValue)
+                                    {
+                                        <small class="d-block ss-datetime-help">Uređena recenzija</small>
+                                    }
+                                    <partial name="_OcjenaSlike" model="row.Slike" />
+                                </td>
+                                <td>
+                                    <div class="ss-actions">
+                                        <a class="ss-btn" asp-action="Details" asp-route-id="@row.OcjenaId">Detalji</a>
+                                        <a class="ss-btn ss-btn-secondary" asp-action="AdminEdit" asp-route-id="@row.OcjenaId">Uredi</a>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+    }
 </section>

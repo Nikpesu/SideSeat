@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.Docker.Sdk">
+  <PropertyGroup>
+    <DockerTargetOS>Linux</DockerTargetOS>
+    <DockerDevelopmentMode>Regular</DockerDevelopmentMode>
+    <DockerLaunchAction>LaunchBrowser</DockerLaunchAction>
+    <DockerServiceName>sideseat-web</DockerServiceName>
+    <DockerServiceUrl>http://localhost:8080</DockerServiceUrl>
+    <ProjectVersion>2.1</ProjectVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="docker-compose.yml" />
+    <None Include="docker-compose.hub.yml" />
+    <None Include=".dockerignore" />
+    <None Include=".env.example" />
+  </ItemGroup>
+</Project>

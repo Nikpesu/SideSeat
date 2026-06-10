@@ -442,6 +442,9 @@ namespace SideSeat.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<bool>("Administratorska")
+                        .HasColumnType("bit");
+
                     b.Property<int>("AutorId")
                         .HasColumnType("int");
 
@@ -457,6 +460,9 @@ namespace SideSeat.Migrations
 
                     b.Property<int>("RezervacijaId")
                         .HasColumnType("int");
+
+                    b.Property<DateTime?>("Uredeno")
+                        .HasColumnType("datetime2");
 
                     b.HasKey("Id");
 

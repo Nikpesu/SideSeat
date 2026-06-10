@@ -112,6 +112,10 @@
           <div class="text-center">
             <img id="ssImagePreviewImage" class="ss-image-preview" src="" alt="Slika recenzije" />
           </div>
+          <div class="ss-actions mt-3">
+            <button type="button" class="ss-btn ss-btn-secondary" data-bs-dismiss="modal">Zatvori</button>
+            <button type="button" class="ss-btn ss-image-delete-button" data-ss-image-delete hidden>Obriši sliku</button>
+          </div>
         </div>
       </div>`;
     document.body.appendChild(modal);
@@ -129,12 +133,90 @@
     const title = modal.querySelector("#ssImagePreviewTitle");
     const imageUrl = trigger.getAttribute("data-ss-image-preview") || "";
     const imageTitle = trigger.getAttribute("data-ss-image-title") || "Slika recenzije";
+    const deleteButton = modal.querySelector("[data-ss-image-delete]");
+    const deleteUrl = trigger.getAttribute("data-ss-image-delete-url") || "";
+    const deleteToken = trigger.getAttribute("data-ss-image-delete-token") || "";
+    const imageId = trigger.getAttribute("data-ss-image-id") || "";
 
     image.src = imageUrl;
     image.alt = imageTitle;
     title.textContent = imageTitle;
+    deleteButton.hidden = !deleteUrl;
+    deleteButton.dataset.deleteUrl = deleteUrl;
+    deleteButton.dataset.deleteToken = deleteToken;
+    deleteButton.dataset.imageId = imageId;
+    deleteButton.dataset.imageTitle = imageTitle;
     bootstrap.Modal.getOrCreateInstance(modal).show();
   });
+
+  document.addEventListener("click", async (event) => {
+    const deleteButton = event.target.closest("[data-ss-image-delete]");
+    if (!deleteButton || deleteButton.hidden) {
+      return;
+    }
+
+    const imageTitle = deleteButton.dataset.imageTitle || "ovu sliku";
+    if (!window.confirm(`Želiš li sigurno obrisati sliku "${imageTitle}"?`)) {
+      return;
+    }
+
+    deleteButton.disabled = true;
+    try {
+      const response = await fetch(deleteButton.dataset.deleteUrl, {
+        method: "POST",
+        headers: {
+          "RequestVerificationToken": deleteButton.dataset.deleteToken || "",
+          "X-Requested-With": "XMLHttpRequest"
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error("Brisanje slike nije uspjelo.");
+      }
+
+      const imageId = deleteButton.dataset.imageId;
+      document.querySelectorAll(`[data-ss-image-id="${CSS.escape(imageId)}"]`).forEach((element) => {
+        const images = element.closest(".ss-review-images");
+        element.remove();
+        if (images && images.children.length === 0) {
+          images.remove();
+        }
+      });
+
+      bootstrap.Modal.getOrCreateInstance(document.getElementById("ssImagePreviewModal")).hide();
+      document.dispatchEvent(new CustomEvent("ss:attachment-deleted"));
+    } catch (error) {
+      window.alert(error.message || "Brisanje slike nije uspjelo.");
+    } finally {
+      deleteButton.disabled = false;
+    }
+  });
+
+  const initializeAttachmentLists = () => {
+    document.querySelectorAll("[data-ss-attachment-list]").forEach((container) => {
+      if (container.dataset.ssBound === "true") {
+        return;
+      }
+
+      container.dataset.ssBound = "true";
+      const loadAttachments = async () => {
+        const response = await fetch(container.dataset.ssAttachmentListUrl, {
+          headers: { "X-Requested-With": "XMLHttpRequest" }
+        });
+        if (!response.ok) {
+          container.innerHTML = '<p class="text-danger">Privitke nije moguće učitati.</p>';
+          return;
+        }
+
+        container.innerHTML = await response.text();
+      };
+
+      document.addEventListener("ss:attachment-deleted", loadAttachments);
+      loadAttachments();
+    });
+  };
+
+  initializeAttachmentLists();
 
   document.querySelectorAll("[data-ss-file-picker]").forEach((input) => {
     const container = input.closest(".ss-file-picker");
@@ -213,6 +295,7 @@
     const modalTitle = externalPaymentModalElement.querySelector("[data-external-modal-title]");
     const modalMessage = externalPaymentModalElement.querySelector("[data-external-modal-message]");
     const completeButton = externalPaymentModalElement.querySelector("[data-external-payment-complete]");
+    let providerWindow = null;
 
     paymentForm.addEventListener("submit", (event) => {
       const selected = document.querySelector('input[name="NacinPlacanja"]:checked')?.value;
@@ -229,16 +312,45 @@
         ? "https://www.paypal.com/"
         : "https://www.revolut.com/";
       const providerLabel = selected === "PayPal" ? "PayPal Pay" : "Revolut Pay";
-      window.open(providerUrl, "_blank", "noopener,noreferrer");
+      const popupWidth = 520;
+      const popupHeight = 720;
+      const popupLeft = Math.max(0, window.screenX + (window.outerWidth - popupWidth) / 2);
+      const popupTop = Math.max(0, window.screenY + (window.outerHeight - popupHeight) / 2);
+      const popupName = selected === "PayPal" ? "sideseat-paypal" : "sideseat-revolut";
+      const popupFeatures = [
+        "popup=yes",
+        `width=${popupWidth}`,
+        `height=${popupHeight}`,
+        `left=${Math.round(popupLeft)}`,
+        `top=${Math.round(popupTop)}`,
+        "resizable=yes",
+        "scrollbars=yes",
+        "toolbar=no",
+        "menubar=no",
+        "location=no",
+        "status=no"
+      ].join(",");
+
+      providerWindow = window.open(providerUrl, popupName, popupFeatures);
+      providerWindow?.focus();
       modalTitle.textContent = `Otvoren ${providerLabel}`;
-      modalMessage.textContent = `${providerLabel} otvoren je u novoj kartici.`;
+      modalMessage.textContent = providerWindow
+        ? `${providerLabel} otvoren je u zasebnom popup prozoru.`
+        : `Preglednik je blokirao ${providerLabel} popup. Dopusti popup prozore i pokušaj ponovno.`;
       modal.show();
     });
 
     completeButton?.addEventListener("click", () => {
+      providerWindow?.close();
+      providerWindow = null;
       externalPaymentConfirmed.value = "true";
       modal.hide();
       paymentForm.requestSubmit();
+    });
+
+    externalPaymentModalElement.addEventListener("hidden.bs.modal", () => {
+      providerWindow?.close();
+      providerWindow = null;
     });
   }
 

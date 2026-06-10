@@ -1,6 +1,6 @@
 @model SideSeat.Models.Ocjena.CreateOcjenaViewModel
 @{
-    ViewData["Title"] = "Ocjeni voznju";
+    ViewData["Title"] = Model.IsAdditional ? "Dodatna recenzija" : "Ocijeni voznju";
 }
 
 <section class="ss-page">
@@ -13,13 +13,14 @@
     </nav>
 
     <div class="ss-page-head">
-        <h1>Ocjeni voznju</h1>
-        <p>Ostavi ocjenu i komentar za @Model.TargetName.</p>
+        <h1>@(Model.IsAdditional ? "Dodaj dodatnu recenziju" : "Ocijeni vožnju")</h1>
+        <p>Ostavi @(Model.IsAdditional ? "dodatnu recenziju" : "ocjenu i komentar") za @Model.TargetName.</p>
     </div>
 
     <form asp-action="Create" method="post" enctype="multipart/form-data" class="ss-detail-card">
         @Html.AntiForgeryToken()
         <input type="hidden" asp-for="RezervacijaId" />
+        <input type="hidden" asp-for="IsAdditional" />
         <div asp-validation-summary="ModelOnly" class="text-danger"></div>
 
         <div class="mb-3">

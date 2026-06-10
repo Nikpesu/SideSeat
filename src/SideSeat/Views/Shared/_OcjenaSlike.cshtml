@@ -1,14 +1,19 @@
 @model IEnumerable<SideSeat.Models.Ocjena.OcjenaSlikaViewModel>
+@inject Microsoft.AspNetCore.Antiforgery.IAntiforgery Antiforgery
 
 @if (Model?.Any() == true)
 {
+    var requestToken = Antiforgery.GetAndStoreTokens(Context).RequestToken;
     <div class="ss-review-images">
         @foreach (var slika in Model)
         {
             <button type="button"
                     class="ss-review-thumb"
+                    data-ss-image-id="@slika.Id"
                     data-ss-image-preview="@slika.FilePath"
                     data-ss-image-title="@slika.FileName"
+                    data-ss-image-delete-url="@(slika.CanDelete ? Url.Action("DeleteImage", "Ocjena", new { id = slika.Id }) : null)"
+                    data-ss-image-delete-token="@(slika.CanDelete ? requestToken : null)"
                     aria-label="Uvecaj sliku @slika.FileName">
                 <img src="@slika.FilePath" alt="@slika.FileName" loading="lazy" />
             </button>
