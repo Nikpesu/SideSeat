@@ -17,7 +17,6 @@
         @if (isAdmin)
         {
             <div class="ss-actions mt-3">
-                <a class="ss-btn" asp-action="AdminCreate">Dodaj administratorsku recenziju</a>
                 <a class="ss-btn ss-btn-secondary" asp-action="Attachments">Privitci recenzija</a>
             </div>
         }
@@ -108,15 +107,24 @@
                             <td>@row.BrojZvjezdica/5</td>
                             <td>
                                 @row.Komentar
-                                @if (row.Administratorska)
-                                {
-                                    <small class="d-block ss-datetime-help">Administratorska recenzija</small>
-                                }
                                 @if (row.Uredeno.HasValue)
                                 {
                                     <small class="d-block ss-datetime-help">Uređena recenzija @row.Uredeno.Value.ToString("dd.MM.yyyy HH:mm")</small>
                                 }
                                 <partial name="_OcjenaSlike" model="row.Slike" />
+                                @if (!string.IsNullOrWhiteSpace(row.AdminFeedback))
+                                {
+                                    <div class="alert alert-info mt-2 mb-0">
+                                        <strong>Feedback administratora:</strong> @row.AdminFeedback
+                                        <small class="d-block ss-datetime-help">
+                                            @row.AdminFeedbackAuthor
+                                            @if (row.AdminFeedbackAt.HasValue)
+                                            {
+                                                <text> · @row.AdminFeedbackAt.Value.ToString("dd.MM.yyyy HH:mm")</text>
+                                            }
+                                        </small>
+                                    </div>
+                                }
                             </td>
                             <td>@row.Kreirano.ToString("dd.MM.yyyy HH:mm")</td>
                             <td>
@@ -165,15 +173,24 @@
                             <td>@row.BrojZvjezdica/5</td>
                             <td>
                                 @row.Komentar
-                                @if (row.Administratorska)
-                                {
-                                    <small class="d-block ss-datetime-help">Administratorska recenzija</small>
-                                }
                                 @if (row.Uredeno.HasValue)
                                 {
                                     <small class="d-block ss-datetime-help">Uređena recenzija @row.Uredeno.Value.ToString("dd.MM.yyyy HH:mm")</small>
                                 }
                                 <partial name="_OcjenaSlike" model="row.Slike" />
+                                @if (!string.IsNullOrWhiteSpace(row.AdminFeedback))
+                                {
+                                    <div class="alert alert-info mt-2 mb-0">
+                                        <strong>Feedback administratora:</strong> @row.AdminFeedback
+                                        <small class="d-block ss-datetime-help">
+                                            @row.AdminFeedbackAuthor
+                                            @if (row.AdminFeedbackAt.HasValue)
+                                            {
+                                                <text> · @row.AdminFeedbackAt.Value.ToString("dd.MM.yyyy HH:mm")</text>
+                                            }
+                                        </small>
+                                    </div>
+                                }
                             </td>
                             <td>@row.Kreirano.ToString("dd.MM.yyyy HH:mm")</td>
                         </tr>
@@ -218,20 +235,25 @@
                                 <td>@row.BrojZvjezdica/5</td>
                                 <td>
                                     @row.Komentar
-                                    @if (row.Administratorska)
-                                    {
-                                        <small class="d-block ss-datetime-help">Administratorska recenzija</small>
-                                    }
                                     @if (row.Uredeno.HasValue)
                                     {
                                         <small class="d-block ss-datetime-help">Uređena recenzija</small>
                                     }
                                     <partial name="_OcjenaSlike" model="row.Slike" />
+                                    @if (!string.IsNullOrWhiteSpace(row.AdminFeedback))
+                                    {
+                                        <div class="alert alert-info mt-2 mb-0">
+                                            <strong>Feedback administratora:</strong> @row.AdminFeedback
+                                        </div>
+                                    }
                                 </td>
                                 <td>
                                     <div class="ss-actions">
                                         <a class="ss-btn" asp-action="Details" asp-route-id="@row.OcjenaId">Detalji</a>
                                         <a class="ss-btn ss-btn-secondary" asp-action="AdminEdit" asp-route-id="@row.OcjenaId">Uredi</a>
+                                        <a class="ss-btn ss-btn-secondary" asp-action="AdminFeedback" asp-route-id="@row.OcjenaId">
+                                            @(string.IsNullOrWhiteSpace(row.AdminFeedback) ? "Dodaj feedback" : "Uredi feedback")
+                                        </a>
                                     </div>
                                 </td>
                             </tr>

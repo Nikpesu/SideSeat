@@ -1,0 +1,53 @@
+@model SideSeat.Models.Ocjena.AdminFeedbackViewModel
+@{
+    ViewData["Title"] = "Administratorski feedback";
+}
+
+<section class="ss-page">
+    <nav class="ss-breadcrumb" aria-label="Breadcrumb">
+        <a asp-controller="Home" asp-action="Index">Dashboard</a>
+        <span class="ss-breadcrumb-sep">/</span>
+        <a asp-controller="Ocjena" asp-action="Index">Ocjene</a>
+        <span class="ss-breadcrumb-sep">/</span>
+        <span class="current" aria-current="page">Feedback za ocjenu #@Model.OcjenaId</span>
+    </nav>
+
+    <div class="ss-page-head">
+        <h1>Administratorski feedback</h1>
+        <p>Odgovor administratora prikazuje se uz postojeću recenziju korisnika.</p>
+    </div>
+
+    <div class="ss-detail-card mb-4">
+        <dl class="ss-detail-grid">
+            <div>
+                <dt>Autor recenzije</dt>
+                <dd>@Model.ReviewAuthor</dd>
+            </div>
+            <div>
+                <dt>Ocjena</dt>
+                <dd>@Model.BrojZvjezdica/5</dd>
+            </div>
+            <div>
+                <dt>Komentar korisnika</dt>
+                <dd>@Model.ReviewComment</dd>
+            </div>
+        </dl>
+    </div>
+
+    <form asp-action="AdminFeedback" asp-route-id="@Model.OcjenaId" method="post">
+        @Html.AntiForgeryToken()
+        <input type="hidden" asp-for="OcjenaId" />
+        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+        <div class="ss-detail-card">
+            <label asp-for="Feedback" class="form-label"></label>
+            <textarea asp-for="Feedback" class="form-control" rows="6"></textarea>
+            <span asp-validation-for="Feedback" class="text-danger"></span>
+
+            <div class="ss-actions mt-3">
+                <button type="submit" class="ss-btn">Spremi feedback</button>
+                <a class="ss-btn ss-btn-secondary" asp-action="Details" asp-route-id="@Model.OcjenaId">Odustani</a>
+            </div>
+        </div>
+    </form>
+</section>

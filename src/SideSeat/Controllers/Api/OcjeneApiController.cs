@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using SideSeat.Data;
 using SideSeat.Models;
 using SideSeat.Models.Api;
+using SideSeat.Security;
 
 namespace SideSeat.Controllers.Api;
 
@@ -21,7 +22,11 @@ public class OcjeneApiController : ControllerBase
     [HttpGet]
     public async Task<ActionResult<IEnumerable<OcjenaDto>>> GetAll(string? q = null)
     {
-        var query = _db.Ocjene.AsNoTracking().Include(o => o.Autor).Include(o => o.Slike).AsQueryable();
+        var query = _db.Ocjene.AsNoTracking()
+            .Include(o => o.Autor)
+            .Include(o => o.AdminFeedbackAutor)
+            .Include(o => o.Slike)
+            .AsQueryable();
         if (!string.IsNullOrWhiteSpace(q))
         {
             var term = q.Trim();
@@ -38,6 +43,7 @@ public class OcjeneApiController : ControllerBase
         var ocjena = await _db.Ocjene
             .AsNoTracking()
             .Include(o => o.Autor)
+            .Include(o => o.AdminFeedbackAutor)
             .Include(o => o.Slike)
             .FirstOrDefaultAsync(o => o.Id == id);
         return ocjena is null ? NotFound() : Ok(ocjena.ToDto());
@@ -55,10 +61,10 @@ public class OcjeneApiController : ControllerBase
 
         var ocjena = new OcjenaVoznje();
         Apply(request, ocjena);
-        ocjena.Administratorska = true;
         _db.Ocjene.Add(ocjena);
         await _db.SaveChangesAsync();
         await _db.Entry(ocjena).Reference(o => o.Autor).LoadAsync();
+        await _db.Entry(ocjena).Reference(o => o.AdminFeedbackAutor).LoadAsync();
         await _db.Entry(ocjena).Collection(o => o.Slike).LoadAsync();
         return CreatedAtAction(nameof(Get), new { id = ocjena.Id }, ocjena.ToDto());
     }
@@ -67,7 +73,11 @@ public class OcjeneApiController : ControllerBase
     [Authorize(Roles = "Admin")]
     public async Task<ActionResult<OcjenaDto>> Put(int id, OcjenaRequest request)
     {
-        var ocjena = await _db.Ocjene.Include(o => o.Autor).Include(o => o.Slike).FirstOrDefaultAsync(o => o.Id == id);
+        var ocjena = await _db.Ocjene
+            .Include(o => o.Autor)
+            .Include(o => o.AdminFeedbackAutor)
+            .Include(o => o.Slike)
+            .FirstOrDefaultAsync(o => o.Id == id);
         if (ocjena is null)
         {
             return NotFound();
@@ -100,6 +110,35 @@ public class OcjeneApiController : ControllerBase
         _db.Ocjene.Remove(ocjena);
         await _db.SaveChangesAsync();
         return NoContent();
+    }
+
+    [HttpPut("{id:int}/admin-feedback")]
+    [Authorize(Roles = "Admin")]
+    public async Task<ActionResult<OcjenaDto>> PutAdminFeedback(int id, AdminFeedbackRequest request)
+    {
+        var adminId = User.GetKorisnikId();
+        if (adminId is null)
+        {
+            return Unauthorized();
+        }
+
+        var ocjena = await _db.Ocjene
+            .Include(o => o.Autor)
+            .Include(o => o.AdminFeedbackAutor)
+            .Include(o => o.Slike)
+            .FirstOrDefaultAsync(o => o.Id == id);
+        if (ocjena is null)
+        {
+            return NotFound();
+        }
+
+        ocjena.AdminFeedback = request.Feedback.Trim();
+        ocjena.AdminFeedbackAt = DateTime.UtcNow;
+        ocjena.AdminFeedbackAutorId = adminId.Value;
+        await _db.SaveChangesAsync();
+        await _db.Entry(ocjena).Reference(o => o.AdminFeedbackAutor).LoadAsync();
+
+        return Ok(ocjena.ToDto());
     }
 
     private static void Apply(OcjenaRequest request, OcjenaVoznje ocjena)

@@ -53,13 +53,40 @@
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="~/SideSeat.styles.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/performative.css" asp-append-version="true" />
 </head>
-<body>
+<body data-page-title="@ViewData["Title"]" data-page-controller="@currentController">
+    <div class="ss-launch-banner">
+        <div class="ss-launch-track" aria-label="SideSeat platform capabilities">
+            <span>✦ AI-NATIVE MOBILITY</span>
+            <span>LIVE ROUTE INTELLIGENCE</span>
+            <span>ZERO-FRICTION RESERVATIONS</span>
+            <span>TRUST LAYER INCLUDED</span>
+            <span>✦ AI-NATIVE MOBILITY</span>
+            <span>LIVE ROUTE INTELLIGENCE</span>
+            <span>ZERO-FRICTION RESERVATIONS</span>
+            <span>TRUST LAYER INCLUDED</span>
+        </div>
+    </div>
     <partial name="_RouteMapBackground" />
+    <div class="ss-aurora" aria-hidden="true">
+        <span></span>
+        <span></span>
+        <span></span>
+    </div>
+    <div class="ss-sparkle-field" aria-hidden="true">
+        <i>✦</i><i>✧</i><i>✦</i><i>·</i><i>✧</i><i>✦</i>
+    </div>
     <header class="ss-header">
         <nav class="navbar navbar-expand-lg ss-nav" aria-label="Glavna navigacija">
             <div class="container-fluid ss-shell">
-                <a class="ss-brand" asp-area="" asp-controller="Home" asp-action="Index">SideSeat Transit</a>
+                <a class="ss-brand" asp-area="" asp-controller="Home" asp-action="Index">
+                    <span class="ss-brand-mark">S</span>
+                    <span>
+                        <strong>SideSeat</strong>
+                        <small>AI mobility network</small>
+                    </span>
+                </a>
                 <button class="navbar-toggler ss-nav-toggle" type="button" data-bs-toggle="collapse" data-bs-target="#mainNavigation"
                         aria-controls="mainNavigation" aria-expanded="false" aria-label="Prikazi ili sakrij navigaciju">
                     <span class="ss-nav-toggle-text">Meni</span>
@@ -154,13 +181,15 @@
 
     <footer class="ss-footer">
         <div class="ss-shell ss-footer-inner">
-            <span>&copy; 2026 SideSeat</span>
+            <span>&copy; 2026 SideSeat · Built for movement at machine speed</span>
             <span class="ss-footer-links">
                 <span>Verzija @appVersion</span>
                 <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy policy</a>
             </span>
         </div>
     </footer>
+
+    <partial name="_AiAssistant" />
 
     @if (!string.IsNullOrWhiteSpace(fundsToastMessage))
     {

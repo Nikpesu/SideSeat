@@ -46,12 +46,23 @@
 
         <div class="ss-hero ss-holo-hero">
             <div class="ss-holo-copy">
-                <span class="ss-hero-kicker">Holografski vozni red</span>
-                <h1>SIDESEAT</h1>
+                <span class="ss-hero-kicker"><span>✦</span> The intelligence layer for shared mobility</span>
+                <h1>
+                    Svaka ruta.
+                    <span class="ss-gradient-text" data-ss-word-roll data-words="Predviđena.,Povezana.,Optimizirana.,SideSeat.">SideSeat.</span>
+                </h1>
                 <p>
-                    SideSeat spaja vozace i putnike u realnom vremenu. Prati slobodna mjesta,
-                    potvrdi rezervacije i drzi ritam s planom voznji bez tablica i kaosa.
+                    AI-native platforma koja pretvara vožnje, rezervacije i povjerenje u jedan
+                    fluidan mobility operating system. Manje trenja. Više kretanja. Dramatično bolji pitch deck.
                 </p>
+                <form class="ss-prompt-hero" data-ss-ai-launch-form>
+                    <span aria-hidden="true">✦</span>
+                    <label class="visually-hidden" for="ss-home-ai-prompt">Pitaj SideSeat AI</label>
+                    <input id="ss-home-ai-prompt" type="text" placeholder="Pitaj AI: pronađi mi najbolju vožnju za sutra..." autocomplete="off" />
+                    <button type="submit" aria-label="Otvori SideSeat AI">
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 14-7-4.5 14-3-5.5L5 12Zm6.5 1.5L19 5" /></svg>
+                    </button>
+                </form>
                 <form class="ss-search" method="get" asp-controller="Home" asp-action="Index" aria-label="Pretrazi voznje" data-ss-ajax-form data-ss-ajax-target="[data-ss-home-search-results]">
                     <div class="ss-search-grid">
                         <div>
@@ -86,16 +97,16 @@
                 </div>
                 <div class="ss-hero-meta">
                     <div class="ss-hero-metric">
-                        <span class="ss-hero-label">Aktivne voznje</span>
-                        <span class="ss-hero-value">@Model.BrojAktivnihVoznji</span>
+                        <span class="ss-hero-label"><i></i> Aktivne vožnje</span>
+                        <span class="ss-hero-value" data-ss-counter="@Model.BrojAktivnihVoznji">@Model.BrojAktivnihVoznji</span>
                     </div>
                     <div class="ss-hero-metric">
-                        <span class="ss-hero-label">Rezervacije</span>
-                        <span class="ss-hero-value">@Model.BrojRezervacija</span>
+                        <span class="ss-hero-label"><i></i> Rezervacije</span>
+                        <span class="ss-hero-value" data-ss-counter="@Model.BrojRezervacija">@Model.BrojRezervacija</span>
                     </div>
                     <div class="ss-hero-metric">
-                        <span class="ss-hero-label">Ocjene</span>
-                        <span class="ss-hero-value">@Model.BrojOcjena</span>
+                        <span class="ss-hero-label"><i></i> Trust signals</span>
+                        <span class="ss-hero-value" data-ss-counter="@Model.BrojOcjena">@Model.BrojOcjena</span>
                     </div>
                 </div>
             </div>
@@ -121,6 +132,21 @@
                     }
                 }
                 <div class="ss-holo-pulse"></div>
+            </div>
+        </div>
+
+        <div class="ss-capability-marquee" aria-label="SideSeat capabilities">
+            <div>
+                <span>ROUTE INTELLIGENCE</span><b>✦</b>
+                <span>REAL-TIME CAPACITY</span><b>✦</b>
+                <span>HUMAN TRUST GRAPH</span><b>✦</b>
+                <span>PAYMENT ORCHESTRATION</span><b>✦</b>
+                <span>AI COPILOT</span><b>✦</b>
+                <span>ROUTE INTELLIGENCE</span><b>✦</b>
+                <span>REAL-TIME CAPACITY</span><b>✦</b>
+                <span>HUMAN TRUST GRAPH</span><b>✦</b>
+                <span>PAYMENT ORCHESTRATION</span><b>✦</b>
+                <span>AI COPILOT</span><b>✦</b>
             </div>
         </div>
 
@@ -160,6 +186,7 @@
 
         <div class="ss-home-capabilities" aria-label="Mogucnosti aplikacije">
             <article class="ss-cap-card">
+                <span class="ss-cap-icon">01</span>
                 <h2>Planiranje i objava</h2>
                 <p>Definiraj rutu, cijenu i broj mjesta, a aplikacija automatski vodi evidenciju dostupnosti.</p>
                 @if (isAuthenticated)
@@ -168,11 +195,13 @@
                 }
             </article>
             <article class="ss-cap-card">
+                <span class="ss-cap-icon">02</span>
                 <h2>Rezervacije u letu</h2>
                 <p>Putnici vide aktivne rute, potvrduju mjesto i primaju azuriranja bez dodatnih poziva.</p>
                 <a class="ss-link" asp-controller="Rezervacija" asp-action="Index">Upravljaj rezervacijama</a>
             </article>
             <article class="ss-cap-card">
+                <span class="ss-cap-icon">03</span>
                 <h2>Ocjene i povjerenje</h2>
                 <p>Ocjene voznji i korisnika stvaraju transparentnu mrezu pouzdanih voznji.</p>
                 <a class="ss-link" asp-controller="Ocjena" asp-action="Index">Pogledaj ocjene</a>

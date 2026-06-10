@@ -176,7 +176,9 @@ public class OcjenaDto
     public string Komentar { get; set; } = string.Empty;
     public DateTime Kreirano { get; set; }
     public DateTime? Uredeno { get; set; }
-    public bool Administratorska { get; set; }
+    public string? AdminFeedback { get; set; }
+    public DateTime? AdminFeedbackAt { get; set; }
+    public KorisnikDto? AdminFeedbackAutor { get; set; }
     public List<OcjenaSlikaDto> Slike { get; set; } = new();
 }
 
@@ -190,6 +192,12 @@ public class OcjenaRequest
     public int BrojZvjezdica { get; set; } = 5;
     [Required, StringLength(500)]
     public string Komentar { get; set; } = string.Empty;
+}
+
+public class AdminFeedbackRequest
+{
+    [Required, StringLength(1000)]
+    public string Feedback { get; set; } = string.Empty;
 }
 
 public class SaldoTransakcijaDto

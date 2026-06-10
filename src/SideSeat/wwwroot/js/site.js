@@ -53,6 +53,101 @@
     });
   }
 
+  const initializeSurfaceTilt = () => {
+    const canTilt = window.matchMedia("(hover: hover) and (pointer: fine)").matches &&
+      !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (!canTilt) {
+      return;
+    }
+
+    const tiltSelector = [
+      "[data-ss-tilt]",
+      ".ss-ride-card",
+      ".ss-cap-card",
+      ".ss-flow-step",
+      ".ss-hero-metric",
+      ".ss-holo-row",
+      ".ss-detail-grid > div",
+      ".ss-home-card",
+      ".ss-role-card",
+      ".ss-list-row",
+      ".ss-notification-item"
+    ].join(", ");
+    let activeElement = null;
+    let animationFrame = 0;
+    let pointerX = 0;
+    let pointerY = 0;
+
+    const resetTilt = (element) => {
+      if (!element) {
+        return;
+      }
+
+      element.style.removeProperty("--ss-tilt-x");
+      element.style.removeProperty("--ss-tilt-y");
+      element.style.removeProperty("--ss-tilt-pointer-x");
+      element.style.removeProperty("--ss-tilt-pointer-y");
+      delete element.dataset.ssTiltActive;
+    };
+
+    const renderTilt = () => {
+      animationFrame = 0;
+      if (!activeElement || !activeElement.isConnected) {
+        return;
+      }
+
+      const rect = activeElement.getBoundingClientRect();
+      const normalizedX = Math.min(1, Math.max(0, (pointerX - rect.left) / Math.max(rect.width, 1)));
+      const normalizedY = Math.min(1, Math.max(0, (pointerY - rect.top) / Math.max(rect.height, 1)));
+      const rotateX = (0.5 - normalizedY) * 6;
+      const rotateY = (normalizedX - 0.5) * 8;
+
+      activeElement.classList.add("ss-tilt-surface");
+      activeElement.style.setProperty("--ss-tilt-x", `${rotateX.toFixed(2)}deg`);
+      activeElement.style.setProperty("--ss-tilt-y", `${rotateY.toFixed(2)}deg`);
+      activeElement.style.setProperty("--ss-tilt-pointer-x", `${(normalizedX * 100).toFixed(1)}%`);
+      activeElement.style.setProperty("--ss-tilt-pointer-y", `${(normalizedY * 100).toFixed(1)}%`);
+      activeElement.dataset.ssTiltActive = "true";
+    };
+
+    document.addEventListener("pointermove", (event) => {
+      const nextElement = event.target.closest?.(tiltSelector) || null;
+      if (nextElement !== activeElement) {
+        resetTilt(activeElement);
+        activeElement = nextElement;
+      }
+      if (!activeElement) {
+        return;
+      }
+
+      pointerX = event.clientX;
+      pointerY = event.clientY;
+      if (!animationFrame) {
+        animationFrame = window.requestAnimationFrame(renderTilt);
+      }
+    }, { passive: true });
+
+    document.addEventListener("pointerout", (event) => {
+      if (!activeElement || (event.relatedTarget && activeElement.contains(event.relatedTarget))) {
+        return;
+      }
+
+      resetTilt(activeElement);
+      activeElement = null;
+      if (animationFrame) {
+        window.cancelAnimationFrame(animationFrame);
+        animationFrame = 0;
+      }
+    }, { passive: true });
+
+    window.addEventListener("blur", () => {
+      resetTilt(activeElement);
+      activeElement = null;
+    });
+  };
+
+  initializeSurfaceTilt();
+
   const authModal = document.getElementById("authModal");
   if (authModal) {
     const tabs = Array.from(authModal.querySelectorAll("[data-auth-tab]"));
@@ -792,6 +887,33 @@
     });
   };
 
+  const initializeTableCards = (rootElement = document) => {
+    rootElement.querySelectorAll(".ss-table").forEach((table) => {
+      const headers = Array.from(table.querySelectorAll("thead th"))
+        .map((header) => header.textContent.trim());
+
+      table.querySelectorAll("tbody tr").forEach((row) => {
+        Array.from(row.cells).forEach((cell, index) => {
+          if (cell.colSpan > 1) {
+            cell.classList.add("ss-card-cell-wide");
+            cell.removeAttribute("data-label");
+            return;
+          }
+
+          const label = headers[index] || "";
+          if (label) {
+            cell.dataset.label = label;
+          } else {
+            cell.removeAttribute("data-label");
+          }
+        });
+      });
+
+      table.classList.add("is-card-table");
+      table.closest(".ss-table-shell")?.classList.add("ss-card-table-shell");
+    });
+  };
+
   const initializeAjaxLists = () => {
     document.querySelectorAll("[data-ss-list-page]").forEach((page) => {
       const searchInput = page.querySelector("[data-ss-list-search]");
@@ -871,6 +993,7 @@
           }
 
           currentListRegion.outerHTML = updatedListRegion.outerHTML;
+          initializeTableCards(currentPage);
 
           if (pageSizeElem) {
             pageSizeElem.value = pageSizeValue ?? "";
@@ -1012,12 +1135,396 @@
     });
   };
 
+  const initializePerformativeUi = () => {
+    document.querySelectorAll("[data-ss-word-roll]").forEach((element) => {
+      if (element.dataset.ssBound === "true") {
+        return;
+      }
+
+      const words = (element.dataset.words || "")
+        .split(",")
+        .map((word) => word.trim())
+        .filter(Boolean);
+      if (words.length < 2) {
+        return;
+      }
+
+      element.dataset.ssBound = "true";
+      let index = 0;
+      const rotateWord = () => {
+        if (document.hidden || !element.isConnected) {
+          return;
+        }
+
+        element.classList.add("is-changing");
+        window.setTimeout(() => {
+          index = (index + 1) % words.length;
+          element.textContent = words[index];
+        }, 160);
+        window.setTimeout(() => element.classList.remove("is-changing"), 360);
+      };
+
+      window.setInterval(rotateWord, 3600);
+    });
+
+    document.querySelectorAll("[data-ss-counter]").forEach((element) => {
+      if (element.dataset.ssBound === "true") {
+        return;
+      }
+
+      element.dataset.ssBound = "true";
+      const target = Number.parseInt(element.dataset.ssCounter || "0", 10);
+      if (!Number.isFinite(target) || target <= 0) {
+        element.textContent = "0";
+        return;
+      }
+
+      const animate = () => {
+        const startedAt = performance.now();
+        const duration = Math.min(1200, 500 + target * 18);
+        const frame = (time) => {
+          const progress = Math.min(1, (time - startedAt) / duration);
+          const eased = 1 - Math.pow(1 - progress, 3);
+          element.textContent = Math.round(target * eased).toLocaleString("hr-HR");
+          if (progress < 1) {
+            requestAnimationFrame(frame);
+          }
+        };
+        requestAnimationFrame(frame);
+      };
+
+      if ("IntersectionObserver" in window) {
+        const observer = new IntersectionObserver((entries) => {
+          if (entries.some((entry) => entry.isIntersecting)) {
+            observer.disconnect();
+            animate();
+          }
+        }, { threshold: 0.35 });
+        observer.observe(element);
+      } else {
+        animate();
+      }
+    });
+
+  };
+
+  const initializeAiAssistant = () => {
+    const assistant = document.querySelector("[data-ss-ai]");
+    if (!assistant || assistant.dataset.ssBound === "true") {
+      return;
+    }
+
+    assistant.dataset.ssBound = "true";
+    const panel = assistant.querySelector(".ss-ai-panel");
+    const toggle = assistant.querySelector("[data-ss-ai-toggle]");
+    const close = assistant.querySelector("[data-ss-ai-close]");
+    const form = assistant.querySelector("[data-ss-ai-form]");
+    const input = assistant.querySelector("[data-ss-ai-input]");
+    const messagesElement = assistant.querySelector("[data-ss-ai-messages]");
+    const sendButton = assistant.querySelector("[data-ss-ai-send]");
+    const configured = assistant.dataset.configured === "true";
+    const history = [];
+
+    if (!panel || !toggle || !form || !input || !messagesElement || !sendButton) {
+      return;
+    }
+
+    const isSafeInternalLink = (href) => {
+      if (!href || !href.startsWith("/") || href.startsWith("//")) {
+        return false;
+      }
+
+      try {
+        return new URL(href, window.location.origin).origin === window.location.origin;
+      } catch {
+        return false;
+      }
+    };
+
+    const appendInlineMarkdown = (parent, text) => {
+      const tokenPattern = /(\[([^\]]+)\]\(([^)]+)\)|\*\*([^*]+)\*\*|`([^`]+)`|\*([^*\n]+)\*)/g;
+      let cursor = 0;
+      let match;
+
+      while ((match = tokenPattern.exec(text)) !== null) {
+        if (match.index > cursor) {
+          parent.appendChild(document.createTextNode(text.slice(cursor, match.index)));
+        }
+
+        if (match[2] !== undefined) {
+          const label = match[2];
+          const href = match[3].trim();
+          if (isSafeInternalLink(href)) {
+            const link = document.createElement("a");
+            link.href = href;
+            link.className = "ss-ai-link";
+            link.textContent = label;
+            parent.appendChild(link);
+          } else {
+            parent.appendChild(document.createTextNode(label));
+          }
+        } else if (match[4] !== undefined) {
+          const strong = document.createElement("strong");
+          strong.textContent = match[4];
+          parent.appendChild(strong);
+        } else if (match[5] !== undefined) {
+          const code = document.createElement("code");
+          code.textContent = match[5];
+          parent.appendChild(code);
+        } else if (match[6] !== undefined) {
+          const emphasis = document.createElement("em");
+          emphasis.textContent = match[6];
+          parent.appendChild(emphasis);
+        }
+
+        cursor = tokenPattern.lastIndex;
+      }
+
+      if (cursor < text.length) {
+        parent.appendChild(document.createTextNode(text.slice(cursor)));
+      }
+    };
+
+    const renderMarkdown = (container, markdown) => {
+      const lines = String(markdown || "").replace(/\r\n?/g, "\n").split("\n");
+      let list = null;
+      let listType = "";
+      let paragraphLines = [];
+      let codeBlock = null;
+
+      const closeList = () => {
+        list = null;
+        listType = "";
+      };
+
+      const flushParagraph = () => {
+        if (paragraphLines.length === 0) {
+          return;
+        }
+
+        const paragraph = document.createElement("p");
+        appendInlineMarkdown(paragraph, paragraphLines.join(" "));
+        container.appendChild(paragraph);
+        paragraphLines = [];
+      };
+
+      lines.forEach((line) => {
+        if (line.trim().startsWith("```")) {
+          flushParagraph();
+          closeList();
+          if (codeBlock) {
+            container.appendChild(codeBlock);
+            codeBlock = null;
+          } else {
+            codeBlock = document.createElement("pre");
+            codeBlock.appendChild(document.createElement("code"));
+          }
+          return;
+        }
+
+        if (codeBlock) {
+          const code = codeBlock.querySelector("code");
+          code.textContent += `${code.textContent ? "\n" : ""}${line}`;
+          return;
+        }
+
+        const headingMatch = line.match(/^(#{1,3})\s+(.+)$/);
+        const unorderedMatch = line.match(/^\s*[-*]\s+(.+)$/);
+        const orderedMatch = line.match(/^\s*\d+\.\s+(.+)$/);
+        const quoteMatch = line.match(/^\s*>\s?(.+)$/);
+
+        if (headingMatch) {
+          flushParagraph();
+          closeList();
+          const heading = document.createElement(`h${Math.min(headingMatch[1].length + 2, 5)}`);
+          appendInlineMarkdown(heading, headingMatch[2]);
+          container.appendChild(heading);
+          return;
+        }
+
+        if (unorderedMatch || orderedMatch) {
+          flushParagraph();
+          const nextListType = unorderedMatch ? "ul" : "ol";
+          if (!list || listType !== nextListType) {
+            closeList();
+            listType = nextListType;
+            list = document.createElement(nextListType);
+            container.appendChild(list);
+          }
+
+          const item = document.createElement("li");
+          appendInlineMarkdown(item, (unorderedMatch || orderedMatch)[1]);
+          list.appendChild(item);
+          return;
+        }
+
+        if (quoteMatch) {
+          flushParagraph();
+          closeList();
+          const quote = document.createElement("blockquote");
+          appendInlineMarkdown(quote, quoteMatch[1]);
+          container.appendChild(quote);
+          return;
+        }
+
+        if (!line.trim()) {
+          flushParagraph();
+          closeList();
+          return;
+        }
+
+        closeList();
+        paragraphLines.push(line.trim());
+      });
+
+      flushParagraph();
+      if (codeBlock) {
+        container.appendChild(codeBlock);
+      }
+    };
+
+    const setOpen = (open) => {
+      panel.hidden = !open;
+      toggle.setAttribute("aria-expanded", open ? "true" : "false");
+      if (open && configured) {
+        window.setTimeout(() => input.focus(), 80);
+      }
+    };
+
+    const appendMessage = (role, text, extraClass = "") => {
+      const message = document.createElement("article");
+      message.className = `ss-ai-message is-${role}${extraClass ? ` ${extraClass}` : ""}`;
+
+      if (role === "assistant") {
+        const icon = document.createElement("span");
+        icon.className = "ss-ai-message-icon";
+        icon.setAttribute("aria-hidden", "true");
+        icon.textContent = "✦";
+        message.appendChild(icon);
+      }
+
+      const content = document.createElement("div");
+      if (role === "assistant") {
+        content.className = "ss-ai-markdown";
+        renderMarkdown(content, text);
+      } else {
+        const paragraph = document.createElement("p");
+        paragraph.textContent = text;
+        content.appendChild(paragraph);
+      }
+      message.appendChild(content);
+      messagesElement.appendChild(message);
+      messagesElement.scrollTop = messagesElement.scrollHeight;
+      return message;
+    };
+
+    const appendTyping = () => {
+      const message = document.createElement("article");
+      message.className = "ss-ai-message is-assistant";
+      message.innerHTML = '<span class="ss-ai-message-icon" aria-hidden="true">✦</span><span class="ss-ai-typing" aria-label="AI priprema odgovor"><i></i><i></i><i></i></span>';
+      messagesElement.appendChild(message);
+      messagesElement.scrollTop = messagesElement.scrollHeight;
+      return message;
+    };
+
+    const askAi = async (prompt) => {
+      const text = (prompt || "").trim();
+      if (!configured || !text || sendButton.disabled) {
+        return;
+      }
+
+      setOpen(true);
+      appendMessage("user", text);
+      history.push({ role: "user", content: text });
+      input.value = "";
+      input.style.height = "";
+      sendButton.disabled = true;
+      const typing = appendTyping();
+
+      try {
+        const response = await fetch(assistant.dataset.endpoint, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "RequestVerificationToken": assistant.dataset.token || "",
+            "X-Requested-With": "XMLHttpRequest"
+          },
+          body: JSON.stringify({
+            messages: history.slice(-12),
+            pageTitle: document.body.dataset.pageTitle || document.title,
+            pagePath: `${window.location.pathname}${window.location.search}`
+          })
+        });
+
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          throw new Error(payload.detail || payload.message || payload.title || "AI odgovor nije dostupan.");
+        }
+
+        const answer = payload.message || "AI nije vratio tekstualni odgovor.";
+        history.push({ role: "assistant", content: answer });
+        appendMessage("assistant", answer);
+      } catch (error) {
+        appendMessage("assistant", error.message || "Veza sa SideSeat AI servisom nije uspjela.", "is-error");
+      } finally {
+        typing.remove();
+        sendButton.disabled = false;
+        input.focus();
+      }
+    };
+
+    toggle.addEventListener("click", () => setOpen(panel.hidden));
+    close?.addEventListener("click", () => setOpen(false));
+
+    form.addEventListener("submit", (event) => {
+      event.preventDefault();
+      askAi(input.value);
+    });
+
+    input.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" && !event.shiftKey) {
+        event.preventDefault();
+        form.requestSubmit();
+      }
+    });
+
+    input.addEventListener("input", () => {
+      input.style.height = "";
+      input.style.height = `${Math.min(input.scrollHeight, 130)}px`;
+    });
+
+    assistant.querySelectorAll("[data-ss-ai-suggestion]").forEach((button) => {
+      button.addEventListener("click", () => askAi(button.dataset.ssAiSuggestion || ""));
+    });
+
+    document.querySelectorAll("[data-ss-ai-launch-form]").forEach((launchForm) => {
+      launchForm.addEventListener("submit", (event) => {
+        event.preventDefault();
+        const launchInput = launchForm.querySelector("input");
+        const prompt = launchInput?.value.trim() || "Objasni mi kako SideSeat može pomoći s mojom sljedećom vožnjom.";
+        if (launchInput) {
+          launchInput.value = "";
+        }
+        askAi(prompt);
+      });
+    });
+
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape" && !panel.hidden) {
+        setOpen(false);
+      }
+    });
+  };
+
   const initializeEnhancedUi = () => {
     initializeDateFields();
     initializeAutocompleteFields();
+    initializeTableCards();
     initializeAjaxLists();
     initializeAjaxForms();
+    initializePerformativeUi();
   };
 
+  initializeAiAssistant();
   initializeEnhancedUi();
 })();

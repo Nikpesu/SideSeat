@@ -70,6 +70,7 @@ public class OcjenaController : Controller
         var ratingsQuery = _db.Ocjene
             .AsNoTracking()
             .Include(o => o.Autor)
+            .Include(o => o.AdminFeedbackAutor)
             .Include(o => o.Slike)
             .Include(o => o.Rezervacija)
             .ThenInclude(r => r.Putnik)
@@ -165,7 +166,11 @@ public class OcjenaController : Controller
             Komentar = o.Komentar,
             Kreirano = o.Kreirano,
             Uredeno = o.Uredeno,
-            Administratorska = o.Administratorska,
+            AdminFeedback = o.AdminFeedback,
+            AdminFeedbackAt = o.AdminFeedbackAt,
+            AdminFeedbackAuthor = o.AdminFeedbackAutor is null
+                ? null
+                : $"{o.AdminFeedbackAutor.Ime} {o.AdminFeedbackAutor.Prezime}".Trim(),
             RouteLabel = $"{o.Rezervacija.Voznja.PolazniGrad.Naziv} -> {o.Rezervacija.Voznja.OdredisniGrad.Naziv}",
             Slike = MapImages(o.Slike, canDeleteImages)
         };
@@ -182,6 +187,7 @@ public class OcjenaController : Controller
         var ocjena = _db.Ocjene
             .AsNoTracking()
             .Include(o => o.Autor)
+            .Include(o => o.AdminFeedbackAutor)
             .Include(o => o.Slike)
             .Include(o => o.Rezervacija)
             .ThenInclude(r => r.Voznja)
@@ -403,58 +409,71 @@ public class OcjenaController : Controller
     }
 
     [Authorize(Roles = "Admin")]
-    public IActionResult AdminCreate()
+    public async Task<IActionResult> AdminFeedback(int id)
     {
-        return View(new OcjenaAdminFormViewModel
+        var review = await _db.Ocjene
+            .AsNoTracking()
+            .Include(item => item.Autor)
+            .FirstOrDefaultAsync(item => item.Id == id);
+        if (review is null)
         {
-            Kreirano = DateTime.UtcNow
+            return NotFound();
+        }
+
+        return View(new AdminFeedbackViewModel
+        {
+            OcjenaId = review.Id,
+            ReviewAuthor = $"{review.Autor.Ime} {review.Autor.Prezime}".Trim(),
+            BrojZvjezdica = review.BrojZvjezdica,
+            ReviewComment = review.Komentar,
+            Feedback = review.AdminFeedback ?? string.Empty
         });
     }
 
     [HttpPost]
     [Authorize(Roles = "Admin")]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> AdminCreate(OcjenaAdminFormViewModel model)
+    public async Task<IActionResult> AdminFeedback(int id, AdminFeedbackViewModel model)
     {
+        if (id != model.OcjenaId)
+        {
+            return BadRequest();
+        }
+
+        var adminId = User.GetKorisnikId();
+        if (adminId is null)
+        {
+            return Challenge();
+        }
+
+        var review = await _db.Ocjene
+            .Include(item => item.Autor)
+            .FirstOrDefaultAsync(item => item.Id == id);
+        if (review is null)
+        {
+            return NotFound();
+        }
+
+        model.ReviewAuthor = $"{review.Autor.Ime} {review.Autor.Prezime}".Trim();
+        model.BrojZvjezdica = review.BrojZvjezdica;
+        model.ReviewComment = review.Komentar;
         if (!ModelState.IsValid)
         {
             return View(model);
         }
 
-        if (!ValidateReviewImages(model.Slike, nameof(model.Slike)))
-        {
-            return View(model);
-        }
-
-        var rezervacijaExists = await _db.Rezervacije.AnyAsync(r => r.Id == model.RezervacijaId);
-        if (!rezervacijaExists)
-        {
-            ModelState.AddModelError(nameof(model.RezervacijaId), "Rezervacija ne postoji.");
-            return View(model);
-        }
-
-        var autorExists = await _db.Korisnici.AnyAsync(k => k.Id == model.AutorId);
-        if (!autorExists)
-        {
-            ModelState.AddModelError(nameof(model.AutorId), "Autor ne postoji.");
-            return View(model);
-        }
-
-        var ocjena = new OcjenaVoznje
-        {
-            RezervacijaId = model.RezervacijaId,
-            AutorId = model.AutorId,
-            BrojZvjezdica = model.BrojZvjezdica,
-            Komentar = model.Komentar.Trim(),
-            Kreirano = model.Kreirano,
-            Administratorska = true
-        };
-
-        _db.Ocjene.Add(ocjena);
+        review.AdminFeedback = model.Feedback.Trim();
+        review.AdminFeedbackAt = DateTime.UtcNow;
+        review.AdminFeedbackAutorId = adminId.Value;
+        _notifications.Add(
+            review.AutorId,
+            "Administratorski feedback",
+            $"Administrator je odgovorio na tvoju recenziju #{review.Id}.",
+            "Ocjena",
+            $"/Ocjena/Details/{review.Id}");
         await _db.SaveChangesAsync();
-        await SaveReviewImagesAsync(ocjena.Id, model.Slike);
-        await _db.SaveChangesAsync();
-        return RedirectToAction(nameof(Index));
+
+        return RedirectToAction(nameof(Details), new { id = review.Id });
     }
 
     [Authorize(Roles = "Admin")]
@@ -462,6 +481,7 @@ public class OcjenaController : Controller
     {
         var ocjena = _db.Ocjene
             .AsNoTracking()
+            .Include(o => o.AdminFeedbackAutor)
             .Include(o => o.Slike)
             .FirstOrDefault(o => o.Id == id);
         if (ocjena is null)

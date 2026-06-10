@@ -93,6 +93,10 @@ public class ApiCrudTests : IClassFixture<SideSeatTestFactory>
         var passengerHtml = await passenger.GetStringAsync("/Voznja?view=available");
         Assert.Contains("id=\"ss-theme-toggle\"", passengerHtml);
         Assert.Contains("localStorage.getItem(\"ss-theme\")", passengerHtml);
+        Assert.Contains("/css/performative.css", passengerHtml);
+        Assert.Contains("data-ss-ai", passengerHtml);
+        Assert.Contains("SideSeat Copilot", passengerHtml);
+        Assert.Contains("data-configured=\"false\"", passengerHtml);
         Assert.Contains("class=\"ss-global-route-map\"", passengerHtml);
         Assert.Contains("<animateMotion", passengerHtml);
         Assert.Contains("Dostupne vožnje", passengerHtml);
@@ -579,6 +583,14 @@ public class ApiCrudTests : IClassFixture<SideSeatTestFactory>
         var dto = await created.Content.ReadFromJsonAsync<SimpleDto>();
 
         (await client.PutAsJsonAsync($"/api/ocjene/{dto!.id}", new { rezervacijaId = 1, autorId = 2, brojZvjezdica = 4, komentar = "Updated" })).EnsureSuccessStatusCode();
+        Assert.Equal(
+            HttpStatusCode.BadRequest,
+            (await client.PutAsJsonAsync($"/api/ocjene/{dto.id}/admin-feedback", new { feedback = "" })).StatusCode);
+        var feedbackResponse = await client.PutAsJsonAsync(
+            $"/api/ocjene/{dto.id}/admin-feedback",
+            new { feedback = "API administratorski feedback" });
+        feedbackResponse.EnsureSuccessStatusCode();
+        Assert.Contains("API administratorski feedback", await feedbackResponse.Content.ReadAsStringAsync());
         Assert.Equal(HttpStatusCode.NotFound, (await client.PutAsJsonAsync("/api/ocjene/999", request)).StatusCode);
         Assert.Equal(HttpStatusCode.NoContent, (await client.DeleteAsync($"/api/ocjene/{dto.id}")).StatusCode);
         Assert.Equal(HttpStatusCode.NotFound, (await client.DeleteAsync($"/api/ocjene/{dto.id}")).StatusCode);
@@ -692,20 +704,22 @@ public class ApiCrudTests : IClassFixture<SideSeatTestFactory>
             Assert.True(additional.IsSuccessStatusCode);
         }
 
-        var adminCreatePage = await client.GetStringAsync("/Ocjena/AdminCreate");
-        using (var adminForm = new FormUrlEncodedContent(new Dictionary<string, string>
+        var adminFeedbackPage = await client.GetStringAsync($"/Ocjena/AdminFeedback/{reviewId}");
+        Assert.Contains("Komentar korisnika", adminFeedbackPage);
+        using (var adminFeedbackForm = new FormUrlEncodedContent(new Dictionary<string, string>
                {
-                   ["__RequestVerificationToken"] = ExtractAntiforgeryToken(adminCreatePage),
-                   ["RezervacijaId"] = "1",
-                   ["AutorId"] = "1",
-                   ["BrojZvjezdica"] = "3",
-                   ["Komentar"] = "Administratorska recenzija",
-                   ["Kreirano"] = DateTime.UtcNow.ToString("O")
+                   ["__RequestVerificationToken"] = ExtractAntiforgeryToken(adminFeedbackPage),
+                   ["OcjenaId"] = reviewId.ToString(),
+                   ["Feedback"] = "Administratorski odgovor na recenziju"
                }))
         {
-            var adminCreated = await client.PostAsync("/Ocjena/AdminCreate", adminForm);
-            Assert.True(adminCreated.IsSuccessStatusCode);
+            var feedbackSaved = await client.PostAsync($"/Ocjena/AdminFeedback/{reviewId}", adminFeedbackForm);
+            Assert.True(feedbackSaved.IsSuccessStatusCode);
         }
+
+        var reviewDetails = await client.GetStringAsync($"/Ocjena/Details/{reviewId}");
+        Assert.Contains("Feedback administratora", reviewDetails);
+        Assert.Contains("Administratorski odgovor na recenziju", reviewDetails);
 
         var attachmentList = await client.GetStringAsync("/Ocjena/AttachmentList");
         Assert.Contains("recenzija.png", attachmentList);
@@ -723,8 +737,10 @@ public class ApiCrudTests : IClassFixture<SideSeatTestFactory>
             var editedReview = await db.Ocjene.SingleAsync(o => o.Id == reviewId);
             Assert.Equal(4, editedReview.BrojZvjezdica);
             Assert.NotNull(editedReview.Uredeno);
-            Assert.Equal(3, await db.Ocjene.CountAsync(o => o.RezervacijaId == 1 && o.AutorId == 1));
-            Assert.Contains(await db.Ocjene.ToListAsync(), o => o.Administratorska);
+            Assert.Equal(2, await db.Ocjene.CountAsync(o => o.RezervacijaId == 1 && o.AutorId == 1));
+            Assert.Equal("Administratorski odgovor na recenziju", editedReview.AdminFeedback);
+            Assert.Equal(1, editedReview.AdminFeedbackAutorId);
+            Assert.NotNull(editedReview.AdminFeedbackAt);
             Assert.False(await db.OcjenaSlike.AnyAsync(s => s.Id == imageId));
             Assert.False(File.Exists(Path.Combine(_factory.WebRootPath, imagePath.TrimStart('/').Replace('/', Path.DirectorySeparatorChar))));
         }

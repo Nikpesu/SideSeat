@@ -1,0 +1,73 @@
+@inject IConfiguration Configuration
+@inject Microsoft.AspNetCore.Antiforgery.IAntiforgery Antiforgery
+@{
+    var aiConfigured = !string.IsNullOrWhiteSpace(Configuration["OpenWebUi:ApiKey"]);
+    var requestToken = Antiforgery.GetAndStoreTokens(Context).RequestToken;
+}
+
+<aside class="ss-ai" data-ss-ai data-endpoint="@Url.Action("Chat", "Ai")" data-token="@requestToken" data-configured="@(aiConfigured ? "true" : "false")">
+    <section class="ss-ai-panel" id="ss-ai-panel" role="dialog" aria-modal="false" aria-labelledby="ss-ai-title" hidden>
+        <header class="ss-ai-header">
+            <div class="ss-ai-identity">
+                <span class="ss-ai-orb" aria-hidden="true">✦</span>
+                <div>
+                    <div class="ss-ai-title-row">
+                        <strong id="ss-ai-title">SideSeat Copilot</strong>
+                        <span class="ss-ai-status @(aiConfigured ? "is-online" : "is-offline")">
+                            <span></span>
+                            @(aiConfigured ? "Open WebUI online" : "Potrebna konfiguracija")
+                        </span>
+                    </div>
+                    <small>AI-native mobility intelligence layer</small>
+                </div>
+            </div>
+            <button class="ss-ai-close" type="button" data-ss-ai-close aria-label="Zatvori AI asistenta">×</button>
+        </header>
+
+        <div class="ss-ai-messages" data-ss-ai-messages aria-live="polite">
+            <article class="ss-ai-message is-assistant">
+                <span class="ss-ai-message-icon" aria-hidden="true">✦</span>
+                <div>
+                    <strong>Spreman za rutu.</strong>
+                    <p>Pitaj me o vožnjama, rezervacijama, saldu ili onome što vidiš na ovoj stranici.</p>
+                </div>
+            </article>
+        </div>
+
+        <div class="ss-ai-suggestions" data-ss-ai-suggestions>
+            <button type="button" data-ss-ai-suggestion="Objasni mi ovu stranicu.">Objasni ovu stranicu</button>
+            <button type="button" data-ss-ai-suggestion="Kako pronaći i rezervirati vožnju?">Pronađi vožnju</button>
+            <button type="button" data-ss-ai-suggestion="Kako funkcioniraju saldo i plaćanja?">Saldo i plaćanja</button>
+        </div>
+
+        <form class="ss-ai-form" data-ss-ai-form>
+            <label class="visually-hidden" for="ss-ai-input">Poruka za SideSeat AI</label>
+            <textarea id="ss-ai-input" rows="2" maxlength="4000" placeholder="Pitaj SideSeat AI bilo što..." data-ss-ai-input @(aiConfigured ? null : "disabled")></textarea>
+            <div class="ss-ai-form-footer">
+                <span>Odgovore uvijek provjeri prije važne odluke.</span>
+                <button type="submit" data-ss-ai-send @(aiConfigured ? null : "disabled")>
+                    <span>Pošalji</span>
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="m5 12 14-7-4.5 14-3-5.5L5 12Zm6.5 1.5L19 5" />
+                    </svg>
+                </button>
+            </div>
+        </form>
+
+        @if (!aiConfigured)
+        {
+            <p class="ss-ai-config-note">
+                Postavi <code>OPENWEBUI_API_KEY</code> u <code>.env</code> datoteci i ponovno pokreni Docker Compose.
+            </p>
+        }
+    </section>
+
+    <button class="ss-ai-fab" type="button" aria-controls="ss-ai-panel" aria-expanded="false" data-ss-ai-toggle>
+        <span class="ss-ai-fab-aura" aria-hidden="true"></span>
+        <span class="ss-ai-fab-icon" aria-hidden="true">✦</span>
+        <span class="ss-ai-fab-copy">
+            <strong>Pitaj SideSeat AI</strong>
+            <small>@(aiConfigured ? "Online · powered by Open WebUI" : "Dodaj API ključ")</small>
+        </span>
+    </button>
+</aside>

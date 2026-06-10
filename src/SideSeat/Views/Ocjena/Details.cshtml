@@ -43,15 +43,25 @@
                 <dt>Komentar</dt>
                 <dd>
                     @Model.Komentar
-                    @if (Model.Administratorska)
-                    {
-                        <small class="d-block ss-datetime-help">Administratorska recenzija</small>
-                    }
                     @if (Model.Uredeno.HasValue)
                     {
                         <small class="d-block ss-datetime-help">Uređena recenzija @Model.Uredeno.Value.ToString("dd.MM.yyyy HH:mm")</small>
                     }
                     <partial name="_OcjenaSlike" model="Model.Slike.Select(s => new OcjenaSlikaViewModel { Id = s.Id, OcjenaVoznjeId = s.OcjenaVoznjeId, FileName = s.FileName, FilePath = s.FilePath, CanDelete = canEdit || isAdmin }).ToList()" />
+                    @if (!string.IsNullOrWhiteSpace(Model.AdminFeedback))
+                    {
+                        <div class="alert alert-info mt-3 mb-0">
+                            <strong>Feedback administratora:</strong>
+                            <p class="mb-1">@Model.AdminFeedback</p>
+                            <small class="ss-datetime-help">
+                                @Model.AdminFeedbackAutor?.Ime @Model.AdminFeedbackAutor?.Prezime
+                                @if (Model.AdminFeedbackAt.HasValue)
+                                {
+                                    <text> · @Model.AdminFeedbackAt.Value.ToString("dd.MM.yyyy HH:mm")</text>
+                                }
+                            </small>
+                        </div>
+                    }
                 </dd>
             </div>
             <div>
@@ -68,6 +78,9 @@
             }
             @if (isAdmin)
             {
+                <a class="ss-btn" asp-controller="Ocjena" asp-action="AdminFeedback" asp-route-id="@Model.Id">
+                    @(string.IsNullOrWhiteSpace(Model.AdminFeedback) ? "Dodaj feedback" : "Uredi feedback")
+                </a>
                 <a class="ss-btn" asp-controller="Ocjena" asp-action="AdminEdit" asp-route-id="@Model.Id">Uredi ocjenu</a>
                 <a class="ss-btn ss-btn-secondary" asp-controller="Ocjena" asp-action="AdminDelete" asp-route-id="@Model.Id">Obrisi ocjenu</a>
             }

@@ -50,6 +50,12 @@ public class SideSeatDbContext : IdentityDbContext<AppUser, IdentityRole<int>, i
             .HasForeignKey(o => o.RezervacijaId)
             .OnDelete(DeleteBehavior.Restrict);
 
+        modelBuilder.Entity<OcjenaVoznje>()
+            .HasOne(o => o.AdminFeedbackAutor)
+            .WithMany()
+            .HasForeignKey(o => o.AdminFeedbackAutorId)
+            .OnDelete(DeleteBehavior.Restrict);
+
         modelBuilder.Entity<Placanje>()
             .HasOne(p => p.Rezervacija)
             .WithMany()

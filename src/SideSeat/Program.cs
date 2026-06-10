@@ -9,6 +9,7 @@ using SideSeat.Security;
 using SideSeat.Services;
 using System.Globalization;
 using System.Text.Encodings.Web;
+using System.Threading.RateLimiting;
 
 namespace SideSeat
 {
@@ -39,6 +40,28 @@ namespace SideSeat
             builder.Services.AddScoped<SideSeatEfRepository>();
             builder.Services.AddScoped<IPasswordHashingService, PasswordHashingService>();
             builder.Services.AddScoped<INotificationService, NotificationService>();
+            builder.Services.AddScoped<IAiContextService, AiContextService>();
+            builder.Services.AddMemoryCache();
+            builder.Services.Configure<OpenWebUiOptions>(
+                builder.Configuration.GetSection(OpenWebUiOptions.SectionName));
+            builder.Services.AddHttpClient<IOpenWebUiService, OpenWebUiService>(client =>
+            {
+                client.Timeout = TimeSpan.FromSeconds(90);
+            });
+            builder.Services.AddRateLimiter(options =>
+            {
+                options.AddPolicy("ai", context =>
+                    RateLimitPartition.GetFixedWindowLimiter(
+                        context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+                        _ => new FixedWindowRateLimiterOptions
+                        {
+                            PermitLimit = 12,
+                            Window = TimeSpan.FromMinutes(1),
+                            QueueLimit = 2,
+                            QueueProcessingOrder = QueueProcessingOrder.OldestFirst
+                        }));
+                options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+            });
             builder.Services
                 .AddIdentity<AppUser, IdentityRole<int>>(options =>
                 {
@@ -127,6 +150,7 @@ namespace SideSeat
 
             app.UseAuthentication();
             app.UseAuthorization();
+            app.UseRateLimiter();
             app.UseStatusCodePagesWithReExecute("/Home/HttpStatus/{0}");
 
             using (var scope = app.Services.CreateScope())

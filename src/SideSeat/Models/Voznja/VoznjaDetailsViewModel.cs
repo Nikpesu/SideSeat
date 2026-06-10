@@ -36,6 +36,8 @@ public class VoznjaRatingRow
     public string Komentar { get; set; } = string.Empty;
     public DateTime Kreirano { get; set; }
     public DateTime? Uredeno { get; set; }
-    public bool Administratorska { get; set; }
+    public string? AdminFeedback { get; set; }
+    public DateTime? AdminFeedbackAt { get; set; }
+    public string? AdminFeedbackAuthor { get; set; }
     public List<OcjenaSlikaViewModel> Slike { get; set; } = new();
 }

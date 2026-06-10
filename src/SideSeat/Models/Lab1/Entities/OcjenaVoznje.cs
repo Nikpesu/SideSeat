@@ -19,6 +19,12 @@ public class OcjenaVoznje
     public string Komentar { get; set; } = string.Empty;
     public DateTime Kreirano { get; set; }
     public DateTime? Uredeno { get; set; }
-    public bool Administratorska { get; set; }
+    [StringLength(1000)]
+    public string? AdminFeedback { get; set; }
+    public DateTime? AdminFeedbackAt { get; set; }
+
+    [ForeignKey(nameof(AdminFeedbackAutor))]
+    public int? AdminFeedbackAutorId { get; set; }
+    public virtual Korisnik? AdminFeedbackAutor { get; set; }
     public virtual ICollection<OcjenaSlika> Slike { get; set; } = new List<OcjenaSlika>();
 }

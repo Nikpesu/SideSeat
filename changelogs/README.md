@@ -6,6 +6,11 @@ Ova mapa sadrži povijest verzija SideSeat aplikacije. Svako izdanje ima zasebnu
 
 | Verzija | Datum | Sažetak |
 | --- | --- | --- |
+| [v0.20](v0.20.md) | 2026-06-11 | Potpuni AI poslovni kontekst i OpenWebUI konfiguracija kroz Docker |
+| [v0.19](v0.19.md) | 2026-06-11 | AI kontekst, admin feedback i novi kartični prikaz podataka |
+| [v0.18](v0.18.md) | 2026-06-10 | Docker release v0.18 i ažurirani hub tagovi |
+| [v0.17](v0.17.md) | 2026-06-10 | Zeleno-crna tema i optimizirani vizualni efekti |
+| [v0.16](v0.16.md) | 2026-06-10 | Performative AI dizajn i SideSeat Copilot preko Open WebUI-ja |
 | [v0.14](v0.14.md) | 2026-06-08 | Popravljen payment modal, kartice i segmentirana adresa |
 | [v0.13](v0.13.md) | 2026-06-08 | Dovršen mock payment tok i verzija u footeru |
 | [v0.12](v0.12.md) | 2026-06-08 | Provjera salda, mock checkout i sigurniji Docker demo podaci |
@@ -21,16 +26,16 @@ Ova mapa sadrži povijest verzija SideSeat aplikacije. Svako izdanje ima zasebnu
 
 ## Trenutna verzija
 
-Trenutna stabilna verzija je [v0.14](v0.14.md):
+Trenutna stabilna verzija je [v0.20](v0.20.md):
 
 ```text
-nikolica/sideseat:v0.14
+nikolica/sideseat:v0.20
 ```
 
 Docker Hub digest:
 
 ```text
-sha256:04778f177a4232bc824c13c2c5f008c56c697896aee2985d9c7c88632758391c
+sha256:f80a84e538890b61ddb9c2120b53e1e9c545a3908ef6709f0e598f03f2ea88fb
 ```
 
 ## Pravilo verzioniranja

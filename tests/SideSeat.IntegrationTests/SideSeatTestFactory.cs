@@ -49,9 +49,12 @@ public class SideSeatTestFactory : WebApplicationFactory<Program>, IDisposable
         });
     }
 
-    public HttpClient CreateAdminClient()
+    public HttpClient CreateAdminClient(bool allowAutoRedirect = true)
     {
-        var client = CreateClient();
+        var client = CreateClient(new WebApplicationFactoryClientOptions
+        {
+            AllowAutoRedirect = allowAutoRedirect
+        });
         client.DefaultRequestHeaders.Add("X-Test-Auth", "admin");
         return client;
     }

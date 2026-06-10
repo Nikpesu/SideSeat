@@ -3,11 +3,12 @@
 > ASP.NET Core MVC ridesharing aplikacija izrađena za kolegij **Razvoj web aplikacija**.
 
 [![.NET](https://img.shields.io/badge/.NET-10.0-512BD4?logo=dotnet)](src/SideSeat/SideSeat.csproj)
+[![.NET CI](https://github.com/Nikpesu/SideSeat/actions/workflows/dotnet-ci.yml/badge.svg)](https://github.com/Nikpesu/SideSeat/actions/workflows/dotnet-ci.yml)
 [![Docker](https://img.shields.io/badge/Docker-Linux%20AMD64-2496ED?logo=docker&logoColor=white)](docker-compose.hub.yml)
-[![Version](https://img.shields.io/badge/version-v0.14-2ea44f)](changelogs/v0.14.md)
+[![Version](https://img.shields.io/badge/version-v0.20-2ea44f)](changelogs/v0.20.md)
 [![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
-SideSeat povezuje vozače i putnike kroz objavu vožnji, rezervacije, potvrđivanje putnika, plaćanja, ocjene i obavijesti. Projekt uključuje ASP.NET Core Identity, Google prijavu, REST API, upload slika, SQL Server, Docker i integracijske testove.
+SideSeat povezuje vozače i putnike kroz objavu vožnji, rezervacije, potvrđivanje putnika, plaćanja, ocjene i obavijesti. Projekt uključuje ASP.NET Core Identity, Google prijavu, REST API, upload slika, Open WebUI AI asistenta, SQL Server, Docker i integracijske testove.
 
 ## Sadržaj
 
@@ -37,7 +38,9 @@ SideSeat povezuje vozače i putnike kroz objavu vožnji, rezervacije, potvrđiva
 - Profilne slike i ograničen prikaz osobnih podataka drugih korisnika.
 - Trajne obavijesti sa zvoncem i brojačem za rezervacije, vožnje, naplatu, saldo i ocjene.
 - Light i dark tema s trajno spremljenim korisničkim odabirom.
+- Performative AI vizualni sustav s aurorom, glass karticama, animiranim metrikama i mikrointerakcijama.
 - Globalna animirana karta rute i prikaz verzije aplikacije u footeru.
+- SideSeat AI Copilot povezan na privatni Open WebUI server kroz sigurni backend proxy.
 - REST API s DTO modelima, validacijom, pretragom i CRUD operacijama.
 - Docker Compose okruženje s aplikacijom, SQL Serverom i trajnim volumeima.
 
@@ -48,7 +51,8 @@ SideSeat povezuje vozače i putnike kroz objavu vožnji, rezervacije, potvrđiva
 | Backend | ASP.NET Core MVC, .NET 10 |
 | Baza | SQL Server 2022, Entity Framework Core 10 |
 | Autentikacija | ASP.NET Core Identity, Google OAuth |
-| Frontend | Razor Views, Bootstrap, JavaScript |
+| Frontend | Razor Views, Bootstrap, JavaScript, Performative UI inspirirani design system |
+| AI | Open WebUI Chat Completions API preko server-side gatewaya |
 | Testovi | xUnit, `WebApplicationFactory`, EF Core InMemory |
 | Deployment | Docker, Docker Compose, Docker Hub |
 
@@ -67,19 +71,19 @@ Aplikacija je dostupna na `http://localhost:8080`.
 Objavljeni image:
 
 ```text
-nikolica/sideseat:v0.14
+nikolica/sideseat:v0.20
 ```
 
 Tag `latest` pokazuje na isto izdanje. Image je namijenjen platformi `linux/amd64`.
 
 ```bash
-docker pull nikolica/sideseat:v0.14
+docker pull nikolica/sideseat:v0.20
 ```
 
 Digest izdanja:
 
 ```text
-sha256:04778f177a4232bc824c13c2c5f008c56c697896aee2985d9c7c88632758391c
+sha256:f80a84e538890b61ddb9c2120b53e1e9c545a3908ef6709f0e598f03f2ea88fb
 ```
 
 SQL podaci i uploadane slike čuvaju se u Docker volumeima. Aplikacija pri pokretanju automatski primjenjuje EF Core migracije.
@@ -163,6 +167,9 @@ SA_PASSWORD=SideSeat123!
 GOOGLE_CLIENT_ID=
 GOOGLE_CLIENT_SECRET=
 DUMMY_DATA=false
+OPENWEBUI_API_KEY=
+OPENWEBUI_MODEL=
+OPENWEBUI_BASE_URL=https://ai.pesut.win
 ```
 
 Verzija, `ASPNETCORE_ENVIRONMENT` i `ASPNETCORE_URLS` ugrađeni su u Docker image. Aplikacija u Dockeru automatski sastavlja connection string za `sideseat-db`; preko `.env` mijenja se samo `SA_PASSWORD`. Napredni overrideovi ostavljeni su zakomentirani u Compose datotekama.
@@ -172,6 +179,24 @@ Verzija, `ASPNETCORE_ENVIRONMENT` i `ASPNETCORE_URLS` ugrađeni su u Docker imag
 ```dotenv
 DUMMY_DATA=true
 ```
+
+SideSeat AI koristi Open WebUI na `https://ai.pesut.win`. API ključ ostaje samo u Docker environmentu i nikada se ne šalje pregledniku:
+
+```dotenv
+OPENWEBUI_API_KEY=upiši_svoj_open_webui_api_ključ
+OPENWEBUI_MODEL=
+OPENWEBUI_BASE_URL=https://ai.pesut.win
+```
+
+`OPENWEBUI_MODEL` nije obavezan. Kada je prazan, aplikacija preko `/api/models` automatski odabire prvi model dostupan tom API ključu. `OPENWEBUI_BASE_URL` aplikacija učitava iz Docker Compose okruženja. Za lokalno pokretanje bez Dockera koristi user-secrets:
+
+```powershell
+dotnet user-secrets set "OpenWebUi:ApiKey" "API_KEY" --project src/SideSeat
+dotnet user-secrets set "OpenWebUi:Model" "MODEL_ID" --project src/SideSeat
+dotnet user-secrets set "OpenWebUi:BaseUrl" "https://ai.pesut.win" --project src/SideSeat
+```
+
+AI zahtjevi idu preko `/api/ai/chat`, ograničeni su rate limiterom i ne izlažu Open WebUI ključ klijentskom JavaScriptu.
 
 Google tajne za lokalni razvoj postavljaju se izvan repozitorija:
 
@@ -246,11 +271,13 @@ Profilne slike koriste `wwwroot/uploads/profili/{korisnikId}` i također se u ba
 
 ## Testovi
 
+GitHub Actions automatski pokreće Release build i sve integracijske testove na svaki push i pull request prema grani `main`. TRX rezultat i code coverage spremaju se kao `sideseat-test-results` artefakt.
+
 ```bash
 dotnet test tests/SideSeat.IntegrationTests/SideSeat.IntegrationTests.csproj
 ```
 
-Trenutni rezultat: **18/18 integracijskih testova prolazi**.
+Trenutni rezultat: **23/23 integracijskih testova prolazi**.
 
 Testovi pokrivaju:
 
@@ -270,6 +297,11 @@ Povijest izdanja organizirana je kao mala wiki baza. Klik na verziju otvara potp
 
 | Verzija | Datum | Najvažnije promjene | Docker |
 | --- | --- | --- | --- |
+| [v0.20](changelogs/v0.20.md) | 2026-06-11 | Potpuni AI poslovni kontekst i Docker OpenWebUI konfiguracija | `nikolica/sideseat:v0.20` |
+| [v0.19](changelogs/v0.19.md) | 2026-06-11 | AI korisnički kontekst, admin feedback, kartični prikazi i cursor tilt | `nikolica/sideseat:v0.19` |
+| [v0.18](changelogs/v0.18.md) | 2026-06-10 | Docker release v0.18 i ažurirani hub tagovi | `nikolica/sideseat:v0.18` |
+| [v0.17](changelogs/v0.17.md) | 2026-06-10 | Zeleno-crna tema i optimizirani vizualni efekti | `nikolica/sideseat:v0.17` |
+| [v0.16](changelogs/v0.16.md) | 2026-06-10 | Performative AI dizajn i SideSeat Copilot preko Open WebUI-ja | `nikolica/sideseat:v0.16` |
 | [v0.14](changelogs/v0.14.md) | 2026-06-08 | Popravljen payment modal, kartice, adresa i prikaz servisa | `nikolica/sideseat:v0.14` |
 | [v0.13](changelogs/v0.13.md) | 2026-06-08 | PayPal/Revolut popup, strogi kartični format i verzija u footeru | `nikolica/sideseat:v0.13` |
 | [v0.12](changelogs/v0.12.md) | 2026-06-08 | Provjera salda, mock checkout, sigurniji demo podaci i file picker | `nikolica/sideseat:v0.12` |

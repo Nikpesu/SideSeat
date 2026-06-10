@@ -116,15 +116,18 @@
                         <dt>@ocjena.Autor (@ocjena.BrojZvjezdica/5)</dt>
                         <dd>
                             @ocjena.Komentar
-                            @if (ocjena.Administratorska)
-                            {
-                                <small class="d-block ss-datetime-help">Administratorska recenzija</small>
-                            }
                             @if (ocjena.Uredeno.HasValue)
                             {
                                 <small class="d-block ss-datetime-help">Uređena recenzija</small>
                             }
                             <partial name="_OcjenaSlike" model="ocjena.Slike" />
+                            @if (!string.IsNullOrWhiteSpace(ocjena.AdminFeedback))
+                            {
+                                <div class="alert alert-info mt-2 mb-0">
+                                    <strong>Feedback administratora:</strong> @ocjena.AdminFeedback
+                                    <small class="d-block ss-datetime-help">@ocjena.AdminFeedbackAuthor</small>
+                                </div>
+                            }
                         </dd>
                     </div>
                 }
@@ -147,15 +150,18 @@
                         <dt>@ocjena.Primatelj (@ocjena.BrojZvjezdica/5)</dt>
                         <dd>
                             @ocjena.Komentar
-                            @if (ocjena.Administratorska)
-                            {
-                                <small class="d-block ss-datetime-help">Administratorska recenzija</small>
-                            }
                             @if (ocjena.Uredeno.HasValue)
                             {
                                 <small class="d-block ss-datetime-help">Uređena recenzija</small>
                             }
                             <partial name="_OcjenaSlike" model="ocjena.Slike" />
+                            @if (!string.IsNullOrWhiteSpace(ocjena.AdminFeedback))
+                            {
+                                <div class="alert alert-info mt-2 mb-0">
+                                    <strong>Feedback administratora:</strong> @ocjena.AdminFeedback
+                                    <small class="d-block ss-datetime-help">@ocjena.AdminFeedbackAuthor</small>
+                                </div>
+                            }
                         </dd>
                     </div>
                 }

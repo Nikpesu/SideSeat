@@ -84,7 +84,9 @@ public static class ApiMapper
         Komentar = ocjena.Komentar,
         Kreirano = ocjena.Kreirano,
         Uredeno = ocjena.Uredeno,
-        Administratorska = ocjena.Administratorska,
+        AdminFeedback = ocjena.AdminFeedback,
+        AdminFeedbackAt = ocjena.AdminFeedbackAt,
+        AdminFeedbackAutor = ocjena.AdminFeedbackAutor?.ToDto(),
         Slike = ocjena.Slike.Select(s => s.ToDto()).ToList()
     };
 

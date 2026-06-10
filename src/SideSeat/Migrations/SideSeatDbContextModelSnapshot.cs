@@ -442,8 +442,15 @@ namespace SideSeat.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<bool>("Administratorska")
-                        .HasColumnType("bit");
+                    b.Property<string>("AdminFeedback")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<DateTime?>("AdminFeedbackAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("AdminFeedbackAutorId")
+                        .HasColumnType("int");
 
                     b.Property<int>("AutorId")
                         .HasColumnType("int");
@@ -465,6 +472,8 @@ namespace SideSeat.Migrations
                         .HasColumnType("datetime2");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("AdminFeedbackAutorId");
 
                     b.HasIndex("AutorId");
 
@@ -771,6 +780,11 @@ namespace SideSeat.Migrations
 
             modelBuilder.Entity("SideSeat.Models.OcjenaVoznje", b =>
                 {
+                    b.HasOne("SideSeat.Models.Korisnik", "AdminFeedbackAutor")
+                        .WithMany()
+                        .HasForeignKey("AdminFeedbackAutorId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("SideSeat.Models.Korisnik", "Autor")
                         .WithMany()
                         .HasForeignKey("AutorId")
@@ -782,6 +796,8 @@ namespace SideSeat.Migrations
                         .HasForeignKey("RezervacijaId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+
+                    b.Navigation("AdminFeedbackAutor");
 
                     b.Navigation("Autor");
 

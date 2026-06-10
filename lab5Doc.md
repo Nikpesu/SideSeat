@@ -755,7 +755,8 @@ Prije obrane korisnik treba:
 7. Pokazati `401/403` na zaštićenom mutation endpointu.
 8. Završiti rezervaciju i dodati ocjenu sa slikom.
 9. Pokazati relativnu putanju u bazi i datoteku na serveru.
-10. Pokrenuti testove i pokazati rezultat `18/18`.
+10. Pokazati da administrator daje feedback na postojeću recenziju korisnika.
+11. Pokrenuti testove i pokazati rezultat testova.
 
 ---
 

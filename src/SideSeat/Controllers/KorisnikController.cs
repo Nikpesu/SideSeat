@@ -124,6 +124,7 @@ public class KorisnikController : Controller
         var ocjene = _db.Ocjene
             .AsNoTracking()
             .Include(o => o.Autor)
+            .Include(o => o.AdminFeedbackAutor)
             .Include(o => o.Slike)
             .Include(o => o.Rezervacija)
             .ThenInclude(r => r.Putnik)
@@ -145,7 +146,11 @@ public class KorisnikController : Controller
                 Komentar = o.Komentar,
                 Kreirano = o.Kreirano,
                 Uredeno = o.Uredeno,
-                Administratorska = o.Administratorska,
+                AdminFeedback = o.AdminFeedback,
+                AdminFeedbackAt = o.AdminFeedbackAt,
+                AdminFeedbackAuthor = o.AdminFeedbackAutor is null
+                    ? null
+                    : $"{o.AdminFeedbackAutor.Ime} {o.AdminFeedbackAutor.Prezime}".Trim(),
                 Slike = o.Slike
                     .OrderBy(s => s.CreatedAt)
                     .Select(s => new SideSeat.Models.Ocjena.OcjenaSlikaViewModel
@@ -178,7 +183,11 @@ public class KorisnikController : Controller
                 Komentar = o.Komentar,
                 Kreirano = o.Kreirano,
                 Uredeno = o.Uredeno,
-                Administratorska = o.Administratorska,
+                AdminFeedback = o.AdminFeedback,
+                AdminFeedbackAt = o.AdminFeedbackAt,
+                AdminFeedbackAuthor = o.AdminFeedbackAutor is null
+                    ? null
+                    : $"{o.AdminFeedbackAutor.Ime} {o.AdminFeedbackAutor.Prezime}".Trim(),
                 Slike = o.Slike
                     .OrderBy(s => s.CreatedAt)
                     .Select(s => new SideSeat.Models.Ocjena.OcjenaSlikaViewModel
