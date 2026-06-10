@@ -18,7 +18,7 @@ services:
       start_period: 20s
 
   sideseat-web:
-    image: nikolica/sideseat:v0.20
+    image: nikolica/sideseat:v0.21
     container_name: sideseat-web
     depends_on:
       sideseat-db:
@@ -28,9 +28,10 @@ services:
       Authentication__Google__ClientId: "${GOOGLE_CLIENT_ID:-}"
       Authentication__Google__ClientSecret: "${GOOGLE_CLIENT_SECRET:-}"
       DUMMY_DATA: "${DUMMY_DATA:-false}"
-      OpenWebUi__BaseUrl: "${OPENWEBUI_BASE_URL:-}"
-      OpenWebUi__ApiKey: "${OPENWEBUI_API_KEY:-}"
-      OpenWebUi__Model: "${OPENWEBUI_MODEL:-}"
+      OpenWebUi__ApiType: "${AI_API_TYPE:-OpenWebUi}"
+      OpenWebUi__BaseUrl: "${AI_BASE_URL:-}"
+      OpenWebUi__ApiKey: "${AI_API_KEY:-}"
+      OpenWebUi__Model: "${AI_MODEL:-}"
       # ASPNETCORE_ENVIRONMENT: "Docker"
       # ASPNETCORE_URLS: "http://+:8080"
       # ConnectionStrings__SideSeatDbContext: "Server=drugi-db,1433;Database=SideSeat;User Id=sa;Password=lozinka;TrustServerCertificate=True;MultipleActiveResultSets=true"

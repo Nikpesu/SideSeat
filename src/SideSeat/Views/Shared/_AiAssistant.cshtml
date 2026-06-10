@@ -1,7 +1,14 @@
 @inject IConfiguration Configuration
 @inject Microsoft.AspNetCore.Antiforgery.IAntiforgery Antiforgery
 @{
-    var aiConfigured = !string.IsNullOrWhiteSpace(Configuration["OpenWebUi:ApiKey"]);
+    var aiApiType = Configuration["OpenWebUi:ApiType"];
+    var aiConfigured =
+        !string.IsNullOrWhiteSpace(aiApiType) &&
+        !string.IsNullOrWhiteSpace(Configuration["OpenWebUi:BaseUrl"]) &&
+        !string.IsNullOrWhiteSpace(Configuration["OpenWebUi:ApiKey"]);
+    var aiProviderName = string.Equals(aiApiType, "DeepSeek", StringComparison.OrdinalIgnoreCase)
+        ? "DeepSeek"
+        : "Open WebUI";
     var requestToken = Antiforgery.GetAndStoreTokens(Context).RequestToken;
 }
 
@@ -15,7 +22,7 @@
                         <strong id="ss-ai-title">SideSeat Copilot</strong>
                         <span class="ss-ai-status @(aiConfigured ? "is-online" : "is-offline")">
                             <span></span>
-                            @(aiConfigured ? "Open WebUI online" : "Potrebna konfiguracija")
+                            @(aiConfigured ? $"{aiProviderName} online" : "Potrebna konfiguracija")
                         </span>
                     </div>
                     <small>AI-native mobility intelligence layer</small>
@@ -57,7 +64,7 @@
         @if (!aiConfigured)
         {
             <p class="ss-ai-config-note">
-                Postavi <code>OPENWEBUI_API_KEY</code> u <code>.env</code> datoteci i ponovno pokreni Docker Compose.
+                Postavi <code>AI_API_TYPE</code>, <code>AI_BASE_URL</code> i <code>AI_API_KEY</code> u <code>.env</code> datoteci.
             </p>
         }
     </section>
@@ -67,7 +74,7 @@
         <span class="ss-ai-fab-icon" aria-hidden="true">✦</span>
         <span class="ss-ai-fab-copy">
             <strong>Pitaj SideSeat AI</strong>
-            <small>@(aiConfigured ? "Online · powered by Open WebUI" : "Dodaj API ključ")</small>
+            <small>@(aiConfigured ? $"Online · powered by {aiProviderName}" : "Dodaj API ključ")</small>
         </span>
     </button>
 </aside>

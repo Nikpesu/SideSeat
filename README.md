@@ -5,10 +5,10 @@
 [![.NET](https://img.shields.io/badge/.NET-10.0-512BD4?logo=dotnet)](src/SideSeat/SideSeat.csproj)
 [![.NET CI](https://github.com/Nikpesu/SideSeat/actions/workflows/dotnet-ci.yml/badge.svg)](https://github.com/Nikpesu/SideSeat/actions/workflows/dotnet-ci.yml)
 [![Docker](https://img.shields.io/badge/Docker-Linux%20AMD64-2496ED?logo=docker&logoColor=white)](docker-compose.hub.yml)
-[![Version](https://img.shields.io/badge/version-v0.20-2ea44f)](changelogs/v0.20.md)
+[![Version](https://img.shields.io/badge/version-v0.21-2ea44f)](changelogs/v0.21.md)
 [![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
-SideSeat povezuje vozače i putnike kroz objavu vožnji, rezervacije, potvrđivanje putnika, plaćanja, ocjene i obavijesti. Projekt uključuje ASP.NET Core Identity, Google prijavu, REST API, upload slika, Open WebUI AI asistenta, SQL Server, Docker i integracijske testove.
+SideSeat povezuje vozače i putnike kroz objavu vožnji, rezervacije, potvrđivanje putnika, plaćanja, ocjene i obavijesti. Projekt uključuje ASP.NET Core Identity, Google prijavu, REST API, upload slika, AI asistenta za Open WebUI ili DeepSeek, SQL Server, Docker i integracijske testove.
 
 ## Sadržaj
 
@@ -71,13 +71,13 @@ Aplikacija je dostupna na `http://localhost:8080`.
 Objavljeni image:
 
 ```text
-nikolica/sideseat:v0.20
+nikolica/sideseat:v0.21
 ```
 
 Tag `latest` pokazuje na isto izdanje. Image je namijenjen platformi `linux/amd64`.
 
 ```bash
-docker pull nikolica/sideseat:v0.20
+docker pull nikolica/sideseat:v0.21
 ```
 
 Digest izdanja:
@@ -167,9 +167,10 @@ SA_PASSWORD=SideSeat123!
 GOOGLE_CLIENT_ID=
 GOOGLE_CLIENT_SECRET=
 DUMMY_DATA=false
-OPENWEBUI_API_KEY=
-OPENWEBUI_MODEL=
-OPENWEBUI_BASE_URL=https://ai.pesut.win
+AI_API_TYPE=OpenWebUi
+AI_BASE_URL=https://ai.pesut.win
+AI_API_KEY=
+AI_MODEL=
 ```
 
 Verzija, `ASPNETCORE_ENVIRONMENT` i `ASPNETCORE_URLS` ugrađeni su u Docker image. Aplikacija u Dockeru automatski sastavlja connection string za `sideseat-db`; preko `.env` mijenja se samo `SA_PASSWORD`. Napredni overrideovi ostavljeni su zakomentirani u Compose datotekama.
@@ -180,23 +181,36 @@ Verzija, `ASPNETCORE_ENVIRONMENT` i `ASPNETCORE_URLS` ugrađeni su u Docker imag
 DUMMY_DATA=true
 ```
 
-SideSeat AI koristi Open WebUI na `https://ai.pesut.win`. API ključ ostaje samo u Docker environmentu i nikada se ne šalje pregledniku:
+SideSeat AI podržava Open WebUI i direktni DeepSeek API. API ključ ostaje samo u Docker environmentu i nikada se ne šalje pregledniku.
+
+Open WebUI konfiguracija:
 
 ```dotenv
-OPENWEBUI_API_KEY=upiši_svoj_open_webui_api_ključ
-OPENWEBUI_MODEL=
-OPENWEBUI_BASE_URL=https://ai.pesut.win
+AI_API_TYPE=OpenWebUi
+AI_BASE_URL=https://ai.pesut.win
+AI_API_KEY=upiši_svoj_open_webui_api_ključ
+AI_MODEL=
 ```
 
-`OPENWEBUI_MODEL` nije obavezan. Kada je prazan, aplikacija preko `/api/models` automatski odabire prvi model dostupan tom API ključu. `OPENWEBUI_BASE_URL` aplikacija učitava iz Docker Compose okruženja. Za lokalno pokretanje bez Dockera koristi user-secrets:
+Direktna DeepSeek konfiguracija:
+
+```dotenv
+AI_API_TYPE=DeepSeek
+AI_BASE_URL=https://api.deepseek.com
+AI_API_KEY=upiši_svoj_deepseek_api_ključ
+AI_MODEL=deepseek-v4-flash
+```
+
+`AI_MODEL` nije obavezan. Kada je prazan, aplikacija automatski dohvaća prvi model preko providerova models endpointa. Za lokalno pokretanje bez Dockera koristi user-secrets:
 
 ```powershell
+dotnet user-secrets set "OpenWebUi:ApiType" "OpenWebUi" --project src/SideSeat
 dotnet user-secrets set "OpenWebUi:ApiKey" "API_KEY" --project src/SideSeat
 dotnet user-secrets set "OpenWebUi:Model" "MODEL_ID" --project src/SideSeat
 dotnet user-secrets set "OpenWebUi:BaseUrl" "https://ai.pesut.win" --project src/SideSeat
 ```
 
-AI zahtjevi idu preko `/api/ai/chat`, ograničeni su rate limiterom i ne izlažu Open WebUI ključ klijentskom JavaScriptu.
+Za DeepSeek promijeni `OpenWebUi:ApiType` u `DeepSeek` i `OpenWebUi:BaseUrl` u `https://api.deepseek.com`. AI zahtjevi idu preko `/api/ai/chat`, ograničeni su rate limiterom i ne izlažu providerov ključ klijentskom JavaScriptu.
 
 Google tajne za lokalni razvoj postavljaju se izvan repozitorija:
 
@@ -277,7 +291,7 @@ GitHub Actions automatski pokreće Release build i sve integracijske testove na 
 dotnet test tests/SideSeat.IntegrationTests/SideSeat.IntegrationTests.csproj
 ```
 
-Trenutni rezultat: **23/23 integracijskih testova prolazi**.
+Trenutni rezultat: **26/26 integracijskih testova prolazi**.
 
 Testovi pokrivaju:
 
@@ -297,6 +311,7 @@ Povijest izdanja organizirana je kao mala wiki baza. Klik na verziju otvara potp
 
 | Verzija | Datum | Najvažnije promjene | Docker |
 | --- | --- | --- | --- |
+| [v0.21](changelogs/v0.21.md) | 2026-06-11 | AI provider podrška za Open WebUI i DeepSeek | `nikolica/sideseat:v0.21` |
 | [v0.20](changelogs/v0.20.md) | 2026-06-11 | Potpuni AI poslovni kontekst i Docker OpenWebUI konfiguracija | `nikolica/sideseat:v0.20` |
 | [v0.19](changelogs/v0.19.md) | 2026-06-11 | AI korisnički kontekst, admin feedback, kartični prikazi i cursor tilt | `nikolica/sideseat:v0.19` |
 | [v0.18](changelogs/v0.18.md) | 2026-06-10 | Docker release v0.18 i ažurirani hub tagovi | `nikolica/sideseat:v0.18` |

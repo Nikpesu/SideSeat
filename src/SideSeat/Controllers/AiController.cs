@@ -24,7 +24,7 @@ public sealed class AiController(
             return Problem(
                 statusCode: StatusCodes.Status503ServiceUnavailable,
                 title: "SideSeat AI nije konfiguriran.",
-                detail: "Postavi OPENWEBUI_API_KEY u Docker konfiguraciji.");
+                detail: "Postavi AI_API_TYPE, AI_BASE_URL i AI_API_KEY u Docker konfiguraciji.");
         }
 
         if (request.Messages.Count > 20 ||
@@ -54,7 +54,7 @@ public sealed class AiController(
         }
         catch (Exception exception) when (exception is HttpRequestException or InvalidOperationException)
         {
-            logger.LogWarning(exception, "Open WebUI request failed.");
+            logger.LogWarning(exception, "AI provider request failed.");
             return Problem(
                 statusCode: StatusCodes.Status502BadGateway,
                 title: "SideSeat AI trenutačno nije dostupan.",
