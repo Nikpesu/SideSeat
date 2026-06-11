@@ -41,6 +41,7 @@ namespace SideSeat
             builder.Services.AddScoped<IPasswordHashingService, PasswordHashingService>();
             builder.Services.AddScoped<INotificationService, NotificationService>();
             builder.Services.AddScoped<IAiContextService, AiContextService>();
+            builder.Services.AddScoped<IAiToolService, AiToolService>();
             builder.Services.AddMemoryCache();
             builder.Services.Configure<OpenWebUiOptions>(
                 builder.Configuration.GetSection(OpenWebUiOptions.SectionName));

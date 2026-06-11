@@ -43,7 +43,11 @@ public sealed class AiController(
                 request.PageTitle,
                 request.PagePath,
                 cancellationToken);
-            return Ok(await openWebUi.ChatAsync(request, applicationContext, cancellationToken));
+            return Ok(await openWebUi.ChatAsync(
+                request,
+                applicationContext,
+                User,
+                cancellationToken));
         }
         catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
         {

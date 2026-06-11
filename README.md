@@ -5,7 +5,7 @@
 [![.NET](https://img.shields.io/badge/.NET-10.0-512BD4?logo=dotnet)](src/SideSeat/SideSeat.csproj)
 [![.NET CI](https://github.com/Nikpesu/SideSeat/actions/workflows/dotnet-ci.yml/badge.svg)](https://github.com/Nikpesu/SideSeat/actions/workflows/dotnet-ci.yml)
 [![Docker](https://img.shields.io/badge/Docker-Linux%20AMD64-2496ED?logo=docker&logoColor=white)](docker-compose.hub.yml)
-[![Version](https://img.shields.io/badge/version-v0.21-2ea44f)](changelogs/v0.21.md)
+[![Version](https://img.shields.io/badge/version-v0.23-2ea44f)](changelogs/v0.23.md)
 [![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
 SideSeat povezuje vozače i putnike kroz objavu vožnji, rezervacije, potvrđivanje putnika, plaćanja, ocjene i obavijesti. Projekt uključuje ASP.NET Core Identity, Google prijavu, REST API, upload slika, AI asistenta za Open WebUI ili DeepSeek, SQL Server, Docker i integracijske testove.
@@ -71,13 +71,13 @@ Aplikacija je dostupna na `http://localhost:8080`.
 Objavljeni image:
 
 ```text
-nikolica/sideseat:v0.21
+nikolica/sideseat:v0.23
 ```
 
 Tag `latest` pokazuje na isto izdanje. Image je namijenjen platformi `linux/amd64`.
 
 ```bash
-docker pull nikolica/sideseat:v0.21
+docker pull nikolica/sideseat:v0.23
 ```
 
 Digest izdanja:
@@ -212,6 +212,15 @@ dotnet user-secrets set "OpenWebUi:BaseUrl" "https://ai.pesut.win" --project src
 
 Za DeepSeek promijeni `OpenWebUi:ApiType` u `DeepSeek` i `OpenWebUi:BaseUrl` u `https://api.deepseek.com`. AI zahtjevi idu preko `/api/ai/chat`, ograničeni su rate limiterom i ne izlažu providerov ključ klijentskom JavaScriptu.
 
+AI system kontekst sadrži trenutačnu stranicu i sitemap svih stranica dostupnih ulozi prijavljenog korisnika. Za aktualne poslovne podatke agent koristi server-side read-only alate:
+
+- `get_current_user` za sigurne podatke trenutačnog korisnika.
+- `get_rides` za dostupne, putničke, vozačke ili administratorske vožnje.
+- `get_reservations` za vlastite rezervacije i rezervacije korisnikovih vožnji.
+- `get_balance` za saldo, rezervirana sredstva i transakcije.
+
+Razgovor i otvoreno stanje AI panela čuvaju se unutar trenutačnog taba tijekom navigacije. Nakon pet minuta neaktivnosti razgovor se automatski briše, a gumb `↻` odmah pokreće novi razgovor.
+
 Google tajne za lokalni razvoj postavljaju se izvan repozitorija:
 
 ```powershell
@@ -291,7 +300,7 @@ GitHub Actions automatski pokreće Release build i sve integracijske testove na 
 dotnet test tests/SideSeat.IntegrationTests/SideSeat.IntegrationTests.csproj
 ```
 
-Trenutni rezultat: **26/26 integracijskih testova prolazi**.
+Trenutni rezultat: **28/28 integracijskih testova prolazi**.
 
 Testovi pokrivaju:
 
@@ -304,6 +313,7 @@ Testovi pokrivaju:
 - lokalnu prijavu s opcijom `Zapamti me`.
 - profilne slike i slike recenzija.
 - uključivanje i čišćenje demo podataka preko `DUMMY_DATA`.
+- autorizirane AI alate, tool-call krug, sitemap i oba AI providera.
 
 ## Changelog wiki
 
@@ -311,6 +321,8 @@ Povijest izdanja organizirana je kao mala wiki baza. Klik na verziju otvara potp
 
 | Verzija | Datum | Najvažnije promjene | Docker |
 | --- | --- | --- | --- |
+| [v0.23](changelogs/v0.23.md) | 2026-06-11 | Ispravno formatirane AI rute i klikabilni detalji | `nikolica/sideseat:v0.23` |
+| [v0.22](changelogs/v0.22.md) | 2026-06-11 | AI alati, autorizirani sitemap i trajna petominutna sesija | `nikolica/sideseat:v0.22` |
 | [v0.21](changelogs/v0.21.md) | 2026-06-11 | AI provider podrška za Open WebUI i DeepSeek | `nikolica/sideseat:v0.21` |
 | [v0.20](changelogs/v0.20.md) | 2026-06-11 | Potpuni AI poslovni kontekst i Docker OpenWebUI konfiguracija | `nikolica/sideseat:v0.20` |
 | [v0.19](changelogs/v0.19.md) | 2026-06-11 | AI korisnički kontekst, admin feedback, kartični prikazi i cursor tilt | `nikolica/sideseat:v0.19` |

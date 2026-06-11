@@ -156,13 +156,12 @@ body::before {
 
 .ss-brand-mark {
   width: 2.15rem;
+  height: 2.15rem;
   aspect-ratio: 1;
-  display: grid;
-  place-items: center;
+  display: block;
+  object-fit: contain;
   flex: 0 0 auto;
   border-radius: 10px;
-  color: #fff;
-  background: var(--ss-gradient);
   box-shadow: 0 8px 20px rgba(36, 107, 59, 0.22);
   transform: rotate(-5deg);
 }

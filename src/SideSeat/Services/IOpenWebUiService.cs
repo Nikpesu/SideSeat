@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using SideSeat.Models.Ai;
 
 namespace SideSeat.Services;
@@ -8,5 +9,6 @@ public interface IOpenWebUiService
     Task<AiChatResponse> ChatAsync(
         AiChatRequest request,
         string applicationContext,
+        ClaimsPrincipal principal,
         CancellationToken cancellationToken);
 }

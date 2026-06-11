@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using System.Net;
 using System.Text;
 using System.Text.Json;
@@ -36,7 +37,8 @@ public class OpenWebUiServiceTests
                 ApiKey = "test-key",
                 Model = "test-model"
             }),
-            cache);
+            cache,
+            new FakeAiToolService());
 
         var response = await service.ChatAsync(
             new AiChatRequest
@@ -51,6 +53,7 @@ public class OpenWebUiServiceTests
                 ]
             },
             """{"user":{"id":2,"saldo":50},"ridesAsPassenger":[{"id":7}]}""",
+            new ClaimsPrincipal(new ClaimsIdentity()),
             CancellationToken.None);
 
         Assert.Equal("U redu.", response.Message);
@@ -119,7 +122,8 @@ public class OpenWebUiServiceTests
                 BaseUrl = "https://ai.example.test",
                 ApiKey = "test-key"
             }),
-            cache);
+            cache,
+            new FakeAiToolService());
 
         var response = await service.ChatAsync(
             new AiChatRequest
@@ -134,6 +138,7 @@ public class OpenWebUiServiceTests
                 ]
             },
             "{}",
+            new ClaimsPrincipal(new ClaimsIdentity()),
             CancellationToken.None);
 
         Assert.Equal("Radi.", response.Message);
@@ -145,6 +150,69 @@ public class OpenWebUiServiceTests
         Assert.Equal(
             "provider-model",
             requestDocument.RootElement.GetProperty("model").GetString());
+    }
+
+    [Fact]
+    public async Task ChatAsync_ExecutesToolCallAndReturnsFinalAnswer()
+    {
+        var requestBodies = new List<string>();
+        var responseNumber = 0;
+        var tools = new FakeAiToolService();
+        using var handler = new RecordingHandler(async request =>
+        {
+            requestBodies.Add(await request.Content!.ReadAsStringAsync());
+            responseNumber++;
+            return responseNumber == 1
+                ? JsonResponse(
+                    """
+                    {"choices":[{"message":{"role":"assistant","content":null,"tool_calls":[{"id":"call-1","type":"function","function":{"name":"get_balance","arguments":"{\"transactionLimit\":5}"}}]}}]}
+                    """)
+                : JsonResponse(
+                    """{"choices":[{"message":{"role":"assistant","content":"Rijeka $\\rightarrow$ Zagreb | [Detalji](/Voznja/Details/7)"}}]}""");
+        });
+        using var httpClient = new HttpClient(handler);
+        using var cache = new MemoryCache(new MemoryCacheOptions());
+        var service = new OpenWebUiService(
+            httpClient,
+            Options.Create(new OpenWebUiOptions
+            {
+                ApiType = "DeepSeek",
+                BaseUrl = "https://api.deepseek.test",
+                ApiKey = "test-key",
+                Model = "test-model"
+            }),
+            cache,
+            tools);
+
+        var response = await service.ChatAsync(
+            new AiChatRequest
+            {
+                Messages =
+                [
+                    new AiChatMessage
+                    {
+                        Role = "user",
+                        Content = "Koliki mi je saldo?"
+                    }
+                ]
+            },
+            """{"sitemap":[{"label":"Moj saldo","path":"/Korisnik/Saldo"}]}""",
+            new ClaimsPrincipal(new ClaimsIdentity()),
+            CancellationToken.None);
+
+        Assert.Equal(
+            "Rijeka → Zagreb | [Detalji](/Voznja/Details/7)",
+            response.Message);
+        Assert.Equal("get_balance", tools.LastToolName);
+        Assert.Equal(2, requestBodies.Count);
+
+        using var secondRequest = JsonDocument.Parse(requestBodies[1]);
+        var messages = secondRequest.RootElement.GetProperty("messages");
+        Assert.Contains(
+            messages.EnumerateArray(),
+            message =>
+                message.GetProperty("role").GetString() == "tool" &&
+                message.GetProperty("tool_call_id").GetString() == "call-1");
     }
 
     private static HttpResponseMessage JsonResponse(string json) =>
@@ -160,5 +228,38 @@ public class OpenWebUiServiceTests
             HttpRequestMessage request,
             CancellationToken cancellationToken) =>
             responseFactory(request);
+    }
+
+    private sealed class FakeAiToolService : IAiToolService
+    {
+        public IReadOnlyList<object> Definitions { get; } =
+        [
+            new
+            {
+                type = "function",
+                function = new
+                {
+                    name = "get_balance",
+                    description = "Test",
+                    parameters = new
+                    {
+                        type = "object",
+                        properties = new { }
+                    }
+                }
+            }
+        ];
+
+        public string? LastToolName { get; private set; }
+
+        public Task<string> ExecuteAsync(
+            string toolName,
+            string argumentsJson,
+            ClaimsPrincipal principal,
+            CancellationToken cancellationToken)
+        {
+            LastToolName = toolName;
+            return Task.FromResult("""{"balance":50}""");
+        }
     }
 }

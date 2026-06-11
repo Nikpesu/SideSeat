@@ -12,7 +12,12 @@
     var requestToken = Antiforgery.GetAndStoreTokens(Context).RequestToken;
 }
 
-<aside class="ss-ai" data-ss-ai data-endpoint="@Url.Action("Chat", "Ai")" data-token="@requestToken" data-configured="@(aiConfigured ? "true" : "false")">
+<aside class="ss-ai"
+       data-ss-ai
+       data-endpoint="@Url.Action("Chat", "Ai")"
+       data-token="@requestToken"
+       data-configured="@(aiConfigured ? "true" : "false")"
+       data-user-key="@(User.FindFirst(SideSeat.Security.SideSeatClaimTypes.KorisnikId)?.Value ?? "anonymous")">
     <section class="ss-ai-panel" id="ss-ai-panel" role="dialog" aria-modal="false" aria-labelledby="ss-ai-title" hidden>
         <header class="ss-ai-header">
             <div class="ss-ai-identity">
@@ -28,7 +33,10 @@
                     <small>AI-native mobility intelligence layer</small>
                 </div>
             </div>
-            <button class="ss-ai-close" type="button" data-ss-ai-close aria-label="Zatvori AI asistenta">×</button>
+            <div class="ss-ai-header-actions">
+                <button class="ss-ai-reset" type="button" data-ss-ai-reset title="Novi razgovor" aria-label="Obriši AI razgovor">↻</button>
+                <button class="ss-ai-close" type="button" data-ss-ai-close aria-label="Zatvori AI asistenta">×</button>
+            </div>
         </header>
 
         <div class="ss-ai-messages" data-ss-ai-messages aria-live="polite">

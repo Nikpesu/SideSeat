@@ -123,16 +123,16 @@ build_metadata.AdditionalFiles.CssScope =
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcS29yaXNuaWtcX0Zvcm0uY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/nikpe/Documents/GitHub/SideSeat/src/SideSeat/Views/Ocjena/AdminCreate.cshtml]
-build_metadata.AdditionalFiles.TargetPath = Vmlld3NcT2NqZW5hXEFkbWluQ3JlYXRlLmNzaHRtbA==
-build_metadata.AdditionalFiles.CssScope = 
-
 [C:/Users/nikpe/Documents/GitHub/SideSeat/src/SideSeat/Views/Ocjena/AdminDelete.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcT2NqZW5hXEFkbWluRGVsZXRlLmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
 [C:/Users/nikpe/Documents/GitHub/SideSeat/src/SideSeat/Views/Ocjena/AdminEdit.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcT2NqZW5hXEFkbWluRWRpdC5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/nikpe/Documents/GitHub/SideSeat/src/SideSeat/Views/Ocjena/AdminFeedback.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcT2NqZW5hXEFkbWluRmVlZGJhY2suY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
 [C:/Users/nikpe/Documents/GitHub/SideSeat/src/SideSeat/Views/Ocjena/Attachments.cshtml]
@@ -225,6 +225,10 @@ build_metadata.AdditionalFiles.CssScope =
 
 [C:/Users/nikpe/Documents/GitHub/SideSeat/src/SideSeat/Views/Shared/Error.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcU2hhcmVkXEVycm9yLmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/nikpe/Documents/GitHub/SideSeat/src/SideSeat/Views/Shared/_AiAssistant.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcU2hhcmVkXF9BaUFzc2lzdGFudC5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
 [C:/Users/nikpe/Documents/GitHub/SideSeat/src/SideSeat/Views/Shared/_AutocompleteLookup.cshtml]

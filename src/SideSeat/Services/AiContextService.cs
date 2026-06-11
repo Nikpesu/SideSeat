@@ -23,19 +23,25 @@ public sealed class AiContextService(SideSeatDbContext dbContext) : IAiContextSe
         var isAuthenticated = principal.Identity?.IsAuthenticated == true;
         var isAdmin = principal.IsInRole("Admin");
         var isDriver = principal.IsInRole("Driver");
-        var routeCatalog = BuildRouteCatalog(isAuthenticated, isAdmin, isDriver);
+        var currentKorisnikId = principal.GetKorisnikId();
+        var routeCatalog = BuildRouteCatalog(
+            isAuthenticated,
+            isAdmin,
+            isDriver,
+            currentKorisnikId);
         var currentPage = new
         {
             title = Clean(pageTitle, 200),
             path = NormalizeInternalPath(pagePath)
         };
 
-        if (!isAuthenticated || principal.GetKorisnikId() is not int korisnikId)
+        if (!isAuthenticated || currentKorisnikId is not int korisnikId)
         {
             return JsonSerializer.Serialize(new
             {
                 currentPage,
                 authentication = "anonymous",
+                sitemap = routeCatalog,
                 routes = routeCatalog,
                 guidance = "Korisnik nije prijavljen. Ne pretpostavljaj osobne podatke. Za prijavu ili registraciju usmjeri ga na /?auth=login ili /?auth=register."
             }, JsonOptions);
@@ -52,6 +58,7 @@ public sealed class AiContextService(SideSeatDbContext dbContext) : IAiContextSe
                 authentication = "authenticated-without-domain-profile",
                 email = principal.Identity?.Name,
                 roles = principal.FindAll(ClaimTypes.Role).Select(claim => claim.Value).Distinct().ToArray(),
+                sitemap = routeCatalog,
                 routes = routeCatalog
             }, JsonOptions);
         }
@@ -352,6 +359,7 @@ public sealed class AiContextService(SideSeatDbContext dbContext) : IAiContextSe
                 route = $"{payment.Rezervacija.Voznja.PolazniGrad.Naziv} → {payment.Rezervacija.Voznja.OdredisniGrad.Naziv}",
                 reservationLink = $"/Rezervacija/Details/{payment.RezervacijaId}"
             }),
+            sitemap = routeCatalog,
             routes = routeCatalog,
             adminOverview = isAdmin
                 ? new
@@ -369,7 +377,11 @@ public sealed class AiContextService(SideSeatDbContext dbContext) : IAiContextSe
         return JsonSerializer.Serialize(context, JsonOptions);
     }
 
-    private static object[] BuildRouteCatalog(bool authenticated, bool admin, bool driver)
+    private static object[] BuildRouteCatalog(
+        bool authenticated,
+        bool admin,
+        bool driver,
+        int? currentKorisnikId)
     {
         var routes = new List<object>
         {
@@ -386,31 +398,73 @@ public sealed class AiContextService(SideSeatDbContext dbContext) : IAiContextSe
 
         routes.AddRange([
             Route("Dostupne vožnje", "/Voznja?view=available&status=all"),
+            Route("Dostupne planirane vožnje", "/Voznja?view=available&status=planned"),
+            Route("Dostupne završene vožnje", "/Voznja?view=available&status=completed"),
+            Route("Dostupne otkazane vožnje", "/Voznja?view=available&status=cancelled"),
             Route("Moja voženja kao putnik", "/Voznja?view=ridden&status=all"),
+            Route("Moja planirana voženja", "/Voznja?view=ridden&status=planned"),
+            Route("Moja završena voženja", "/Voznja?view=ridden&status=completed"),
+            Route("Moja otkazana voženja", "/Voznja?view=ridden&status=cancelled"),
             Route("Moje rezervacije", "/Rezervacija?view=mine&status=all"),
+            Route("Moje rezervacije u procesu", "/Rezervacija?view=mine&status=pending"),
+            Route("Moje potvrđene rezervacije", "/Rezervacija?view=mine&status=confirmed"),
+            Route("Moje odbijene rezervacije", "/Rezervacija?view=mine&status=rejected"),
+            Route("Moje završene rezervacije", "/Rezervacija?view=mine&status=completed"),
             Route("Moje ocjene", "/Ocjena"),
             Route("Moj saldo", "/Korisnik/Saldo"),
             Route("Uplata sredstava", "/Korisnik/Uplata"),
             Route("Postavke profila", "/Korisnik/Settings"),
-            Route("Vozački KYC", "/Korisnik/Kyc")
+            Route("Vozački KYC", "/Korisnik/Kyc"),
+            Route("Detalji vožnje", "/Voznja/Details/{id}"),
+            Route("Detalji rezervacije", "/Rezervacija/Details/{id}"),
+            Route("Detalji ocjene", "/Ocjena/Details/{id}")
         ]);
+
+        if (currentKorisnikId.HasValue)
+        {
+            routes.Add(Route(
+                "Detalji vlastitog profila",
+                $"/Korisnik/Details/{currentKorisnikId.Value}"));
+        }
 
         if (driver || admin)
         {
-            routes.Add(Route("Moje objavljene vožnje", "/Voznja?view=driving&status=all"));
-            routes.Add(Route("Objavi novu vožnju", "/Voznja/Create"));
-            routes.Add(Route("Rezervacije mojih vožnji", "/Rezervacija?view=my-rides&status=all"));
+            routes.AddRange([
+                Route("Moje objavljene vožnje", "/Voznja?view=driving&status=all"),
+                Route("Moje planirane objavljene vožnje", "/Voznja?view=driving&status=planned"),
+                Route("Moje završene objavljene vožnje", "/Voznja?view=driving&status=completed"),
+                Route("Moje otkazane objavljene vožnje", "/Voznja?view=driving&status=cancelled"),
+                Route("Objavi novu vožnju", "/Voznja/Create"),
+                Route("Uredi vlastitu vožnju", "/Voznja/Edit/{id}"),
+                Route("Rezervacije mojih vožnji", "/Rezervacija?view=my-rides&status=all"),
+                Route("Rezervacije mojih vožnji u procesu", "/Rezervacija?view=my-rides&status=pending"),
+                Route("Potvrđene rezervacije mojih vožnji", "/Rezervacija?view=my-rides&status=confirmed"),
+                Route("Odbijene rezervacije mojih vožnji", "/Rezervacija?view=my-rides&status=rejected"),
+                Route("Završene rezervacije mojih vožnji", "/Rezervacija?view=my-rides&status=completed")
+            ]);
         }
 
         if (admin)
         {
             routes.AddRange([
                 Route("Sve vožnje", "/Voznja?view=all&status=all"),
+                Route("Sve planirane vožnje", "/Voznja?view=all&status=planned"),
+                Route("Sve završene vožnje", "/Voznja?view=all&status=completed"),
+                Route("Sve otkazane vožnje", "/Voznja?view=all&status=cancelled"),
                 Route("Sve rezervacije", "/Rezervacija?view=all&status=all"),
+                Route("Sve rezervacije u procesu", "/Rezervacija?view=all&status=pending"),
+                Route("Sve potvrđene rezervacije", "/Rezervacija?view=all&status=confirmed"),
+                Route("Sve odbijene rezervacije", "/Rezervacija?view=all&status=rejected"),
+                Route("Sve završene rezervacije", "/Rezervacija?view=all&status=completed"),
                 Route("Korisnici", "/Korisnik"),
+                Route("Novi korisnik", "/Korisnik/Create"),
+                Route("Uredi korisnika", "/Korisnik/Edit/{id}"),
                 Route("Vozila", "/Vozilo"),
+                Route("Novo vozilo", "/Vozilo/Create"),
                 Route("Gradovi", "/Grad"),
+                Route("Novi grad", "/Grad/Create"),
                 Route("Plaćanja", "/Placanje"),
+                Route("Novo plaćanje", "/Placanje/Create"),
                 Route("Privitci recenzija", "/Ocjena/Attachments")
             ]);
         }

@@ -1218,16 +1218,37 @@
     const panel = assistant.querySelector(".ss-ai-panel");
     const toggle = assistant.querySelector("[data-ss-ai-toggle]");
     const close = assistant.querySelector("[data-ss-ai-close]");
+    const reset = assistant.querySelector("[data-ss-ai-reset]");
     const form = assistant.querySelector("[data-ss-ai-form]");
     const input = assistant.querySelector("[data-ss-ai-input]");
     const messagesElement = assistant.querySelector("[data-ss-ai-messages]");
     const sendButton = assistant.querySelector("[data-ss-ai-send]");
     const configured = assistant.dataset.configured === "true";
+    const sessionLifetimeMs = 5 * 60 * 1000;
+    const storageKey = `ss-ai-session:${assistant.dataset.userKey || "anonymous"}`;
     const history = [];
 
     if (!panel || !toggle || !form || !input || !messagesElement || !sendButton) {
       return;
     }
+
+    const initialMarkup = messagesElement.innerHTML;
+
+    const clearStoredSession = () => {
+      try {
+        sessionStorage.removeItem(storageKey);
+      } catch {}
+    };
+
+    const saveSession = () => {
+      try {
+        sessionStorage.setItem(storageKey, JSON.stringify({
+          expiresAt: Date.now() + sessionLifetimeMs,
+          open: !panel.hidden,
+          history
+        }));
+      } catch {}
+    };
 
     const isSafeInternalLink = (href) => {
       if (!href || !href.startsWith("/") || href.startsWith("//")) {
@@ -1386,6 +1407,7 @@
     const setOpen = (open) => {
       panel.hidden = !open;
       toggle.setAttribute("aria-expanded", open ? "true" : "false");
+      saveSession();
       if (open && configured) {
         window.setTimeout(() => input.focus(), 80);
       }
@@ -1418,6 +1440,46 @@
       return message;
     };
 
+    const resetSession = () => {
+      history.splice(0);
+      messagesElement.innerHTML = initialMarkup;
+      input.value = "";
+      input.style.height = "";
+      setOpen(false);
+      clearStoredSession();
+    };
+
+    const restoreSession = () => {
+      try {
+        const raw = sessionStorage.getItem(storageKey);
+        if (!raw) {
+          return;
+        }
+
+        const stored = JSON.parse(raw);
+        if (!stored || Number(stored.expiresAt) <= Date.now() || !Array.isArray(stored.history)) {
+          resetSession();
+          return;
+        }
+
+        history.push(...stored.history
+          .filter(message =>
+            message &&
+            (message.role === "user" || message.role === "assistant") &&
+            typeof message.content === "string")
+          .slice(-20));
+
+        if (history.length > 0) {
+          messagesElement.innerHTML = "";
+          history.forEach(message => appendMessage(message.role, message.content));
+        }
+
+        setOpen(stored.open === true);
+      } catch {
+        resetSession();
+      }
+    };
+
     const appendTyping = () => {
       const message = document.createElement("article");
       message.className = "ss-ai-message is-assistant";
@@ -1436,6 +1498,7 @@
       setOpen(true);
       appendMessage("user", text);
       history.push({ role: "user", content: text });
+      saveSession();
       input.value = "";
       input.style.height = "";
       sendButton.disabled = true;
@@ -1464,6 +1527,7 @@
         const answer = payload.message || "AI nije vratio tekstualni odgovor.";
         history.push({ role: "assistant", content: answer });
         appendMessage("assistant", answer);
+        saveSession();
       } catch (error) {
         appendMessage("assistant", error.message || "Veza sa SideSeat AI servisom nije uspjela.", "is-error");
       } finally {
@@ -1475,6 +1539,7 @@
 
     toggle.addEventListener("click", () => setOpen(panel.hidden));
     close?.addEventListener("click", () => setOpen(false));
+    reset?.addEventListener("click", resetSession);
 
     form.addEventListener("submit", (event) => {
       event.preventDefault();
@@ -1514,6 +1579,18 @@
         setOpen(false);
       }
     });
+
+    restoreSession();
+    window.setInterval(() => {
+      try {
+        const stored = JSON.parse(sessionStorage.getItem(storageKey) || "null");
+        if (stored && Number(stored.expiresAt) <= Date.now()) {
+          resetSession();
+        }
+      } catch {
+        clearStoredSession();
+      }
+    }, 15000);
   };
 
   const initializeEnhancedUi = () => {

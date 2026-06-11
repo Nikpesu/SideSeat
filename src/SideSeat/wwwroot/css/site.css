@@ -2025,3 +2025,23 @@ html[data-theme="dark"] .ss-notification-item strong {
     width: min(1320px, calc(100% - 3rem));
   }
 }
+.ss-ai-header-actions {
+  display: flex;
+  align-items: center;
+  gap: .35rem;
+}
+
+.ss-ai-reset {
+  border: 1px solid var(--ss-border);
+  border-radius: 999px;
+  background: var(--ss-surface);
+  color: var(--ss-text);
+  width: 2rem;
+  height: 2rem;
+  line-height: 1;
+}
+
+.ss-ai-reset:hover {
+  border-color: var(--ss-primary);
+  color: var(--ss-primary);
+}
