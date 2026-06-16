@@ -1,8 +1,10 @@
+@using Microsoft.Extensions.Options
+@inject IOptions<SideSeat.Services.MapsOptions> MapSettings
 @{
     var db = Context.RequestServices.GetService(typeof(SideSeat.Data.SideSeatDbContext)) as SideSeat.Data.SideSeatDbContext;
     var configuration = Context.RequestServices.GetService(typeof(IConfiguration)) as IConfiguration;
     var useDummyData = configuration?.GetValue<bool>("DUMMY_DATA") == true;
-    var appVersion = configuration?["SIDESEAT_VERSION"] ?? "v0.14";
+    var appVersion = configuration?["SIDESEAT_VERSION"] ?? "v0.32";
     var googleLoginEnabled =
         !string.IsNullOrWhiteSpace(configuration?["Authentication:Google:ClientId"]) &&
         !string.IsNullOrWhiteSpace(configuration?["Authentication:Google:ClientSecret"]);
@@ -10,6 +12,9 @@
     var currentAction = (ViewContext.RouteData.Values["action"]?.ToString() ?? string.Empty).ToLowerInvariant();
     var isAuthenticated = User.Identity?.IsAuthenticated == true;
     var isAdmin = User.IsInRole("Admin");
+    var isDriver = User.IsInRole("Driver") || isAdmin;
+    var accountName = User.Identity?.Name ?? "Korisnik";
+    var accountInitial = accountName.Length > 0 ? accountName[..1].ToUpperInvariant() : "K";
     var returnUrlQuery = Context.Request.Query["returnUrl"].ToString();
     var returnUrl = !string.IsNullOrWhiteSpace(returnUrlQuery) && !returnUrlQuery.Contains("auth=", StringComparison.OrdinalIgnoreCase)
         ? returnUrlQuery
@@ -17,12 +22,14 @@
     var authError = TempData["AuthError"] as string;
     var fundsToastMessage = TempData["FundsToastMessage"] as string;
     var fundsToastHref = TempData["FundsToastHref"] as string;
+    int? currentUserId = null;
     decimal? userSaldo = null;
     if (isAuthenticated && db is not null)
     {
         var userIdClaim = User.FindFirst(SideSeat.Security.SideSeatClaimTypes.KorisnikId)?.Value;
         if (int.TryParse(userIdClaim, out var userId))
         {
+            currentUserId = userId;
             userSaldo = db.Korisnici
                 .Where(k => k.Id == userId)
                 .Select(k => (decimal?)k.Saldo)
@@ -52,23 +59,17 @@
     </script>
     <script type="importmap"></script>
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/lib/leaflet/leaflet.css" />
     <link rel="stylesheet" href="~/SideSeat.styles.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/performative.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/route-maps.css" asp-append-version="true" />
 </head>
-<body data-page-title="@ViewData["Title"]" data-page-controller="@currentController">
-    <div class="ss-launch-banner">
-        <div class="ss-launch-track" aria-label="SideSeat platform capabilities">
-            <span>✦ AI-NATIVE MOBILITY</span>
-            <span>LIVE ROUTE INTELLIGENCE</span>
-            <span>ZERO-FRICTION RESERVATIONS</span>
-            <span>TRUST LAYER INCLUDED</span>
-            <span>✦ AI-NATIVE MOBILITY</span>
-            <span>LIVE ROUTE INTELLIGENCE</span>
-            <span>ZERO-FRICTION RESERVATIONS</span>
-            <span>TRUST LAYER INCLUDED</span>
-        </div>
-    </div>
+<body data-page-title="@ViewData["Title"]"
+      data-page-controller="@currentController"
+      data-map-tile-url="@MapSettings.Value.TileUrl"
+      data-map-attribution="@MapSettings.Value.TileAttribution"
+      data-map-route-url="/api/maps/route">
     <partial name="_RouteMapBackground" />
     <div class="ss-aurora" aria-hidden="true">
         <span></span>
@@ -79,100 +80,266 @@
         <i>✦</i><i>✧</i><i>✦</i><i>·</i><i>✧</i><i>✦</i>
     </div>
     <header class="ss-header">
-        <nav class="navbar navbar-expand-lg ss-nav" aria-label="Glavna navigacija">
-            <div class="container-fluid ss-shell">
-                <a class="ss-brand" asp-area="" asp-controller="Home" asp-action="Index">
-                    <img class="ss-brand-mark" src="~/favicon.svg" alt="" width="42" height="42" />
-                    <span>
-                        <strong>SideSeat</strong>
-                        <small>AI mobility network</small>
-                    </span>
-                </a>
-                <button class="navbar-toggler ss-nav-toggle" type="button" data-bs-toggle="collapse" data-bs-target="#mainNavigation"
-                        aria-controls="mainNavigation" aria-expanded="false" aria-label="Prikazi ili sakrij navigaciju">
-                    <span class="ss-nav-toggle-text">Meni</span>
-                </button>
-                <div class="collapse navbar-collapse" id="mainNavigation">
-                    <ul class="navbar-nav ms-lg-3 ss-nav-list">
-                        <li class="nav-item">
-                            <a class="ss-nav-link @((currentController == "home" && currentAction == "index") ? "active" : string.Empty)"
-                               asp-controller="Home" asp-action="Index">Pocetna</a>
-                        </li>
+        <nav class="ss-nav" aria-label="Glavna navigacija">
+            <div class="ss-shell ss-nav-primary">
+                <div class="ss-nav-brand-group">
+                    <button class="ss-menu-trigger"
+                            type="button"
+                            data-bs-toggle="offcanvas"
+                            data-bs-target="#sideNavigation"
+                            aria-controls="sideNavigation"
+                            aria-label="Otvori glavni meni"
+                            data-testid="sidebar-open">
+                        <span></span><span></span><span></span>
+                    </button>
+                    <a class="ss-brand" asp-area="" asp-controller="Home" asp-action="Index" aria-label="SideSeat početna">
+                        <img class="ss-brand-mark" src="~/favicon.svg" alt="" width="42" height="42" />
+                        <span class="ss-brand-copy">
+                            <strong>SideSeat</strong>
+                            <small>AI mobility network</small>
+                        </span>
+                    </a>
+                </div>
 
-                        @if (isAuthenticated)
-                        {
-                            <li class="nav-item">
-                                <a class="ss-nav-link @(currentController == "voznja" ? "active" : string.Empty)"
-                                   asp-controller="Voznja" asp-action="Index">Voznje</a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="ss-nav-link @(currentController == "rezervacija" ? "active" : string.Empty)"
-                                   asp-controller="Rezervacija" asp-action="Index">Rezervacije</a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="ss-nav-link @(currentController == "ocjena" ? "active" : string.Empty)"
-                                   asp-controller="Ocjena" asp-action="Index">Ocjene</a>
-                            </li>
-                            @if (isAdmin)
-                            {
-                                <li class="nav-item">
-                                    <a class="ss-nav-link @(currentController == "grad" ? "active" : string.Empty)"
-                                       asp-controller="Grad" asp-action="Index">Gradovi</a>
-                                </li>
-                                <li class="nav-item">
-                                    <a class="ss-nav-link @(currentController == "korisnik" && currentAction != "settings" ? "active" : string.Empty)"
-                                       asp-controller="Korisnik" asp-action="Index">Korisnici</a>
-                                </li>
-                                <li class="nav-item">
-                                    <a class="ss-nav-link @(currentController == "vozilo" ? "active" : string.Empty)"
-                                       asp-controller="Vozilo" asp-action="Index">Vozila</a>
-                                </li>
-                                <li class="nav-item">
-                                    <a class="ss-nav-link @(currentController == "placanje" ? "active" : string.Empty)"
-                                       asp-controller="Placanje" asp-action="Index">Placanja</a>
-                                </li>
-                            }
-                        }
-                    </ul>
+                @if (isAuthenticated)
+                {
+                    <button class="ss-search-trigger ss-search-trigger-main"
+                            type="button"
+                            data-ss-global-search-open
+                            aria-haspopup="dialog"
+                            data-testid="global-search-trigger">
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <circle cx="11" cy="11" r="7"></circle>
+                            <path d="m20 20-3.5-3.5"></path>
+                        </svg>
+                        <span>Pretraži SideSeat</span>
+                        <kbd>Ctrl K</kbd>
+                    </button>
+                }
+                else
+                {
+                    <span class="ss-nav-search-placeholder" aria-hidden="true"></span>
+                }
 
-                    <div class="ms-lg-auto mt-3 mt-lg-0 d-flex align-items-center gap-2">
-                        <button id="ss-theme-toggle" class="ss-theme-toggle" type="button" aria-label="Promijeni temu" aria-pressed="false">
-                            <span class="ss-theme-toggle-icon" aria-hidden="true">☀</span>
-                            <span class="ss-theme-toggle-label">Light</span>
-                        </button>
-                        @if (isAuthenticated)
+                <div class="ss-nav-account">
+                    <button id="ss-theme-toggle" class="ss-theme-toggle ss-theme-toggle-compact" type="button"
+                            aria-label="Promijeni temu" aria-pressed="false">
+                        <span class="ss-theme-toggle-icon" aria-hidden="true">☀</span>
+                        <span class="ss-theme-toggle-label">Light</span>
+                    </button>
+                    @if (isAuthenticated)
+                    {
+                        @await Component.InvokeAsync("ObavijestiBell")
+                        <a class="ss-account-link @(currentController == "korisnik" && currentAction == "settings" ? "active" : string.Empty)"
+                           asp-controller="Korisnik" asp-action="Settings" data-testid="account-settings">
+                            <span class="ss-account-avatar" aria-hidden="true">@accountInitial</span>
+                            <span class="ss-account-name">@accountName</span>
+                        </a>
+                        <form asp-controller="Auth" asp-action="Logout" method="post" class="ss-top-logout">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="ss-top-logout-btn" data-testid="top-logout">Odjava</button>
+                        </form>
+                    }
+                    else
+                    {
+                        <div class="ss-auth-actions">
+                            <button class="ss-btn ss-btn-secondary" type="button" data-bs-toggle="modal" data-bs-target="#authModal" data-auth-open="login">
+                                Prijava
+                            </button>
+                            <button class="ss-btn" type="button" data-bs-toggle="modal" data-bs-target="#authModal" data-auth-open="register">
+                                Registracija
+                            </button>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            @if (isAuthenticated)
+            {
+                <div class="ss-nav-secondary" data-testid="desktop-primary-navigation">
+                    <div class="ss-shell ss-nav-secondary-inner">
+                        <a class="ss-nav-link @(currentController == "voznja" ? "active" : string.Empty)"
+                           asp-controller="Voznja" asp-action="Index" data-testid="nav-rides">Vožnje</a>
+                        @if (isDriver)
                         {
-                            <div class="d-flex align-items-center gap-2">
-                                @if (userSaldo.HasValue)
-                                {
-                                    <a class="ss-nav-link @(currentController == "korisnik" && currentAction == "saldo" ? "active" : string.Empty)"
-                                       asp-controller="Korisnik" asp-action="Saldo">Saldo: @userSaldo.Value.ToString("0.00") EUR</a>
-                                }
-                                @await Component.InvokeAsync("ObavijestiBell")
-                                <a class="ss-nav-link @(currentController == "korisnik" && currentAction == "settings" ? "active" : string.Empty)"
-                                   asp-controller="Korisnik" asp-action="Settings">@User.Identity!.Name</a>
-                                <form asp-controller="Auth" asp-action="Logout" method="post">
-                                    @Html.AntiForgeryToken()
-                                    <button type="submit" class="ss-btn ss-btn-secondary">Odjava</button>
-                                </form>
-                            </div>
+                            <a class="ss-nav-link @(currentController == "voznja" && currentAction == "current" ? "active" : string.Empty)"
+                               asp-controller="Voznja" asp-action="Current" data-testid="nav-current-ride">Trenutna</a>
                         }
-                        else
+                        <a class="ss-nav-link @(currentController == "rezervacija" ? "active" : string.Empty)"
+                           asp-controller="Rezervacija" asp-action="Index" data-testid="nav-reservations">Rezervacije</a>
+                        <a class="ss-nav-link @(currentController == "ocjena" ? "active" : string.Empty)"
+                           asp-controller="Ocjena" asp-action="Index" data-testid="nav-reviews">Ocjene</a>
+                        @if (userSaldo.HasValue)
                         {
-                            <div class="d-flex gap-2">
-                                <button class="ss-btn ss-btn-secondary" type="button" data-bs-toggle="modal" data-bs-target="#authModal" data-auth-open="login">
-                                    Prijava
-                                </button>
-                                <button class="ss-btn" type="button" data-bs-toggle="modal" data-bs-target="#authModal" data-auth-open="register">
-                                    Registracija
-                                </button>
-                            </div>
+                            <a class="ss-nav-link ss-nav-balance @(currentController == "korisnik" && currentAction == "saldo" ? "active" : string.Empty)"
+                               asp-controller="Korisnik" asp-action="Saldo" data-testid="nav-balance">
+                                Saldo: <strong>@userSaldo.Value.ToString("0.00") EUR</strong>
+                            </a>
                         }
                     </div>
                 </div>
-            </div>
+            }
         </nav>
     </header>
+
+    <aside class="offcanvas offcanvas-start ss-sidebar"
+           tabindex="-1"
+           id="sideNavigation"
+           aria-labelledby="sideNavigationTitle"
+           data-testid="sidebar">
+        <div class="offcanvas-header ss-sidebar-header">
+            <a class="ss-brand" asp-controller="Home" asp-action="Index">
+                <img class="ss-brand-mark" src="~/favicon.svg" alt="" width="40" height="40" />
+                <span class="ss-brand-copy">
+                    <strong id="sideNavigationTitle">SideSeat</strong>
+                    <small>Glavni meni</small>
+                </span>
+            </a>
+            <button type="button" class="btn-close ss-sidebar-close" data-bs-dismiss="offcanvas" aria-label="Zatvori meni"></button>
+        </div>
+        <div class="offcanvas-body ss-sidebar-body">
+            <details class="ss-sidebar-group" open>
+                <summary>Glavno</summary>
+                <nav aria-label="Glavne stranice">
+                    <a class="ss-sidebar-link @((currentController == "home" && currentAction == "index") ? "active" : string.Empty)"
+                       asp-controller="Home" asp-action="Index" data-testid="sidebar-home">Početna</a>
+                    @if (isAuthenticated)
+                    {
+                        <a class="ss-sidebar-link @(currentController == "voznja" && currentAction != "active" ? "active" : string.Empty)"
+                           asp-controller="Voznja" asp-action="Index">Vožnje</a>
+                        <a class="ss-sidebar-link @(currentController == "voznja" && currentAction == "active" ? "active" : string.Empty)"
+                           asp-controller="Voznja" asp-action="Active">Aktivne vožnje</a>
+                        @if (isDriver)
+                        {
+                            <a class="ss-sidebar-link @(currentController == "voznja" && currentAction == "current" ? "active" : string.Empty)"
+                               asp-controller="Voznja" asp-action="Current">Trenutna vožnja</a>
+                        }
+                        <a class="ss-sidebar-link @(currentController == "rezervacija" && !currentAction.StartsWith("admin") ? "active" : string.Empty)"
+                           asp-controller="Rezervacija" asp-action="Index">Rezervacije</a>
+                        <a class="ss-sidebar-link @(currentController == "ocjena" && currentAction != "attachments" ? "active" : string.Empty)"
+                           asp-controller="Ocjena" asp-action="Index">Ocjene</a>
+                    }
+                </nav>
+            </details>
+
+            @if (isAuthenticated)
+            {
+                <details class="ss-sidebar-group" @(currentAction is "create" or "uplata" ? "open" : null)>
+                    <summary>Akcije</summary>
+                    <nav aria-label="Brze akcije">
+                        @if (isDriver)
+                        {
+                            <a class="ss-sidebar-link @(currentController == "voznja" && currentAction == "create" ? "active" : string.Empty)"
+                               asp-controller="Voznja" asp-action="Create" data-testid="sidebar-create-ride">Nova vožnja</a>
+                        }
+                        <a class="ss-sidebar-link @(currentController == "korisnik" && currentAction == "uplata" ? "active" : string.Empty)"
+                           asp-controller="Korisnik" asp-action="Uplata">Uplati sredstva</a>
+                    </nav>
+                </details>
+
+                <details class="ss-sidebar-group" @(currentController == "korisnik" ? "open" : null)>
+                    <summary>Račun</summary>
+                    <nav aria-label="Korisnički račun">
+                        @if (userSaldo.HasValue)
+                        {
+                            <a class="ss-sidebar-link ss-sidebar-balance @(currentController == "korisnik" && currentAction == "saldo" ? "active" : string.Empty)"
+                               asp-controller="Korisnik" asp-action="Saldo">
+                                <span>Saldo</span>
+                                <strong>@userSaldo.Value.ToString("0.00") EUR</strong>
+                            </a>
+                        }
+                        @if (currentUserId.HasValue)
+                        {
+                            <a class="ss-sidebar-link @(currentController == "korisnik" && currentAction == "details" ? "active" : string.Empty)"
+                               asp-controller="Korisnik" asp-action="Details" asp-route-id="@currentUserId.Value">Moj profil</a>
+                        }
+                        <a class="ss-sidebar-link @(currentController == "korisnik" && currentAction == "settings" ? "active" : string.Empty)"
+                           asp-controller="Korisnik" asp-action="Settings">Postavke</a>
+                        <a class="ss-sidebar-link @(currentController == "korisnik" && currentAction == "kyc" ? "active" : string.Empty)"
+                           asp-controller="Korisnik" asp-action="Kyc">KYC vozača</a>
+                    </nav>
+                </details>
+            }
+
+            @if (isAdmin)
+            {
+                <details class="ss-sidebar-group ss-sidebar-admin"
+                         @(currentController is "audit" or "grad" or "placanje" or "vozilo" ||
+                           (currentController == "korisnik" && currentAction is "index" or "create" or "edit" or "delete") ||
+                           (currentController == "rezervacija" && currentAction.StartsWith("admin")) ||
+                           (currentController == "ocjena" && currentAction is "attachments" or "adminfeedback" or "adminedit" or "admindelete")
+                             ? "open"
+                             : null)
+                         data-testid="sidebar-admin">
+                    <summary>Administracija</summary>
+                    <nav aria-label="Administracija">
+                        <a class="ss-sidebar-link @(currentController == "korisnik" && currentAction == "index" ? "active" : string.Empty)"
+                           asp-controller="Korisnik" asp-action="Index" data-testid="sidebar-admin-users">Korisnici</a>
+                        <a class="ss-sidebar-link @(currentController == "korisnik" && currentAction == "create" ? "active" : string.Empty)"
+                           asp-controller="Korisnik" asp-action="Create">Novi korisnik</a>
+                        <a class="ss-sidebar-link @(currentController == "grad" ? "active" : string.Empty)"
+                           asp-controller="Grad" asp-action="Index">Gradovi</a>
+                        <a class="ss-sidebar-link @(currentController == "grad" && currentAction == "create" ? "active" : string.Empty)"
+                           asp-controller="Grad" asp-action="Create">Novi grad</a>
+                        <a class="ss-sidebar-link @(currentController == "vozilo" ? "active" : string.Empty)"
+                           asp-controller="Vozilo" asp-action="Index">Vozila</a>
+                        <a class="ss-sidebar-link @(currentController == "vozilo" && currentAction == "create" ? "active" : string.Empty)"
+                           asp-controller="Vozilo" asp-action="Create">Novo vozilo</a>
+                        <a class="ss-sidebar-link @(currentController == "rezervacija" && currentAction == "index" ? "active" : string.Empty)"
+                           asp-controller="Rezervacija" asp-action="Index">Sve rezervacije</a>
+                        <a class="ss-sidebar-link @(currentController == "rezervacija" && currentAction.StartsWith("admin") ? "active" : string.Empty)"
+                           asp-controller="Rezervacija" asp-action="AdminCreate">Nova rezervacija</a>
+                        <a class="ss-sidebar-link @(currentController == "placanje" ? "active" : string.Empty)"
+                           asp-controller="Placanje" asp-action="Index">Plaćanja</a>
+                        <a class="ss-sidebar-link @(currentController == "placanje" && currentAction == "create" ? "active" : string.Empty)"
+                           asp-controller="Placanje" asp-action="Create">Novo plaćanje</a>
+                        <a class="ss-sidebar-link @(currentController == "ocjena" && currentAction == "index" ? "active" : string.Empty)"
+                           asp-controller="Ocjena" asp-action="Index">Sve ocjene</a>
+                        <a class="ss-sidebar-link @(currentController == "ocjena" && currentAction == "attachments" ? "active" : string.Empty)"
+                           asp-controller="Ocjena" asp-action="Attachments">Prilozi ocjena</a>
+                        <a class="ss-sidebar-link @(currentController == "audit" ? "active" : string.Empty)"
+                           asp-controller="Audit" asp-action="Index">Audit zapis</a>
+                    </nav>
+                </details>
+            }
+
+            <details class="ss-sidebar-group">
+                <summary>Ostalo</summary>
+                <nav aria-label="Ostale mogućnosti">
+                    <button class="ss-sidebar-link ss-sidebar-button" type="button" data-ss-theme-toggle>
+                        Promijeni temu
+                    </button>
+                    <a class="ss-sidebar-link @(currentController == "home" && currentAction == "vodic" ? "active" : string.Empty)"
+                       asp-controller="Home" asp-action="Vodic">Vodič kroz vožnju</a>
+                    <a class="ss-sidebar-link @(currentController == "home" && currentAction == "privacy" ? "active" : string.Empty)"
+                       asp-controller="Home" asp-action="Privacy">Privacy</a>
+                    @if (isAuthenticated)
+                    {
+                        <form asp-controller="Auth" asp-action="Logout" method="post" class="ss-sidebar-logout">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="ss-sidebar-link ss-sidebar-button" data-testid="sidebar-logout">Odjava</button>
+                        </form>
+                    }
+                    else
+                    {
+                        <button class="ss-sidebar-link ss-sidebar-button" type="button"
+                                data-bs-toggle="modal" data-bs-target="#authModal" data-auth-open="login"
+                                data-bs-dismiss="offcanvas">Prijava</button>
+                        <button class="ss-sidebar-link ss-sidebar-button" type="button"
+                                data-bs-toggle="modal" data-bs-target="#authModal" data-auth-open="register"
+                                data-bs-dismiss="offcanvas">Registracija</button>
+                    }
+                </nav>
+            </details>
+        </div>
+        <footer class="ss-sidebar-footer">
+            <span>Verzija @appVersion</span>
+            @if (isAuthenticated)
+            {
+                <span>@accountName</span>
+            }
+        </footer>
+    </aside>
 
     <div class="ss-shell ss-shell-main">
         <main role="main" class="ss-main">
@@ -185,12 +352,59 @@
             <span>&copy; 2026 SideSeat · Built for movement at machine speed</span>
             <span class="ss-footer-links">
                 <span>Verzija @appVersion</span>
+                <a asp-area="" asp-controller="Home" asp-action="Vodic">Vodič kroz vožnju</a>
                 <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy policy</a>
             </span>
         </div>
     </footer>
 
     <partial name="_AiAssistant" />
+
+    <aside class="ss-route-preview"
+           data-ss-route-preview
+           aria-label="Pregled rute"
+           hidden>
+        <header class="ss-route-preview-header">
+            <div>
+                <span class="ss-kicker">Pregled rute</span>
+                <strong data-ss-route-preview-label>Ruta</strong>
+            </div>
+            <button type="button"
+                    class="ss-route-preview-close"
+                    data-ss-route-preview-close
+                    aria-label="Zatvori pregled rute">×</button>
+        </header>
+        <div class="ss-route-map-canvas" data-ss-route-map-canvas></div>
+        <p class="ss-route-map-fallback" data-ss-route-map-fallback hidden>
+            Koordinate rute nisu dostupne.
+        </p>
+    </aside>
+
+    @if (isAuthenticated)
+    {
+        <div class="ss-command-palette" data-ss-global-search hidden>
+            <button class="ss-command-backdrop" type="button" data-ss-global-search-close aria-label="Zatvori pretragu"></button>
+            <section class="ss-command-dialog" role="dialog" aria-modal="true" aria-labelledby="ss-command-title">
+                <header>
+                    <div>
+                        <span class="ss-kicker">Global search</span>
+                        <h2 id="ss-command-title">Pretraži SideSeat</h2>
+                    </div>
+                    <button class="ss-command-close" type="button" data-ss-global-search-close aria-label="Zatvori">×</button>
+                </header>
+                <label class="visually-hidden" for="ss-global-search-input">Pojam pretrage</label>
+                <input id="ss-global-search-input"
+                       class="form-control"
+                       type="search"
+                       autocomplete="off"
+                       placeholder="Stranice, vožnje, rezervacije..."
+                       data-ss-global-search-input />
+                <div class="ss-command-results" data-ss-global-search-results aria-live="polite">
+                    <p>Upiši najmanje dva znaka.</p>
+                </div>
+            </section>
+        </div>
+    }
 
     @if (!string.IsNullOrWhiteSpace(fundsToastMessage))
     {
@@ -348,7 +562,10 @@
 
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/lib/leaflet/leaflet.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.7/signalr.min.js"></script>
     <partial name="_ValidationScriptsPartial" />
+    <script src="~/js/route-maps.js" asp-append-version="true"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
     @await RenderSectionAsync("Scripts", required: false)
 </body>

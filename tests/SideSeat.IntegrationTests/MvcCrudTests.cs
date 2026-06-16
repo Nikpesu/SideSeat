@@ -42,6 +42,8 @@ public class MvcCrudTests : IClassFixture<SideSeatTestFactory>
         var db = scope.ServiceProvider.GetRequiredService<SideSeatDbContext>();
         var newGrad = await db.Gradovi.SingleAsync(g => g.Naziv == "TestGrad");
         Assert.Equal("TestDrzava", newGrad.Drzava);
+        Assert.Equal(45.123456m, newGrad.Latitude);
+        Assert.Equal(15.654321m, newGrad.Longitude);
 
         var editPage = await client.GetStringAsync($"/Grad/Edit/{newGrad.Id}");
         var editToken = ExtractAntiforgeryToken(editPage);
@@ -69,6 +71,28 @@ public class MvcCrudTests : IClassFixture<SideSeatTestFactory>
         Assert.Equal(HttpStatusCode.Redirect, deleteResponse.StatusCode);
 
         Assert.False(await db.Gradovi.AnyAsync(g => g.Id == newGrad.Id));
+    }
+
+    [Fact]
+    public async Task GradoviMvc_GeocodingFailureDoesNotSaveCity()
+    {
+        await _factory.SeedAsync();
+        using var client = _factory.CreateAdminClient(allowAutoRedirect: false);
+        var page = await client.GetStringAsync("/Grad/Create");
+
+        using var form = new FormUrlEncodedContent(new Dictionary<string, string>
+        {
+            ["__RequestVerificationToken"] = ExtractAntiforgeryToken(page),
+            ["Naziv"] = "Bez Lokacije",
+            ["Drzava"] = "Hrvatska",
+            ["PostanskiBroj"] = "99999"
+        });
+        var response = await client.PostAsync("/Grad/Create", form);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        using var scope = _factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<SideSeatDbContext>();
+        Assert.False(await db.Gradovi.AnyAsync(city => city.Naziv == "Bez Lokacije"));
     }
 
     [Fact]

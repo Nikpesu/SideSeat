@@ -1,0 +1,55 @@
+@model IReadOnlyList<SideSeat.Models.AuditLog>
+@{
+    ViewData["Title"] = "Audit zapis";
+}
+
+<section class="ss-page">
+    <div class="ss-page-head">
+        <div>
+            <span class="ss-kicker">Administracija</span>
+            <h1>Audit zapis</h1>
+            <p>Posljednjih 250 poslovnih i agentskih write operacija.</p>
+        </div>
+    </div>
+
+    <form method="get" class="ss-filter-bar">
+        <input class="form-control" name="source" value="@ViewBag.Source" placeholder="Izvor: AI, MCP, API..." />
+        <input class="form-control" name="action" value="@ViewBag.Action" placeholder="Radnja" />
+        <select class="form-select" name="succeeded">
+            <option value="">Svi rezultati</option>
+            <option value="true" selected="@(ViewBag.Succeeded is true)">Uspješno</option>
+            <option value="false" selected="@(ViewBag.Succeeded is false)">Odbijeno</option>
+        </select>
+        <button class="ss-btn" type="submit">Filtriraj</button>
+    </form>
+
+    <div class="ss-table-shell">
+        <table class="ss-table is-card-table">
+            <thead>
+                <tr>
+                    <th>Vrijeme</th>
+                    <th>Izvor</th>
+                    <th>Akter</th>
+                    <th>Radnja</th>
+                    <th>Entitet</th>
+                    <th>Rezultat</th>
+                    <th>Sažetak</th>
+                </tr>
+            </thead>
+            <tbody>
+            @foreach (var log in Model)
+            {
+                <tr>
+                    <td data-label="Vrijeme">@log.CreatedAtUtc.ToLocalTime().ToString("dd.MM.yyyy HH:mm:ss")</td>
+                    <td data-label="Izvor">@log.Source</td>
+                    <td data-label="Akter">@log.Actor</td>
+                    <td data-label="Radnja">@log.Action</td>
+                    <td data-label="Entitet">@log.EntityType @log.EntityId</td>
+                    <td data-label="Rezultat">@(log.Succeeded ? "Uspješno" : "Odbijeno")</td>
+                    <td data-label="Sažetak">@log.Summary</td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+</section>

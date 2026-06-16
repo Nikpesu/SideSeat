@@ -7,7 +7,9 @@ public static class ApiMapper
         Id = grad.Id,
         Naziv = grad.Naziv,
         Drzava = grad.Drzava,
-        PostanskiBroj = grad.PostanskiBroj
+        PostanskiBroj = grad.PostanskiBroj,
+        Latitude = grad.Latitude,
+        Longitude = grad.Longitude
     };
 
     public static KorisnikDto ToDto(this Korisnik korisnik) => new()
@@ -62,6 +64,13 @@ public static class ApiMapper
         CijenaUkupno = rezervacija.CijenaUkupno,
         VrijemeRezervacije = rezervacija.VrijemeRezervacije,
         Status = rezervacija.Status,
+        NacinPlacanja = rezervacija.NacinPlacanja,
+        Napojnica = rezervacija.Napojnica,
+        CheckInAtUtc = rezervacija.CheckInAtUtc,
+        LastLatitude = rezervacija.LastLatitude,
+        LastLongitude = rezervacija.LastLongitude,
+        LastLocationAtUtc = rezervacija.LastLocationAtUtc,
+        CashCollectedAtUtc = rezervacija.CashCollectedAtUtc,
         Napomena = rezervacija.Napomena
     };
 

@@ -10,6 +10,7 @@
   const storageKey = "ss-theme";
   const root = document.documentElement;
   const toggleButton = document.getElementById("ss-theme-toggle");
+  const themeButtons = Array.from(document.querySelectorAll("[data-ss-theme-toggle]"));
 
   const getPreferredTheme = () => {
     try {
@@ -41,6 +42,11 @@
       toggleButton.title = isDark ? "Prebaci na svijetlu temu" : "Prebaci na tamnu temu";
       toggleButton.setAttribute("aria-pressed", theme === "dark" ? "true" : "false");
     }
+
+    themeButtons.forEach((button) => {
+      button.textContent = theme === "dark" ? "Uključi svijetlu temu" : "Uključi tamnu temu";
+      button.setAttribute("aria-pressed", theme === "dark" ? "true" : "false");
+    });
   };
 
   const initialTheme = getPreferredTheme();
@@ -53,6 +59,13 @@
     });
   }
 
+  themeButtons.forEach((button) => {
+    button.addEventListener("click", () => {
+      const nextTheme = root.getAttribute("data-theme") === "dark" ? "light" : "dark";
+      setTheme(nextTheme);
+    });
+  });
+
   const initializeSurfaceTilt = () => {
     const canTilt = window.matchMedia("(hover: hover) and (pointer: fine)").matches &&
       !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -62,16 +75,12 @@
 
     const tiltSelector = [
       "[data-ss-tilt]",
+      ".ss-detail-grid > div",
+      ".ss-table.is-card-table tbody tr",
       ".ss-ride-card",
       ".ss-cap-card",
-      ".ss-flow-step",
-      ".ss-hero-metric",
-      ".ss-holo-row",
-      ".ss-detail-grid > div",
       ".ss-home-card",
-      ".ss-role-card",
-      ".ss-list-row",
-      ".ss-notification-item"
+      ".ss-role-card"
     ].join(", ");
     let activeElement = null;
     let animationFrame = 0;
@@ -110,8 +119,31 @@
       activeElement.dataset.ssTiltActive = "true";
     };
 
+    const isInteractiveFormSurface = (element) =>
+      Boolean(element?.closest?.(
+        "form, input, select, textarea, button, label, .form-control, .form-select, .ss-prompt-hero, .ss-ai-form, .ss-command-dialog, .ss-search-trigger, .ss-search-trigger-main"
+      ));
+
+    const isTiltEligible = (element) => {
+      if (!element) {
+        return false;
+      }
+
+      if (element.matches("form, input, select, textarea, button, label, .form-control, .form-select")) {
+        return false;
+      }
+
+      if (element.matches(".ss-detail-card") &&
+          (element.tagName === "FORM" || element.querySelector("input, select, textarea, .form-control, .form-select"))) {
+        return false;
+      }
+
+      return !isInteractiveFormSurface(element);
+    };
+
     document.addEventListener("pointermove", (event) => {
-      const nextElement = event.target.closest?.(tiltSelector) || null;
+      const candidate = event.target.closest?.(tiltSelector) || null;
+      const nextElement = isTiltEligible(candidate) ? candidate : null;
       if (nextElement !== activeElement) {
         resetTilt(activeElement);
         activeElement = nextElement;
@@ -889,6 +921,13 @@
 
   const initializeTableCards = (rootElement = document) => {
     rootElement.querySelectorAll(".ss-table").forEach((table) => {
+      if (table.matches("[data-ss-keep-table]") ||
+          table.closest("[data-ss-keep-table]")) {
+        table.classList.remove("is-card-table");
+        table.closest(".ss-table-shell")?.classList.remove("ss-card-table-shell");
+        return;
+      }
+
       const headers = Array.from(table.querySelectorAll("thead th"))
         .map((header) => header.textContent.trim());
 
@@ -994,6 +1033,9 @@
 
           currentListRegion.outerHTML = updatedListRegion.outerHTML;
           initializeTableCards(currentPage);
+          document.dispatchEvent(new CustomEvent("ss:content-updated", {
+            detail: { target: currentPage }
+          }));
 
           if (pageSizeElem) {
             pageSizeElem.value = pageSizeValue ?? "";
@@ -1110,6 +1152,9 @@
             window.history.replaceState({}, "", url);
           }
           initializeEnhancedUi();
+          document.dispatchEvent(new CustomEvent("ss:content-updated", {
+            detail: { target: document.querySelector(targetSelector) }
+          }));
 
           const flashTarget = document.querySelector(targetSelector);
           if (flashTarget) {
@@ -1440,6 +1485,112 @@
       return message;
     };
 
+    const appendPendingAction = (action) => {
+      if (!action?.token) {
+        return;
+      }
+
+      const card = document.createElement("article");
+      card.className = "ss-ai-action";
+      const title = document.createElement("strong");
+      title.textContent = action.title || "Potvrda akcije";
+      const summary = document.createElement("p");
+      summary.textContent = action.summary || "";
+      card.append(title, summary);
+
+      if (action.form?.sections?.length) {
+        const form = document.createElement("div");
+        form.className = "ss-ai-action-form";
+        action.form.sections.forEach((section) => {
+          const group = document.createElement("section");
+          const heading = document.createElement("h4");
+          heading.textContent = section.title || "Podaci";
+          const list = document.createElement("dl");
+          (section.fields || []).forEach((field) => {
+            const item = document.createElement("div");
+            const label = document.createElement("dt");
+            const value = document.createElement("dd");
+            label.textContent = field.label || field.name || "Polje";
+            value.textContent = field.isSensitive
+              ? "••••••"
+              : ((field.value || "").toString().trim() || "Nije uneseno");
+            item.append(label, value);
+            list.appendChild(item);
+          });
+          group.append(heading, list);
+          form.appendChild(group);
+        });
+
+        if (Array.isArray(action.form.warnings) && action.form.warnings.length > 0) {
+          const warnings = document.createElement("ul");
+          warnings.className = "ss-ai-action-warnings";
+          action.form.warnings.forEach((warning) => {
+            const item = document.createElement("li");
+            item.textContent = warning;
+            warnings.appendChild(item);
+          });
+          form.appendChild(warnings);
+        }
+
+        card.appendChild(form);
+      }
+
+      const actions = document.createElement("div");
+      actions.className = "ss-actions";
+      const confirm = document.createElement("button");
+      confirm.type = "button";
+      confirm.className = "ss-btn";
+      confirm.textContent = action.form?.submitLabel || "Potvrdi";
+      const cancel = document.createElement("button");
+      cancel.type = "button";
+      cancel.className = "ss-btn ss-btn-secondary";
+      cancel.textContent = "Odustani";
+      if (action.form?.reviewUrl) {
+        const review = document.createElement("a");
+        review.className = "ss-btn ss-btn-secondary";
+        review.href = action.form.reviewUrl;
+        review.textContent = "Otvori punu formu";
+        actions.appendChild(review);
+      }
+      actions.append(confirm, cancel);
+      card.appendChild(actions);
+      messagesElement.appendChild(card);
+      messagesElement.scrollTop = messagesElement.scrollHeight;
+
+      const submitAction = async (operation) => {
+        confirm.disabled = true;
+        cancel.disabled = true;
+        try {
+          const response = await fetch(
+            `${assistant.dataset.actionBase}/${encodeURIComponent(action.token)}/${operation}`,
+            {
+              method: "POST",
+              headers: {
+                "RequestVerificationToken": assistant.dataset.token || "",
+                "X-Requested-With": "XMLHttpRequest"
+              }
+            });
+          const payload = await response.json().catch(() => ({}));
+          if (!response.ok) {
+            throw new Error(payload.detail || payload.title || payload.message || "Akcija nije izvršena.");
+          }
+
+          card.remove();
+          const message = operation === "confirm"
+            ? `${payload.message || "Akcija je izvršena."}${payload.link ? ` [Otvori rezultat](${payload.link})` : ""}`
+            : (payload.message || "Akcija je otkazana.");
+          appendMessage("assistant", message);
+        } catch (error) {
+          appendMessage("assistant", error.message || "Akcija nije izvršena.", "is-error");
+          confirm.disabled = false;
+          cancel.disabled = false;
+        }
+      };
+
+      confirm.addEventListener("click", () => submitAction("confirm"));
+      cancel.addEventListener("click", () => submitAction("cancel"));
+    };
+
     const resetSession = () => {
       history.splice(0);
       messagesElement.innerHTML = initialMarkup;
@@ -1527,6 +1678,7 @@
         const answer = payload.message || "AI nije vratio tekstualni odgovor.";
         history.push({ role: "assistant", content: answer });
         appendMessage("assistant", answer);
+        appendPendingAction(payload.pendingAction);
         saveSession();
       } catch (error) {
         appendMessage("assistant", error.message || "Veza sa SideSeat AI servisom nije uspjela.", "is-error");
@@ -1602,6 +1754,251 @@
     initializePerformativeUi();
   };
 
+  const initializeGlobalSearch = () => {
+    const palette = document.querySelector("[data-ss-global-search]");
+    if (!palette || palette.dataset.ssBound === "true") {
+      return;
+    }
+
+    palette.dataset.ssBound = "true";
+    const input = palette.querySelector("[data-ss-global-search-input]");
+    const results = palette.querySelector("[data-ss-global-search-results]");
+    const openButtons = document.querySelectorAll("[data-ss-global-search-open]");
+    const closeButtons = palette.querySelectorAll("[data-ss-global-search-close]");
+    let debounceId = 0;
+    let abortController = null;
+    let activeIndex = -1;
+
+    const links = () => Array.from(results.querySelectorAll("a"));
+    const setActive = (index) => {
+      const items = links();
+      if (items.length === 0) {
+        activeIndex = -1;
+        return;
+      }
+
+      activeIndex = Math.max(0, Math.min(index, items.length - 1));
+      items.forEach((item, itemIndex) => item.classList.toggle("is-active", itemIndex === activeIndex));
+      items[activeIndex].scrollIntoView({ block: "nearest" });
+    };
+
+    const closePalette = () => {
+      palette.hidden = true;
+      document.body.classList.remove("ss-command-open");
+      abortController?.abort();
+    };
+
+    const openPalette = () => {
+      const sidebar = document.getElementById("sideNavigation");
+      if (sidebar && window.bootstrap?.Offcanvas) {
+        window.bootstrap.Offcanvas.getInstance(sidebar)?.hide();
+      }
+      palette.hidden = false;
+      document.body.classList.add("ss-command-open");
+      window.setTimeout(() => input.focus(), 20);
+    };
+
+    const renderResults = (items) => {
+      results.innerHTML = "";
+      activeIndex = -1;
+      if (!Array.isArray(items) || items.length === 0) {
+        results.innerHTML = "<p>Nema rezultata.</p>";
+        return;
+      }
+
+      let currentGroup = "";
+      items.forEach((item) => {
+        if (item.group !== currentGroup) {
+          currentGroup = item.group;
+          const heading = document.createElement("h3");
+          heading.textContent = currentGroup;
+          results.appendChild(heading);
+        }
+
+        const link = document.createElement("a");
+        link.href = item.url;
+        const title = document.createElement("strong");
+        title.textContent = item.title;
+        const subtitle = document.createElement("span");
+        subtitle.textContent = item.subtitle;
+        link.append(title, subtitle);
+        results.appendChild(link);
+      });
+    };
+
+    const search = async () => {
+      const query = input.value.trim();
+      if (query.length < 2) {
+        results.innerHTML = "<p>Upiši najmanje dva znaka.</p>";
+        return;
+      }
+
+      abortController?.abort();
+      abortController = new AbortController();
+      results.innerHTML = "<p>Pretražujem...</p>";
+      try {
+        const response = await fetch(`/api/search?q=${encodeURIComponent(query)}`, {
+          headers: { "X-Requested-With": "XMLHttpRequest" },
+          signal: abortController.signal
+        });
+        if (!response.ok) {
+          throw new Error("Pretraga nije dostupna.");
+        }
+
+        renderResults(await response.json());
+      } catch (error) {
+        if (error.name !== "AbortError") {
+          results.textContent = error.message || "Pretraga nije dostupna.";
+        }
+      }
+    };
+
+    openButtons.forEach((button) => button.addEventListener("click", openPalette));
+    closeButtons.forEach((button) => button.addEventListener("click", closePalette));
+    input.addEventListener("input", () => {
+      window.clearTimeout(debounceId);
+      debounceId = window.setTimeout(search, 220);
+    });
+    input.addEventListener("keydown", (event) => {
+      if (event.key === "ArrowDown") {
+        event.preventDefault();
+        setActive(activeIndex + 1);
+      } else if (event.key === "ArrowUp") {
+        event.preventDefault();
+        setActive(activeIndex - 1);
+      } else if (event.key === "Enter" && activeIndex >= 0) {
+        event.preventDefault();
+        links()[activeIndex]?.click();
+      } else if (event.key === "Escape") {
+        closePalette();
+      }
+    });
+    document.addEventListener("keydown", (event) => {
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k") {
+        event.preventDefault();
+        openPalette();
+      } else if (event.key === "Escape" && !palette.hidden) {
+        closePalette();
+      }
+    });
+  };
+
+  const initializeLiveRides = () => {
+    const root = document.querySelector("[data-ss-live-rides]");
+    if (!root || root.dataset.ssBound === "true" || !window.signalR) {
+      return;
+    }
+
+    root.dataset.ssBound = "true";
+    const connection = new signalR.HubConnectionBuilder()
+      .withUrl("/hubs/rides")
+      .withAutomaticReconnect()
+      .build();
+
+    const cards = Array.from(root.querySelectorAll("[data-ss-live-ride]"));
+    const appendChat = (rideId, payload) => {
+      const card = root.querySelector(`[data-ss-live-ride][data-ride-id="${rideId}"]`);
+      const log = card?.querySelector("[data-chat-log]");
+      if (!log) {
+        return;
+      }
+
+      const line = document.createElement("p");
+      const sender = document.createElement("strong");
+      const text = document.createElement("span");
+      sender.textContent = `${payload.senderName || "Korisnik"}: `;
+      text.textContent = payload.message || "";
+      line.append(sender, text);
+      log.appendChild(line);
+      log.scrollTop = log.scrollHeight;
+    };
+
+    connection.on("RideMessage", (payload) => {
+      appendChat(payload.voznjaId || payload.VoznjaId, payload);
+    });
+
+    connection.on("PassengerReady", (payload) => {
+      const reservationId = payload.id || payload.Id;
+      const passenger = root.querySelector(`[data-reservation-id="${reservationId}"]`);
+      passenger?.querySelector("[data-ready-state]")?.replaceChildren(document.createTextNode("U autu"));
+      const badge = passenger?.querySelector("[data-ready-state]");
+      badge?.classList.remove("is-alert");
+      badge?.classList.add("is-ok");
+      const location = passenger?.querySelector("[data-location-state]");
+      if (location && payload.lastLatitude && payload.lastLongitude) {
+        location.textContent = `Lokacija: ${Number(payload.lastLatitude).toFixed(6)}, ${Number(payload.lastLongitude).toFixed(6)}`;
+      }
+    });
+
+    connection.on("PassengerLocation", (payload) => {
+      const reservationId = payload.id || payload.Id;
+      const location = root
+        .querySelector(`[data-reservation-id="${reservationId}"]`)
+        ?.querySelector("[data-location-state]");
+      if (location && payload.lastLatitude && payload.lastLongitude) {
+        location.textContent = `Lokacija: ${Number(payload.lastLatitude).toFixed(6)}, ${Number(payload.lastLongitude).toFixed(6)}`;
+      }
+    });
+
+    cards.forEach((card) => {
+      const rideId = Number(card.dataset.rideId || "0");
+      card.querySelector("[data-chat-form]")?.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const input = event.currentTarget.querySelector("input[name='message']");
+        const recipient = event.currentTarget.querySelector("select[name='recipientId']");
+        const message = input?.value.trim();
+        if (!rideId || !message) {
+          return;
+        }
+
+        const recipientId = recipient?.value ? Number(recipient.value) : null;
+        await connection.invoke("SendMessage", rideId, message, recipientId);
+        input.value = "";
+      });
+    });
+
+    connection.start()
+      .then(() => Promise.all(cards.map((card) => {
+        const rideId = Number(card.dataset.rideId || "0");
+        return rideId ? connection.invoke("JoinRide", rideId) : Promise.resolve();
+      })))
+      .catch(() => {
+        root.classList.add("ss-live-unavailable");
+      });
+  };
+
+  const initializeCheckInForms = () => {
+    document.querySelectorAll("[data-ss-checkin-form]").forEach((form) => {
+      if (form.dataset.ssBound === "true") {
+        return;
+      }
+
+      form.dataset.ssBound = "true";
+      form.addEventListener("submit", (event) => {
+        if (form.dataset.locationResolved === "true" || !navigator.geolocation) {
+          return;
+        }
+
+        event.preventDefault();
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            form.querySelector("[data-checkin-lat]").value = position.coords.latitude.toFixed(6);
+            form.querySelector("[data-checkin-lng]").value = position.coords.longitude.toFixed(6);
+            form.dataset.locationResolved = "true";
+            form.requestSubmit();
+          },
+          () => {
+            form.dataset.locationResolved = "true";
+            form.requestSubmit();
+          },
+          { enableHighAccuracy: true, maximumAge: 30000, timeout: 4000 });
+      });
+    });
+  };
+
   initializeAiAssistant();
+  initializeGlobalSearch();
   initializeEnhancedUi();
+  initializeLiveRides();
+  initializeCheckInForms();
 })();

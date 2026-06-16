@@ -1,5 +1,6 @@
 @model SideSeat.Models.Rides.VoznjaListViewModel
 @using SideSeat.Models.ViewModels
+@using System.Globalization
 @{
 	ViewData["Title"] = Model.Title;
 	var search = ViewBag.Search as string ?? string.Empty;
@@ -60,7 +61,7 @@
 	}
 	else
 	{
-		<div class="ss-table-shell" role="region" aria-label="Lista voznji" tabindex="0" data-ss-list-content>
+		<div class="ss-table-shell" role="region" aria-label="Lista voznji" tabindex="0" data-ss-list-content data-ss-keep-table>
 			<table class="ss-table">
 				<thead>
 					<tr>
@@ -85,7 +86,14 @@
 								? "is-alert"
 								: "is-off";
 
-						<tr>
+						<tr tabindex="0"
+							data-ss-route-preview-source
+							data-route-start-name="@voznja.PolazniGrad?.Naziv"
+							data-route-start-lat="@(voznja.PolazniGrad?.Latitude?.ToString(CultureInfo.InvariantCulture))"
+							data-route-start-lng="@(voznja.PolazniGrad?.Longitude?.ToString(CultureInfo.InvariantCulture))"
+							data-route-end-name="@voznja.OdredisniGrad?.Naziv"
+							data-route-end-lat="@(voznja.OdredisniGrad?.Latitude?.ToString(CultureInfo.InvariantCulture))"
+							data-route-end-lng="@(voznja.OdredisniGrad?.Longitude?.ToString(CultureInfo.InvariantCulture))">
 							<td>@voznja.Id</td>
 							<td>@voznja.PolazniGrad?.Naziv -> @voznja.OdredisniGrad?.Naziv</td>
 							<td>@voznja.Vozac?.Ime @voznja.Vozac?.Prezime</td>
@@ -96,6 +104,9 @@
 							<td>@voznja.CijenaPoMjestu.ToString("0.00") EUR</td>
 							<td><span class="ss-badge @statusClass">@voznja.Status</span></td>
 							<td>
+								<button type="button"
+										class="ss-btn ss-btn-secondary ss-route-preview-button"
+										data-ss-route-preview-button>Prikaži rutu</button>
 								<a class="ss-btn" asp-controller="Voznja" asp-action="Details" asp-route-id="@voznja.Id">Detalji</a>
 								@if (isAdmin || voznja.VozacId == currentUserId)
 								{

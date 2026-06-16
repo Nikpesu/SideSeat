@@ -5,6 +5,7 @@ using SideSeat.Data;
 using SideSeat.Models;
 using SideSeat.Repositories;
 using SideSeat.Models.ViewModels;
+using SideSeat.Services;
 
 namespace SideSeat.Controllers;
 
@@ -16,11 +17,16 @@ public class GradController : Controller
 {
 	private readonly SideSeatEfRepository _repository;
 	private readonly SideSeatDbContext _db;
+	private readonly ICityGeocodingService _cityGeocoding;
 
-	public GradController(SideSeatEfRepository repository, SideSeatDbContext db)
+	public GradController(
+		SideSeatEfRepository repository,
+		SideSeatDbContext db,
+		ICityGeocodingService cityGeocoding)
 	{
 		_repository = repository;
 		_db = db;
+		_cityGeocoding = cityGeocoding;
 	}
 
 	public IActionResult Index(string? search, int? pageSize)
@@ -69,15 +75,33 @@ public class GradController : Controller
 
 	[HttpPost]
 	[ValidateAntiForgeryToken]
-	public async Task<IActionResult> Create(Grad model)
+	public async Task<IActionResult> Create(Grad model, CancellationToken cancellationToken)
 	{
 		if (!ModelState.IsValid)
 		{
 			return View(model);
 		}
 
+		model.Naziv = model.Naziv.Trim();
+		model.Drzava = model.Drzava.Trim();
+		model.PostanskiBroj = model.PostanskiBroj.Trim();
+		var coordinates = await _cityGeocoding.ResolveAsync(
+			model.Naziv,
+			model.Drzava,
+			model.PostanskiBroj,
+			model.Latitude,
+			model.Longitude,
+			cancellationToken);
+		if (!coordinates.Succeeded)
+		{
+			ModelState.AddModelError(string.Empty, coordinates.Error ?? "Koordinate grada nisu dostupne.");
+			return View(model);
+		}
+
+		model.Latitude = coordinates.Latitude;
+		model.Longitude = coordinates.Longitude;
 		_db.Gradovi.Add(model);
-		await _db.SaveChangesAsync();
+		await _db.SaveChangesAsync(cancellationToken);
 
 		return RedirectToAction(nameof(Index));
 	}
@@ -95,7 +119,7 @@ public class GradController : Controller
 
 	[HttpPost]
 	[ValidateAntiForgeryToken]
-	public async Task<IActionResult> Edit(int id, Grad model)
+	public async Task<IActionResult> Edit(int id, Grad model, CancellationToken cancellationToken)
 	{
 		if (id != model.Id)
 		{
@@ -107,18 +131,52 @@ public class GradController : Controller
 			return View(model);
 		}
 
-		var grad = await _db.Gradovi.FirstOrDefaultAsync(g => g.Id == id);
+		var grad = await _db.Gradovi.FirstOrDefaultAsync(g => g.Id == id, cancellationToken);
 		if (grad is null)
 		{
 			return NotFound();
 		}
 
-		if (!await TryUpdateModelAsync(grad, string.Empty, g => g.Naziv, g => g.Drzava, g => g.PostanskiBroj))
+		var name = model.Naziv.Trim();
+		var country = model.Drzava.Trim();
+		var postalCode = model.PostanskiBroj.Trim();
+		var identityChanged =
+			!string.Equals(grad.Naziv, name, StringComparison.Ordinal) ||
+			!string.Equals(grad.Drzava, country, StringComparison.Ordinal) ||
+			!string.Equals(grad.PostanskiBroj, postalCode, StringComparison.Ordinal);
+		var coordinatesChanged =
+			grad.Latitude != model.Latitude ||
+			grad.Longitude != model.Longitude;
+		var bothCoordinatesOmitted = !model.Latitude.HasValue && !model.Longitude.HasValue;
+		var latitude = !identityChanged && bothCoordinatesOmitted
+			? grad.Latitude
+			: identityChanged && !coordinatesChanged
+				? null
+				: model.Latitude;
+		var longitude = !identityChanged && bothCoordinatesOmitted
+			? grad.Longitude
+			: identityChanged && !coordinatesChanged
+				? null
+				: model.Longitude;
+		var coordinates = await _cityGeocoding.ResolveAsync(
+			name,
+			country,
+			postalCode,
+			latitude,
+			longitude,
+			cancellationToken);
+		if (!coordinates.Succeeded)
 		{
+			ModelState.AddModelError(string.Empty, coordinates.Error ?? "Koordinate grada nisu dostupne.");
 			return View(model);
 		}
 
-		await _db.SaveChangesAsync();
+		grad.Naziv = name;
+		grad.Drzava = country;
+		grad.PostanskiBroj = postalCode;
+		grad.Latitude = coordinates.Latitude;
+		grad.Longitude = coordinates.Longitude;
+		await _db.SaveChangesAsync(cancellationToken);
 		return RedirectToAction(nameof(Details), new { id = grad.Id });
 	}
 

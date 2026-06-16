@@ -1,16 +1,29 @@
 @model SideSeat.Models.Rides.VoznjaDetailsViewModel
+@using SideSeat.Models.ViewModels
 @{
 	ViewData["Title"] = "Detalji voznje";
 	var currentUserId = int.TryParse(User.FindFirst(SideSeat.Security.SideSeatClaimTypes.KorisnikId)?.Value, out var idValue) ? idValue : 0;
 	var voznja = Model.Voznja;
 	var canEdit = User.IsInRole("Admin") || voznja.VozacId == currentUserId;
-	var canExecute = canEdit && voznja.Status == SideSeat.Models.StatusVoznje.Planirana;
+	var canStart = canEdit && voznja.Status == SideSeat.Models.StatusVoznje.Planirana && Model.AllConfirmedPassengersReady;
+	var canFinish = canEdit && voznja.Status is SideSeat.Models.StatusVoznje.Planirana or SideSeat.Models.StatusVoznje.Aktivna;
 	var canBook = !canEdit && voznja.Status == SideSeat.Models.StatusVoznje.Planirana && voznja.SlobodnaMjesta > 0;
 	var statusClass = voznja.Status == SideSeat.Models.StatusVoznje.Planirana
 		? "is-ok"
 		: voznja.Status == SideSeat.Models.StatusVoznje.Zavrsena
 			? "is-alert"
 			: "is-off";
+	var routeMap = new RouteMapViewModel
+	{
+		StartName = voznja.PolazniGrad?.Naziv ?? string.Empty,
+		StartLatitude = voznja.PolazniGrad?.Latitude,
+		StartLongitude = voznja.PolazniGrad?.Longitude,
+		EndName = voznja.OdredisniGrad?.Naziv ?? string.Empty,
+		EndLatitude = voznja.OdredisniGrad?.Latitude,
+		EndLongitude = voznja.OdredisniGrad?.Longitude,
+		Title = $"Ruta vožnje #{voznja.Id}",
+		CssClass = "ss-detail-route-map"
+	};
 }
 
 <section class="ss-page">
@@ -36,6 +49,16 @@
 		{
 			<div class="alert alert-info" role="status">@reservationStatusMessage</div>
 		}
+
+		<partial name="_RouteMap" model="routeMap" />
+
+		<div class="ss-workflow-steps" aria-label="Koraci vožnje">
+			<span class="is-done">1. Izrada</span>
+			<span class="@(Model.Putnici.Count > 0 ? "is-done" : "is-current")">2. Rezervacije</span>
+			<span class="@(Model.AllConfirmedPassengersReady ? "is-done" : "is-current")">3. Putnici spremni</span>
+			<span class="@(voznja.Status == SideSeat.Models.StatusVoznje.Aktivna ? "is-current" : voznja.Status == SideSeat.Models.StatusVoznje.Zavrsena ? "is-done" : "")">4. Aktivna</span>
+			<span class="@(voznja.Status == SideSeat.Models.StatusVoznje.Zavrsena ? "is-done" : "")">5. Ocjena i naplata</span>
+		</div>
 
 		<dl class="ss-detail-grid">
 			<div>
@@ -75,6 +98,14 @@
 				<dd>@Model.Putnici.Count</dd>
 			</div>
 			<div>
+				<dt>Saldo za naplatu</dt>
+				<dd>@Model.SaldoDue.ToString("0.00") EUR</dd>
+			</div>
+			<div>
+				<dt>Gotovina za vozača</dt>
+				<dd>@Model.CashDue.ToString("0.00") EUR</dd>
+			</div>
+			<div>
 				<dt>Prosjek ocjena voznje</dt>
 				<dd>@(Model.BrojOcjenaVoznje == 0 ? "Nema ocjena" : Model.ProsjecnaOcjenaVoznje.ToString("0.0"))</dd>
 			</div>
@@ -103,6 +134,9 @@
 							<th>Putnik</th>
 							<th>Status</th>
 							<th>Mjesta</th>
+							<th>Plaćanje</th>
+							<th>Spreman</th>
+							<th>Kontakt</th>
 							<th>Ocjena putnika</th>
 							<th>Ocjena vozaca</th>
 							@if (canEdit)
@@ -121,6 +155,24 @@
 							</td>
 							<td>@putnik.Status.ToDisplayName()</td>
 							<td>@putnik.BrojMjesta</td>
+							<td>
+								@putnik.NacinPlacanja · @putnik.CijenaUkupno.ToString("0.00") EUR
+								@if (putnik.Napojnica > 0)
+								{
+									<span class="ss-muted d-block">+ @putnik.Napojnica.ToString("0.00") EUR napojnica karticom</span>
+								}
+							</td>
+							<td>@(putnik.CheckInAtUtc.HasValue ? "Da" : "Ne")</td>
+							<td>
+								@if (canEdit && !string.IsNullOrWhiteSpace(putnik.PutnikTelefon))
+								{
+									<a href="tel:@putnik.PutnikTelefon">@putnik.PutnikTelefon</a>
+								}
+								else
+								{
+									<span>-</span>
+								}
+							</td>
 							<td>@(putnik.PutnikJeOcijenio ? "Da" : "Ne")</td>
 							<td>@(putnik.VozacJeOcijenio ? "Da" : "Ne")</td>
 							@if (canEdit)
@@ -261,12 +313,18 @@
 			}
 			@if (canEdit)
 			{
-				@if (canExecute)
+				@if (voznja.Status != SideSeat.Models.StatusVoznje.Zavrsena && voznja.Status != SideSeat.Models.StatusVoznje.Otkazana)
 				{
-					<form asp-controller="Voznja" asp-action="Izvrsi" asp-route-id="@voznja.Id" method="post" onsubmit="return confirm('Potvrdi izvrsenje voznje i naplatu svih putnika?');">
-						@Html.AntiForgeryToken()
-						<button type="submit" class="ss-btn">Izvrsi voznju</button>
-					</form>
+					<a class="ss-btn" asp-controller="Voznja" asp-action="Current">Trenutna vožnja</a>
+					@if (canStart)
+					{
+						<form asp-controller="Voznja" asp-action="Start" method="post">
+							@Html.AntiForgeryToken()
+							<input type="hidden" name="id" value="@voznja.Id" />
+							<button type="submit" class="ss-btn">Pokreni vožnju</button>
+						</form>
+					}
+					<a class="ss-btn" asp-controller="Voznja" asp-action="Finish" asp-route-id="@voznja.Id">Završi i naplati</a>
 				}
 				<a class="ss-btn" asp-controller="Voznja" asp-action="Edit" asp-route-id="@voznja.Id">Uredi voznju</a>
 				<a class="ss-btn ss-btn-secondary" asp-controller="Voznja" asp-action="Delete" asp-route-id="@voznja.Id">Obrisi voznju</a>

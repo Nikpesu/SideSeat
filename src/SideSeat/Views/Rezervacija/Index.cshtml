@@ -1,5 +1,6 @@
 @model SideSeat.Models.ViewModels.RezervacijaListViewModel
 @using SideSeat.Models.ViewModels
+@using System.Globalization
 @{
     ViewData["Title"] = Model.Title;
     var search = ViewBag.Search as string ?? string.Empty;
@@ -61,7 +62,7 @@
     }
     else
     {
-        <div class="ss-table-shell" role="region" aria-label="Lista rezervacija" tabindex="0" data-ss-list-content>
+        <div class="ss-table-shell" role="region" aria-label="Lista rezervacija" tabindex="0" data-ss-list-content data-ss-keep-table>
             <table class="ss-table">
                 <thead>
                     <tr>
@@ -86,7 +87,14 @@
                                 ? "is-alert"
                                 : "is-off";
 
-                        <tr>
+                        <tr tabindex="0"
+                            data-ss-route-preview-source
+                            data-route-start-name="@rezervacija.Voznja?.PolazniGrad?.Naziv"
+                            data-route-start-lat="@(rezervacija.Voznja?.PolazniGrad?.Latitude?.ToString(CultureInfo.InvariantCulture))"
+                            data-route-start-lng="@(rezervacija.Voznja?.PolazniGrad?.Longitude?.ToString(CultureInfo.InvariantCulture))"
+                            data-route-end-name="@rezervacija.Voznja?.OdredisniGrad?.Naziv"
+                            data-route-end-lat="@(rezervacija.Voznja?.OdredisniGrad?.Latitude?.ToString(CultureInfo.InvariantCulture))"
+                            data-route-end-lng="@(rezervacija.Voznja?.OdredisniGrad?.Longitude?.ToString(CultureInfo.InvariantCulture))">
                             <td>@rezervacija.Id</td>
                             <td>@rezervacija.Putnik?.Ime @rezervacija.Putnik?.Prezime</td>
                             <td>
@@ -100,6 +108,9 @@
                             <td>@rezervacija.VrijemeRezervacije.ToString("dd.MM.yyyy HH:mm")</td>
                             <td><span class="ss-badge @statusClass">@rezervacija.Status.ToDisplayName()</span></td>
                             <td>
+                                <button type="button"
+                                        class="ss-btn ss-btn-secondary ss-route-preview-button"
+                                        data-ss-route-preview-button>Prikaži rutu</button>
                                 <a class="ss-btn" asp-controller="Rezervacija" asp-action="Details" asp-route-id="@rezervacija.Id">Detalji</a>
                                 @if (item.CanRate)
                                 {

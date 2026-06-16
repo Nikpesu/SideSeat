@@ -240,6 +240,64 @@ namespace SideSeat.Migrations
                     b.ToTable("AspNetUsers", (string)null);
                 });
 
+            modelBuilder.Entity("SideSeat.Models.AuditLog", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("Action")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("nvarchar(80)");
+
+                    b.Property<string>("Actor")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("nvarchar(120)");
+
+                    b.Property<string>("CorrelationId")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("EntityId")
+                        .HasMaxLength(80)
+                        .HasColumnType("nvarchar(80)");
+
+                    b.Property<string>("EntityType")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("nvarchar(80)");
+
+                    b.Property<int?>("KorisnikId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Source")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("nvarchar(40)");
+
+                    b.Property<bool>("Succeeded")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Summary")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedAtUtc");
+
+                    b.ToTable("AuditLogs");
+                });
+
             modelBuilder.Entity("SideSeat.Models.Grad", b =>
                 {
                     b.Property<int>("Id")
@@ -253,6 +311,14 @@ namespace SideSeat.Migrations
                         .HasMaxLength(120)
                         .HasColumnType("nvarchar(120)");
 
+                    b.Property<decimal?>("Latitude")
+                        .HasPrecision(9, 6)
+                        .HasColumnType("decimal(9,6)");
+
+                    b.Property<decimal?>("Longitude")
+                        .HasPrecision(9, 6)
+                        .HasColumnType("decimal(9,6)");
+
                     b.Property<string>("Naziv")
                         .IsRequired()
                         .HasMaxLength(120)
@@ -264,6 +330,9 @@ namespace SideSeat.Migrations
                         .HasColumnType("nvarchar(12)");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("Naziv", "Drzava")
+                        .IsUnique();
 
                     b.ToTable("Gradovi");
                 });
@@ -325,6 +394,7 @@ namespace SideSeat.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<decimal>("Saldo")
+                        .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<string>("SpremljenaAdresaPlacanja")
@@ -491,6 +561,7 @@ namespace SideSeat.Migrations
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<decimal>("Iznos")
+                        .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<int>("NacinPlacanja")
@@ -523,7 +594,33 @@ namespace SideSeat.Migrations
                     b.Property<int>("BrojMjesta")
                         .HasColumnType("int");
 
+                    b.Property<DateTime?>("CashCollectedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("CheckInAtUtc")
+                        .HasColumnType("datetime2");
+
                     b.Property<decimal>("CijenaUkupno")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal?>("LastLatitude")
+                        .HasPrecision(9, 6)
+                        .HasColumnType("decimal(9,6)");
+
+                    b.Property<DateTime?>("LastLocationAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<decimal?>("LastLongitude")
+                        .HasPrecision(9, 6)
+                        .HasColumnType("decimal(9,6)");
+
+                    b.Property<int>("NacinPlacanja")
+                        .HasDefaultValue(3)
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("Napojnica")
+                        .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<string>("Napomena")
@@ -551,6 +648,42 @@ namespace SideSeat.Migrations
                     b.ToTable("Rezervacije");
                 });
 
+            modelBuilder.Entity("SideSeat.Models.RideChatMessage", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Message")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<int?>("RecipientId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("SenderId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("VoznjaId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("RecipientId");
+
+                    b.HasIndex("SenderId");
+
+                    b.HasIndex("VoznjaId", "CreatedAtUtc");
+
+                    b.ToTable("RideChatMessages");
+                });
+
             modelBuilder.Entity("SideSeat.Models.SaldoTransakcija", b =>
                 {
                     b.Property<int>("Id")
@@ -560,6 +693,7 @@ namespace SideSeat.Migrations
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<decimal>("Iznos")
+                        .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<string>("Komentar")
@@ -570,9 +704,11 @@ namespace SideSeat.Migrations
                         .HasColumnType("int");
 
                     b.Property<decimal>("SaldoPoslije")
+                        .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<decimal>("SaldoPrije")
+                        .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<string>("Tip")
@@ -619,7 +755,8 @@ namespace SideSeat.Migrations
                         .HasColumnType("nvarchar(80)");
 
                     b.Property<decimal>("ProsjecnaPotrosnja")
-                        .HasColumnType("decimal(18,2)");
+                        .HasPrecision(8, 2)
+                        .HasColumnType("decimal(8,2)");
 
                     b.Property<string>("Registracija")
                         .IsRequired()
@@ -630,6 +767,9 @@ namespace SideSeat.Migrations
                         .HasColumnType("int");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("Registracija")
+                        .IsUnique();
 
                     b.HasIndex("VlasnikId");
 
@@ -645,6 +785,7 @@ namespace SideSeat.Migrations
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<decimal>("CijenaPoMjestu")
+                        .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<DateTime>("OcekivaniDolazak")
@@ -751,7 +892,8 @@ namespace SideSeat.Migrations
                 {
                     b.HasOne("SideSeat.Models.Vozilo", "Vozilo")
                         .WithMany()
-                        .HasForeignKey("VoziloId");
+                        .HasForeignKey("VoziloId")
+                        .OnDelete(DeleteBehavior.SetNull);
 
                     b.Navigation("Vozilo");
                 });
@@ -834,6 +976,32 @@ namespace SideSeat.Migrations
                     b.Navigation("Voznja");
                 });
 
+            modelBuilder.Entity("SideSeat.Models.RideChatMessage", b =>
+                {
+                    b.HasOne("SideSeat.Models.Korisnik", "Recipient")
+                        .WithMany()
+                        .HasForeignKey("RecipientId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("SideSeat.Models.Korisnik", "Sender")
+                        .WithMany()
+                        .HasForeignKey("SenderId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("SideSeat.Models.Voznja", "Voznja")
+                        .WithMany()
+                        .HasForeignKey("VoznjaId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Recipient");
+
+                    b.Navigation("Sender");
+
+                    b.Navigation("Voznja");
+                });
+
             modelBuilder.Entity("SideSeat.Models.SaldoTransakcija", b =>
                 {
                     b.HasOne("SideSeat.Models.Korisnik", "Korisnik")
@@ -849,7 +1017,8 @@ namespace SideSeat.Migrations
                 {
                     b.HasOne("SideSeat.Models.Korisnik", "Vlasnik")
                         .WithMany()
-                        .HasForeignKey("VlasnikId");
+                        .HasForeignKey("VlasnikId")
+                        .OnDelete(DeleteBehavior.SetNull);
 
                     b.Navigation("Vlasnik");
                 });

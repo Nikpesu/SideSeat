@@ -1,0 +1,74 @@
+@model SideSeat.Models.Commands.PendingActionDescriptor
+@{
+    ViewData["Title"] = "AI provjera akcije";
+    var form = Model.Form;
+}
+
+<section class="ss-page">
+    <nav class="ss-breadcrumb" aria-label="Breadcrumb">
+        <a asp-controller="Home" asp-action="Index">Dashboard</a>
+        <span class="ss-breadcrumb-sep">/</span>
+        <span class="current" aria-current="page">AI provjera</span>
+    </nav>
+
+    <div class="ss-page-head">
+        <h1>@Model.Title</h1>
+        <p>Provjeri podatke prije slanja. Akcija se neće izvršiti dok ne klikneš potvrdu.</p>
+    </div>
+
+    <article class="ss-detail-card ss-ai-review-card">
+        @if (TempData["AiActionStatus"] is string status)
+        {
+            <div class="alert alert-info" role="status">@status</div>
+        }
+
+        <div class="ss-ai-review-meta">
+            <span class="ss-badge is-alert">@Model.ActionType</span>
+            <span>Ističe: @Model.ExpiresAtUtc.ToLocalTime().ToString("dd.MM.yyyy HH:mm:ss")</span>
+        </div>
+
+        <p>@Model.Summary</p>
+
+        @if (form is not null)
+        {
+            @foreach (var formSection in form.Sections)
+            {
+                <section class="ss-ai-form-section">
+                    <h2 class="h5">@formSection.Title</h2>
+                    <dl class="ss-detail-grid">
+                        @foreach (var field in formSection.Fields)
+                        {
+                            <div>
+                                <dt>@field.Label</dt>
+                                <dd>@(field.IsSensitive ? "••••••" : string.IsNullOrWhiteSpace(field.Value) ? "Nije uneseno" : field.Value)</dd>
+                            </div>
+                        }
+                    </dl>
+                </section>
+            }
+
+            @if (form.Warnings.Count > 0)
+            {
+                <div class="alert alert-warning">
+                    @foreach (var warning in form.Warnings)
+                    {
+                        <div>@warning</div>
+                    }
+                </div>
+            }
+        }
+
+        <div class="ss-actions">
+            <form asp-action="Confirm" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="token" value="@Model.Token" />
+                <button type="submit" class="ss-btn">@(form?.SubmitLabel ?? "Potvrdi")</button>
+            </form>
+            <form asp-action="Cancel" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="token" value="@Model.Token" />
+                <button type="submit" class="ss-btn ss-btn-secondary">Odustani</button>
+            </form>
+        </div>
+    </article>
+</section>

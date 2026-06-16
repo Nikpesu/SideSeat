@@ -28,22 +28,6 @@ namespace SideSeat.Controllers
             var isAuthenticated = User.Identity?.IsAuthenticated == true;
             var isAdmin = User.IsInRole("Admin");
 
-            var nadolazece = _db.Voznje
-                .AsNoTracking()
-                .Include(v => v.PolazniGrad)
-                .Include(v => v.OdredisniGrad)
-                .Where(v => v.Status == StatusVoznje.Planirana)
-                .OrderBy(v => v.Polazak)
-                .Take(4)
-                .Select(v => new HomeVoznjaRow
-                {
-                    Polazak = v.Polazak,
-                    PolazniGrad = v.PolazniGrad.Naziv,
-                    OdredisniGrad = v.OdredisniGrad.Naziv,
-                    Status = v.Status
-                })
-                .ToList();
-
             var query = _db.Voznje
                 .AsNoTracking()
                 .Include(v => v.Vozac)
@@ -69,16 +53,19 @@ namespace SideSeat.Controllers
                 query = query.Where(v => v.Polazak >= start && v.Polazak < end);
             }
 
-            var hasFilters = from.HasValue || to.HasValue || date.HasValue;
             var searchResults = query
                 .OrderBy(v => v.Polazak)
-                .Take(hasFilters ? 12 : 10)
+                .Take(20)
                 .Select(v => new HomeVoznjaSearchRow
                 {
                     Id = v.Id,
                     Polazak = v.Polazak,
                     PolazniGrad = v.PolazniGrad.Naziv,
                     OdredisniGrad = v.OdredisniGrad.Naziv,
+                    PolazniGradLatitude = v.PolazniGrad.Latitude,
+                    PolazniGradLongitude = v.PolazniGrad.Longitude,
+                    OdredisniGradLatitude = v.OdredisniGrad.Latitude,
+                    OdredisniGradLongitude = v.OdredisniGrad.Longitude,
                     SlobodnaMjesta = v.SlobodnaMjesta,
                     CijenaPoMjestu = v.CijenaPoMjestu,
                     Vozac = v.Vozac.Ime + " " + v.Vozac.Prezime
@@ -104,7 +91,6 @@ namespace SideSeat.Controllers
                 BrojAktivnihVoznji = _db.Voznje.Count(v => v.Status == StatusVoznje.Planirana && v.SlobodnaMjesta > 0),
                 BrojMojihVoznji = userId is null ? 0 : _db.Voznje.Count(v => v.VozacId == userId.Value),
                 BrojMojihRezervacija = userId is null ? 0 : _db.Rezervacije.Count(r => r.PutnikId == userId.Value),
-                NadolazeceVoznje = nadolazece,
                 SearchFrom = from,
                 SearchTo = to,
                 SearchFromText = fromText,
@@ -215,6 +201,12 @@ namespace SideSeat.Controllers
         }
 
         [AllowAnonymous]
+        public IActionResult Vodic()
+        {
+            return View();
+        }
+
+        [AllowAnonymous]
         [Route("Home/HttpStatus/{code:int}")]
         public IActionResult HttpStatus(int code)
         {
@@ -236,9 +228,12 @@ namespace SideSeat.Controllers
         }
 
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
-        public IActionResult Error()
+        public IActionResult Error(string? requestId = null)
         {
-            return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
+            return View(new ErrorViewModel
+            {
+                RequestId = requestId ?? Activity.Current?.Id ?? HttpContext.TraceIdentifier
+            });
         }
     }
 }

@@ -1,5 +1,6 @@
 @model SideSeat.Models.Home.HomeDashboardViewModel
 @using SideSeat.Models.ViewModels
+@using System.Globalization
 @{
     ViewData["Title"] = "Pocetna";
     var isAuthenticated = Model.IsAuthenticated;
@@ -36,14 +37,22 @@
         Value = Model.SearchDate,
         DateOnly = true
     };
+    var initialRoute = Model.SearchResults.FirstOrDefault();
+    var homeRouteMap = new RouteMapViewModel
+    {
+        StartName = initialRoute?.PolazniGrad ?? string.Empty,
+        StartLatitude = initialRoute?.PolazniGradLatitude,
+        StartLongitude = initialRoute?.PolazniGradLongitude,
+        EndName = initialRoute?.OdredisniGrad ?? string.Empty,
+        EndLatitude = initialRoute?.OdredisniGradLatitude,
+        EndLongitude = initialRoute?.OdredisniGradLongitude,
+        Title = "Ruta voznog reda",
+        CssClass = "ss-home-route-map"
+    };
 }
 
-<section class="ss-page ss-home-hub">
+<section class="ss-page ss-home-hub" data-testid="home-dashboard">
     <div class="ss-home-content">
-        <nav class="ss-breadcrumb" aria-label="Breadcrumb">
-            <span class="current" aria-current="page">Pocetna</span>
-        </nav>
-
         <div class="ss-hero ss-holo-hero">
             <div class="ss-holo-copy">
                 <span class="ss-hero-kicker"><span>✦</span> The intelligence layer for shared mobility</span>
@@ -110,79 +119,113 @@
                     </div>
                 </div>
             </div>
+        </div>
 
-            <div class="ss-holo-board" aria-hidden="true">
-                @if (Model.NadolazeceVoznje.Count == 0)
-                {
-                    <div class="ss-holo-row">
-                        <span class="ss-holo-time">--:--</span>
-                        <span class="ss-holo-route">Nema planiranih voznji</span>
-                        <span class="ss-holo-status">Idle</span>
+        <section class="ss-search-results ss-schedule-panel"
+                 aria-labelledby="ss-schedule-title"
+                 aria-live="polite"
+                 data-ss-home-schedule
+                 data-testid="home-schedule">
+            <div class="ss-schedule-layout">
+                <div data-ss-home-search-results>
+                    <div class="ss-search-head">
+                        <div>
+                            <span class="ss-kicker">Aktivne rute</span>
+                            <h2 id="ss-schedule-title">Vozni red</h2>
+                            <p>Najbliže dostupne vožnje, mjesta i cijene na jednom mjestu.</p>
+                        </div>
+                        <div class="ss-schedule-head-actions">
+                            <span class="ss-schedule-count">@Model.SearchResults.Count prikazanih vožnji</span>
+                            <a class="ss-link" asp-controller="Voznja" asp-action="Active">Sve aktivne vožnje</a>
+                        </div>
                     </div>
-                }
-                else
-                {
-                    foreach (var voznja in Model.NadolazeceVoznje)
+
+                    @if (Model.SearchResults.Count == 0)
                     {
-                        <div class="ss-holo-row">
-                            <span class="ss-holo-time">@voznja.Polazak.ToLocalTime().ToString("HH:mm")</span>
-                            <span class="ss-holo-route">@voznja.PolazniGrad - @voznja.OdredisniGrad</span>
-                            <span class="ss-holo-status is-live">Planirana</span>
+                        <div class="ss-empty ss-schedule-empty" data-testid="home-schedule-empty">
+                            Nema vožnji za odabrane kriterije. Promijeni polazište, odredište ili datum.
                         </div>
                     }
-                }
-                <div class="ss-holo-pulse"></div>
-            </div>
-        </div>
-
-        <div class="ss-capability-marquee" aria-label="SideSeat capabilities">
-            <div>
-                <span>ROUTE INTELLIGENCE</span><b>✦</b>
-                <span>REAL-TIME CAPACITY</span><b>✦</b>
-                <span>HUMAN TRUST GRAPH</span><b>✦</b>
-                <span>PAYMENT ORCHESTRATION</span><b>✦</b>
-                <span>AI COPILOT</span><b>✦</b>
-                <span>ROUTE INTELLIGENCE</span><b>✦</b>
-                <span>REAL-TIME CAPACITY</span><b>✦</b>
-                <span>HUMAN TRUST GRAPH</span><b>✦</b>
-                <span>PAYMENT ORCHESTRATION</span><b>✦</b>
-                <span>AI COPILOT</span><b>✦</b>
-            </div>
-        </div>
-
-        <div class="ss-search-results" aria-live="polite" data-ss-home-search-results>
-            <div class="ss-search-head">
-                <h2>Vozni red</h2>
-                <span>@Model.SearchResults.Count prikazanih voznji</span>
-            </div>
-
-            @if (Model.SearchResults.Count == 0)
-            {
-                <div class="ss-empty">Jos nema rezultata. Unesi polaziste, odrediste ili datum.</div>
-            }
-            else
-            {
-                <div class="ss-ride-grid">
-                    @foreach (var voznja in Model.SearchResults)
+                    else
                     {
-                        <article class="ss-ride-card">
-                            <div class="ss-ride-route">
-                                <span>@voznja.PolazniGrad</span>
-                                <span class="ss-ride-arrow">→</span>
-                                <span>@voznja.OdredisniGrad</span>
+                        <div class="ss-route-carousel" data-ss-route-carousel>
+                            <div class="ss-route-carousel-toolbar">
+                                <span>Pomakni rute vodoravno ili koristi strelice.</span>
+                                <div class="ss-route-carousel-controls" aria-label="Kontrole voznog reda">
+                                    <button class="ss-route-carousel-control"
+                                            type="button"
+                                            data-ss-route-carousel-prev
+                                            aria-label="Prethodne rute">←</button>
+                                    <button class="ss-route-carousel-control"
+                                            type="button"
+                                            data-ss-route-carousel-next
+                                            aria-label="Sljedeće rute">→</button>
+                                </div>
                             </div>
-                            <div class="ss-ride-meta">
-                                <span>@voznja.Polazak.ToLocalTime().ToString("dd.MM. HH:mm")</span>
-                                <span>@voznja.SlobodnaMjesta mjesta</span>
-                                <span>@voznja.CijenaPoMjestu.ToString("0.00") €</span>
+                            <div class="ss-route-carousel-viewport"
+                                 data-ss-route-carousel-viewport
+                                 tabindex="0"
+                                 aria-label="Rute voznog reda">
+                                <div class="ss-ride-list ss-route-carousel-track"
+                                     data-ss-route-carousel-track
+                                     data-testid="home-schedule-results">
+                                    @foreach (var voznja in Model.SearchResults)
+                                    {
+                                        <article class="ss-ride-card"
+                                                 tabindex="0"
+                                                 data-ss-route-carousel-item
+                                                 data-ss-home-route-source
+                                                 data-route-start-name="@voznja.PolazniGrad"
+                                                 data-route-start-lat="@(voznja.PolazniGradLatitude?.ToString(CultureInfo.InvariantCulture))"
+                                                 data-route-start-lng="@(voznja.PolazniGradLongitude?.ToString(CultureInfo.InvariantCulture))"
+                                                 data-route-end-name="@voznja.OdredisniGrad"
+                                                 data-route-end-lat="@(voznja.OdredisniGradLatitude?.ToString(CultureInfo.InvariantCulture))"
+                                                 data-route-end-lng="@(voznja.OdredisniGradLongitude?.ToString(CultureInfo.InvariantCulture))">
+                                            <div class="ss-ride-route">
+                                                <span class="ss-ride-city">@voznja.PolazniGrad</span>
+                                                <span class="ss-ride-arrow">→</span>
+                                                <span class="ss-ride-city">@voznja.OdredisniGrad</span>
+                                            </div>
+                                            <div class="ss-ride-meta">
+                                                <span>
+                                                    <small>Polazak</small>
+                                                    <strong>@voznja.Polazak.ToLocalTime().ToString("dd.MM. HH:mm")</strong>
+                                                </span>
+                                                <span>
+                                                    <small>Slobodna mjesta</small>
+                                                    <strong>@voznja.SlobodnaMjesta</strong>
+                                                </span>
+                                                <span>
+                                                    <small>Cijena</small>
+                                                    <strong>@voznja.CijenaPoMjestu.ToString("0.00") EUR</strong>
+                                                </span>
+                                            </div>
+                                            <div class="ss-ride-driver">
+                                                <small>Vozač</small>
+                                                <strong>@voznja.Vozac</strong>
+                                            </div>
+                                            <div class="ss-ride-actions">
+                                                <button type="button"
+                                                        class="ss-btn ss-btn-secondary ss-route-preview-button"
+                                                        data-ss-route-preview-button>Prikaži rutu</button>
+                                                <a class="ss-btn ss-btn-secondary"
+                                                   asp-controller="Voznja"
+                                                   asp-action="Details"
+                                                   asp-route-id="@voznja.Id">Detalji</a>
+                                            </div>
+                                        </article>
+                                    }
+                                </div>
                             </div>
-                            <div class="ss-ride-driver">@voznja.Vozac</div>
-                            <a class="ss-btn ss-btn-secondary" asp-controller="Voznja" asp-action="Details" asp-route-id="@voznja.Id">Detalji</a>
-                        </article>
+                        </div>
                     }
                 </div>
-            }
-        </div>
+
+                <div data-ss-home-route-map>
+                    <partial name="_RouteMap" model="homeRouteMap" />
+                </div>
+            </div>
+        </section>
 
         <div class="ss-home-capabilities" aria-label="Mogucnosti aplikacije">
             <article class="ss-cap-card">
@@ -229,6 +272,21 @@
                     <h3>Rezerviraj ili potvrdi</h3>
                     <p>Brza potvrda rezervacija i placanja bez napustanja platforme.</p>
                 </div>
+            </div>
+        </div>
+
+        <div class="ss-capability-marquee" aria-label="SideSeat capabilities">
+            <div>
+                <span>ROUTE INTELLIGENCE</span><b>✦</b>
+                <span>REAL-TIME CAPACITY</span><b>✦</b>
+                <span>HUMAN TRUST GRAPH</span><b>✦</b>
+                <span>PAYMENT ORCHESTRATION</span><b>✦</b>
+                <span>AI COPILOT</span><b>✦</b>
+                <span>ROUTE INTELLIGENCE</span><b>✦</b>
+                <span>REAL-TIME CAPACITY</span><b>✦</b>
+                <span>HUMAN TRUST GRAPH</span><b>✦</b>
+                <span>PAYMENT ORCHESTRATION</span><b>✦</b>
+                <span>AI COPILOT</span><b>✦</b>
             </div>
         </div>
     </div>

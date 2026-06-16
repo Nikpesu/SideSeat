@@ -4,7 +4,9 @@ using Microsoft.EntityFrameworkCore;
 using SideSeat.Data;
 using SideSeat.Models;
 using SideSeat.Models.Api;
+using SideSeat.Models.Commands;
 using SideSeat.Security;
+using SideSeat.Services;
 
 namespace SideSeat.Controllers.Api;
 
@@ -13,10 +15,12 @@ namespace SideSeat.Controllers.Api;
 public class VoznjeApiController : ControllerBase
 {
     private readonly SideSeatDbContext _db;
+    private readonly ISideSeatCommandService _commands;
 
-    public VoznjeApiController(SideSeatDbContext db)
+    public VoznjeApiController(SideSeatDbContext db, ISideSeatCommandService commands)
     {
         _db = db;
+        _commands = commands;
     }
 
     [HttpGet]
@@ -60,17 +64,43 @@ public class VoznjeApiController : ControllerBase
             return Forbid();
         }
 
-        var validation = await ValidateRefs(request);
-        if (validation is not null)
+        var result = await _commands.ExecuteAsync(
+            SideSeatActionTypes.CreateRide,
+            new CreateRideCommand(
+                request.VozacId,
+                request.PolazniGradId,
+                request.OdredisniGradId,
+                request.Polazak,
+                request.OcekivaniDolazak,
+                request.CijenaPoMjestu,
+                request.UkupnoMjesta,
+                request.SlobodnaMjesta,
+                request.Opis),
+            User,
+            "API",
+            HttpContext.RequestAborted);
+        if (!result.Succeeded)
         {
-            return validation;
+            return result.ErrorKind switch
+            {
+                CommandErrorKind.Forbidden => Forbid(),
+                CommandErrorKind.NotFound => Problem(
+                    statusCode: StatusCodes.Status404NotFound,
+                    title: result.Message),
+                CommandErrorKind.Conflict => Problem(
+                    statusCode: StatusCodes.Status409Conflict,
+                    title: result.Message),
+                CommandErrorKind.BusinessRule => Problem(
+                    statusCode: StatusCodes.Status422UnprocessableEntity,
+                    title: result.Message),
+                _ => Problem(
+                    statusCode: StatusCodes.Status400BadRequest,
+                    title: result.Message)
+            };
         }
 
-        var voznja = new Voznja();
-        Apply(request, voznja);
-        _db.Voznje.Add(voznja);
-        await _db.SaveChangesAsync();
-        voznja = await IncludeGraph(_db.Voznje).FirstAsync(v => v.Id == voznja.Id);
+        var voznja = await IncludeGraph(_db.Voznje.AsNoTracking())
+            .FirstAsync(v => v.Id == result.EntityId);
         return CreatedAtAction(nameof(Get), new { id = voznja.Id }, voznja.ToDto());
     }
 
@@ -89,14 +119,28 @@ public class VoznjeApiController : ControllerBase
             return Forbid();
         }
 
-        var validation = await ValidateRefs(request);
-        if (validation is not null)
+        var result = await _commands.ExecuteAsync(
+            SideSeatActionTypes.UpdateRide,
+            new UpdateRideCommand(
+                id,
+                request.VozacId,
+                request.PolazniGradId,
+                request.OdredisniGradId,
+                request.Polazak,
+                request.OcekivaniDolazak,
+                request.CijenaPoMjestu,
+                request.UkupnoMjesta,
+                request.SlobodnaMjesta,
+                request.Opis,
+                request.Status),
+            User,
+            "API",
+            HttpContext.RequestAborted);
+        if (!result.Succeeded)
         {
-            return validation;
+            return ToProblem(result);
         }
 
-        Apply(request, voznja);
-        await _db.SaveChangesAsync();
         voznja = await IncludeGraph(_db.Voznje.AsNoTracking()).FirstAsync(v => v.Id == id);
         return Ok(voznja.ToDto());
     }
@@ -127,6 +171,24 @@ public class VoznjeApiController : ControllerBase
     }
 
     private bool CanManage(Voznja voznja) => User.IsInRole("Admin") || User.GetKorisnikId() == voznja.VozacId;
+
+    private ActionResult<VoznjaDto> ToProblem(CommandResult result) =>
+        result.ErrorKind switch
+        {
+            CommandErrorKind.Forbidden => Forbid(),
+            CommandErrorKind.NotFound => Problem(
+                statusCode: StatusCodes.Status404NotFound,
+                title: result.Message),
+            CommandErrorKind.Conflict => Problem(
+                statusCode: StatusCodes.Status409Conflict,
+                title: result.Message),
+            CommandErrorKind.BusinessRule => Problem(
+                statusCode: StatusCodes.Status422UnprocessableEntity,
+                title: result.Message),
+            _ => Problem(
+                statusCode: StatusCodes.Status400BadRequest,
+                title: result.Message)
+        };
 
     private async Task<ActionResult<VoznjaDto>?> ValidateRefs(VoznjaRequest request)
     {

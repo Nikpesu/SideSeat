@@ -1,0 +1,136 @@
+@model SideSeat.Models.Rides.CurrentRideViewModel
+@{
+    ViewData["Title"] = "Trenutna vožnja";
+}
+
+<section class="ss-page ss-live-rides" data-ss-live-rides>
+    <nav class="ss-breadcrumb" aria-label="Breadcrumb">
+        <a asp-controller="Home" asp-action="Index">Dashboard</a>
+        <span class="ss-breadcrumb-sep">/</span>
+        <span class="current" aria-current="page">Trenutna vožnja</span>
+    </nav>
+
+    <div class="ss-page-head">
+        <h1>Trenutna vožnja</h1>
+        <p>Vožnje u aktualnom prozoru, spremnost putnika, gotovina za naplatu, lokacija i chat.</p>
+    </div>
+
+    @if (TempData["RideExecuted"] is string status)
+    {
+        <div class="alert alert-info" role="status">@status</div>
+    }
+
+    @if (Model.Rides.Count == 0)
+    {
+        <article class="ss-detail-card">
+            <p class="ss-empty">Trenutno nema vožnji za prikaz. Ovdje će se pojaviti vožnje blizu polaska ili aktivne vožnje.</p>
+        </article>
+    }
+    else
+    {
+        <div class="ss-live-ride-stack">
+            @foreach (var ride in Model.Rides)
+            {
+                <article class="ss-detail-card ss-live-ride-card"
+                         data-ss-live-ride
+                         data-ride-id="@ride.Voznja.Id">
+                    <header class="ss-live-ride-head">
+                        <div>
+                            <span class="ss-badge @(ride.AllReady ? "is-ok" : "is-alert")">
+                                @(ride.AllReady ? "Svi spremni" : "Čeka putnike")
+                            </span>
+                            <h2>@ride.Voznja.PolazniGrad?.Naziv → @ride.Voznja.OdredisniGrad?.Naziv</h2>
+                            <p>@ride.Voznja.Polazak.ToString("dd.MM.yyyy HH:mm") · @ride.Voznja.Status</p>
+                        </div>
+                        <div class="ss-live-ride-money">
+                            <span>Gotovina za vozača</span>
+                            <strong>@ride.CashDue.ToString("0.00") EUR</strong>
+                        </div>
+                    </header>
+
+                    <div class="ss-workflow-steps" aria-label="Koraci vožnje">
+                        <span class="is-done">1. Izrada</span>
+                        <span class="is-done">2. Rezervacije</span>
+                        <span class="@(ride.AllReady ? "is-done" : "is-current")">3. Putnici spremni</span>
+                        <span class="@(ride.Voznja.Status == SideSeat.Models.StatusVoznje.Aktivna ? "is-current" : "")">4. Aktivna</span>
+                        <span>5. Završetak</span>
+                    </div>
+
+                    <div class="ss-live-grid">
+                        <section>
+                            <h3 class="h5">Putnici</h3>
+                            <div class="ss-live-passengers">
+                                @foreach (var passenger in ride.Putnici)
+                                {
+                                    <article class="ss-live-passenger"
+                                             data-reservation-id="@passenger.RezervacijaId"
+                                             data-passenger-id="@passenger.PutnikId">
+                                        <div>
+                                            <strong>@passenger.PutnikIme</strong>
+                                            <span>@passenger.Status.ToDisplayName() · @passenger.BrojMjesta mjesta</span>
+                                            <a href="tel:@passenger.PutnikTelefon">@passenger.PutnikTelefon</a>
+                                        </div>
+                                        <div class="ss-live-passenger-meta">
+                                            <span class="ss-badge @(passenger.CheckInAtUtc.HasValue ? "is-ok" : "is-alert")" data-ready-state>
+                                                @(passenger.CheckInAtUtc.HasValue ? "U autu" : "Čeka")
+                                            </span>
+                                            <span>@passenger.NacinPlacanja</span>
+                                            <strong>@((passenger.CijenaUkupno + passenger.Napojnica).ToString("0.00")) EUR</strong>
+                                        </div>
+                                        @if (passenger.LastLatitude.HasValue && passenger.LastLongitude.HasValue)
+                                        {
+                                            <small data-location-state>
+                                                Lokacija: @passenger.LastLatitude.Value.ToString("0.000000"), @passenger.LastLongitude.Value.ToString("0.000000")
+                                            </small>
+                                        }
+                                        else
+                                        {
+                                            <small data-location-state>Lokacija nije poslana.</small>
+                                        }
+                                    </article>
+                                }
+                            </div>
+                        </section>
+
+                        <section class="ss-live-chat" data-ss-live-chat>
+                            <h3 class="h5">Chat vožnje</h3>
+                            <div class="ss-live-chat-log" data-chat-log>
+                                @foreach (var message in ride.Messages)
+                                {
+                                    <p>
+                                        <strong>@message.Sender?.Ime @message.Sender?.Prezime:</strong>
+                                        <span>@message.Message</span>
+                                    </p>
+                                }
+                            </div>
+                            <form data-chat-form>
+                                <select name="recipientId" class="form-select" aria-label="Primatelj poruke">
+                                    <option value="">Cijela vožnja</option>
+                                    @foreach (var passenger in ride.Putnici.Where(item => item.Status == SideSeat.Models.StatusRezervacije.Potvrdena))
+                                    {
+                                        <option value="@passenger.PutnikId">@passenger.PutnikIme</option>
+                                    }
+                                </select>
+                                <input name="message" class="form-control" maxlength="1000" placeholder="Poruka cijeloj vožnji..." autocomplete="off" />
+                                <button type="submit" class="ss-btn">Pošalji</button>
+                            </form>
+                        </section>
+                    </div>
+
+                    <div class="ss-actions">
+                        @if (ride.Voznja.Status == SideSeat.Models.StatusVoznje.Planirana)
+                        {
+                            <form asp-action="Start" method="post">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="id" value="@ride.Voznja.Id" />
+                                <button type="submit" class="ss-btn" @(ride.AllReady ? null : "disabled")>Pokreni vožnju</button>
+                            </form>
+                        }
+                        <a class="ss-btn" asp-action="Finish" asp-route-id="@ride.Voznja.Id">Završi i naplati</a>
+                        <a class="ss-btn ss-btn-secondary" asp-action="Details" asp-route-id="@ride.Voznja.Id">Detalji</a>
+                    </div>
+                </article>
+            }
+        </div>
+    }
+</section>

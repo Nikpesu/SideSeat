@@ -72,13 +72,13 @@ public class AiToolServiceTests : IClassFixture<SideSeatTestFactory>
 
         using var rides = JsonDocument.Parse(ridesJson);
         Assert.Equal(1, rides.RootElement.GetProperty("count").GetInt32());
-        Assert.Equal(1, rides.RootElement.GetProperty("rides")[0].GetProperty("Id").GetInt32());
+        Assert.Equal(1, rides.RootElement.GetProperty("rides")[0].GetProperty("id").GetInt32());
 
         using var reservations = JsonDocument.Parse(reservationsJson);
         Assert.Equal(1, reservations.RootElement.GetProperty("count").GetInt32());
         Assert.Equal(
             1,
-            reservations.RootElement.GetProperty("reservations")[0].GetProperty("Id").GetInt32());
+            reservations.RootElement.GetProperty("reservations")[0].GetProperty("id").GetInt32());
 
         using var balance = JsonDocument.Parse(balanceJson);
         Assert.Equal(50, balance.RootElement.GetProperty("balance").GetDecimal());
@@ -86,6 +86,34 @@ public class AiToolServiceTests : IClassFixture<SideSeatTestFactory>
 
         using var unauthorizedAllRides = JsonDocument.Parse(unauthorizedAllRidesJson);
         Assert.Equal(0, unauthorizedAllRides.RootElement.GetProperty("count").GetInt32());
+    }
+
+    [Fact]
+    public async Task Tools_ExposeAndExecutePublicWebSearch()
+    {
+        await _factory.SeedAsync();
+        using var scope = _factory.Services.CreateScope();
+        var tools = scope.ServiceProvider.GetRequiredService<IAiToolService>();
+        var principal = CreatePrincipal("2", "Passenger");
+
+        var definitionsJson = JsonSerializer.Serialize(tools.Definitions);
+        Assert.Contains("search_public_web", definitionsJson);
+
+        var resultJson = await tools.ExecuteAsync(
+            "search_public_web",
+            """{"query":"OpenStreetMap","source":"wikipedia","language":"hr","limit":3}""",
+            principal,
+            CancellationToken.None);
+
+        using var result = JsonDocument.Parse(resultJson);
+        Assert.Equal("OpenStreetMap", result.RootElement.GetProperty("query").GetString());
+        Assert.Equal(1, result.RootElement.GetProperty("count").GetInt32());
+        Assert.Equal(
+            "https://example.test/sideseat",
+            result.RootElement.GetProperty("results")[0].GetProperty("url").GetString());
+        Assert.Contains(
+            "[SideSeat test rezultat](https://example.test/sideseat)",
+            resultJson);
     }
 
     private static ClaimsPrincipal CreatePrincipal(string korisnikId, params string[] roles)

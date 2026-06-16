@@ -52,6 +52,59 @@
             <small class="ss-datetime-help d-block mt-2">Mozes dodati do 5 slika, najvise 5 MB po slici.</small>
         </div>
 
+        @if (Model.CanTipDriver)
+        {
+            <section class="ss-inline-panel">
+                <h2 class="h5">Napojnica vozaču karticom</h2>
+                <p class="ss-muted">Napojnica se dodaje samo ovdje, nakon završene vožnje i pri prvoj ocjeni vozača. Ne skida se sa SideSeat salda putnika.</p>
+
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label asp-for="Napojnica" class="form-label"></label>
+                        <input asp-for="Napojnica" class="form-control" min="0" max="10000" step="0.01" />
+                        <span asp-validation-for="Napojnica" class="text-danger"></span>
+                    </div>
+                    <div class="col-md-8">
+                        <label asp-for="CardholderName" class="form-label"></label>
+                        <input asp-for="CardholderName" class="form-control" autocomplete="cc-name" />
+                        <span asp-validation-for="CardholderName" class="text-danger"></span>
+                    </div>
+                    <div class="col-md-6">
+                        <label asp-for="CardNumber" class="form-label"></label>
+                        <input asp-for="CardNumber" class="form-control" inputmode="numeric" autocomplete="cc-number" placeholder="1234 5678 9012 3456" />
+                        <span asp-validation-for="CardNumber" class="text-danger"></span>
+                        @if (!string.IsNullOrWhiteSpace(Model.SavedCardDisplay))
+                        {
+                            <small class="ss-datetime-help">Ako ostaviš prazno, koristi se spremljena kartica @Model.SavedCardDisplay.</small>
+                        }
+                    </div>
+                    <div class="col-md-3">
+                        <label asp-for="CardExpiry" class="form-label"></label>
+                        <input asp-for="CardExpiry" class="form-control" inputmode="numeric" autocomplete="cc-exp" placeholder="MM/YY" />
+                        <span asp-validation-for="CardExpiry" class="text-danger"></span>
+                    </div>
+                    <div class="col-md-3">
+                        <label asp-for="CardCvv" class="form-label"></label>
+                        <input asp-for="CardCvv" class="form-control" inputmode="numeric" autocomplete="cc-csc" placeholder="123" />
+                        <span asp-validation-for="CardCvv" class="text-danger"></span>
+                    </div>
+                    <div class="col-12">
+                        <label class="ss-check-row">
+                            <input asp-for="SaveCard" />
+                            <span>Spremi ovu mock karticu za buduće uplate i napojnice.</span>
+                        </label>
+                    </div>
+                </div>
+            </section>
+        }
+        else if (Model.ExistingTip > 0)
+        {
+            <section class="ss-inline-panel">
+                <h2 class="h5">Napojnica je već evidentirana</h2>
+                <p class="ss-muted">Za ovu rezervaciju je već dodana napojnica @Model.ExistingTip.ToString("0.00") EUR.</p>
+            </section>
+        }
+
         <div class="ss-actions">
             <button class="ss-btn" type="submit">Spremi ocjenu</button>
             <a class="ss-btn ss-btn-secondary" asp-controller="Rezervacija" asp-action="Index">Natrag</a>

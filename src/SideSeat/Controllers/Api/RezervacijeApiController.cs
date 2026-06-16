@@ -150,6 +150,8 @@ public class RezervacijeApiController : ControllerBase
         rezervacija.CijenaUkupno = cijenaUkupno;
         rezervacija.VrijemeRezervacije = rezervacija.Id == 0 ? DateTime.UtcNow : rezervacija.VrijemeRezervacije;
         rezervacija.Status = request.Status;
+        rezervacija.NacinPlacanja = request.NacinPlacanja;
+        rezervacija.Napojnica = request.Napojnica;
         rezervacija.Napomena = request.Napomena.Trim();
     }
 

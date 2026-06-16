@@ -842,9 +842,10 @@ public class KorisnikController : Controller
             .AsNoTracking()
             .Where(r =>
                 r.PutnikId == korisnikId &&
+                r.NacinPlacanja == NacinPlacanja.SideSeatSaldo &&
                 (r.Status == StatusRezervacije.UProcesuPotvrde ||
                  r.Status == StatusRezervacije.Potvrdena))
-            .Sum(r => (decimal?)r.CijenaUkupno) ?? 0m;
+            .Sum(r => (decimal?)(r.CijenaUkupno + r.Napojnica)) ?? 0m;
 
     private SaldoViewModel BuildSaldoModel(int korisnikId, decimal saldo, SaldoViewModel? current = null)
     {
