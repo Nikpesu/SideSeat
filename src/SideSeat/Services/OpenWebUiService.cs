@@ -67,7 +67,7 @@ public sealed class OpenWebUiService(
                 {
                     model,
                     messages,
-                    tools = aiTools.Definitions,
+                    tools = aiTools.GetDefinitions(principal),
                     tool_choice = "auto",
                     stream = false
                 },
@@ -167,6 +167,8 @@ public sealed class OpenWebUiService(
                         "Ne izmišljaj vožnje, cijene, rezervacije ni podatke računa.",
                         "Za bilo koju poslovnu informaciju obavezno pozovi odgovarajući alat i vrati samo podatke koje je alat stvarno vratio.",
                         "Za podatke korisnika koristi get_current_user, za vožnje get_rides, za rezervacije get_reservations, a za saldo i transakcije get_balance.",
+                        "Za pronalazak ID-eva prije pripreme akcije koristi lookup alate: get_cities za gradove i get_reviews za ocjene; administrator dodatno ima get_vehicles, get_users i get_payments.",
+                        "Dostupni su ti samo alati primjereni ulozi prijavljenog korisnika. Ne spominji niti pokušavaj koristiti alate kojih nema na popisu i nemoj obećavati radnje izvan svojih ovlasti.",
                         "Za vanjske, enciklopedijske ili aktualne javne informacije koristi search_public_web. Za SideSeat poslovne podatke nikad ne koristi javnu web pretragu.",
                         "Kad koristiš search_public_web, jasno navedi izvore kao Markdown linkove iz rezultata i reci ako alat nije pronašao pouzdan rezultat.",
                         "Svojstvo data služi za kontekst stranice i sitemap, a ne kao zamjena za poziv alata kada korisnik traži poslovne podatke.",

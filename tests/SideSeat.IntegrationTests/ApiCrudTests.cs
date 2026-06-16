@@ -104,8 +104,8 @@ public class ApiCrudTests : IClassFixture<SideSeatTestFactory>
         Assert.Contains("data-ss-ai", passengerHtml);
         Assert.Contains("SideSeat Copilot", passengerHtml);
         Assert.Contains("data-configured=\"false\"", passengerHtml);
-        Assert.Contains("class=\"ss-global-route-map\"", passengerHtml);
-        Assert.Contains("<animateMotion", passengerHtml);
+        Assert.Contains("class=\"ss-route-bg\"", passengerHtml);
+        Assert.Contains("data-ss-route-bg", passengerHtml);
         Assert.Contains("Dostupne vožnje", passengerHtml);
         Assert.DoesNotContain("Moje vožnje", passengerHtml);
         Assert.Contains("Moja voženja", passengerHtml);
@@ -230,7 +230,7 @@ public class ApiCrudTests : IClassFixture<SideSeatTestFactory>
         Assert.Contains("maxlength=\"19\"", topUpPage);
         Assert.Contains("maxlength=\"5\"", topUpPage);
         Assert.Contains("maxlength=\"4\"", topUpPage);
-        Assert.Contains("Verzija v0.32", topUpPage);
+        Assert.Contains("Verzija v0.33", topUpPage);
         var topUpToken = ExtractAntiforgeryToken(topUpPage);
         using var topUpForm = new FormUrlEncodedContent(new Dictionary<string, string>
         {

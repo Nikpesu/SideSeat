@@ -116,6 +116,45 @@ public class AiToolServiceTests : IClassFixture<SideSeatTestFactory>
             resultJson);
     }
 
+    [Fact]
+    public async Task Tools_RespectRoleBasedAccessAndCityLookup()
+    {
+        await _factory.SeedAsync();
+        using var scope = _factory.Services.CreateScope();
+        var tools = scope.ServiceProvider.GetRequiredService<IAiToolService>();
+
+        var passenger = CreatePrincipal("2", "Passenger");
+        var admin = CreatePrincipal("1", "Admin");
+
+        var passengerTools = JsonSerializer.Serialize(tools.GetDefinitions(passenger));
+        var adminTools = JsonSerializer.Serialize(tools.GetDefinitions(admin));
+
+        // Alat za sve je vidljiv putniku, ali admin/vozač alati nisu.
+        Assert.Contains("get_cities", passengerTools);
+        Assert.DoesNotContain("get_users", passengerTools);
+        Assert.DoesNotContain("prepare_create_city", passengerTools);
+        Assert.DoesNotContain("prepare_create_ride", passengerTools);
+
+        // Administrator vidi sve te alate.
+        Assert.Contains("get_users", adminTools);
+        Assert.Contains("prepare_create_city", adminTools);
+        Assert.Contains("prepare_create_ride", adminTools);
+
+        // Izvršna provjera role: putnik ne može dohvatiti korisnike.
+        var deniedJson = await tools.ExecuteAsync("get_users", "{}", passenger, CancellationToken.None);
+        Assert.Contains("administrator", deniedJson);
+
+        // Lookup gradova radi za putnika.
+        var citiesJson = await tools.ExecuteAsync(
+            "get_cities",
+            """{"search":"Zagreb"}""",
+            passenger,
+            CancellationToken.None);
+        using var cities = JsonDocument.Parse(citiesJson);
+        Assert.True(cities.RootElement.GetProperty("count").GetInt32() >= 1);
+        Assert.Contains("Zagreb", citiesJson);
+    }
+
     private static ClaimsPrincipal CreatePrincipal(string korisnikId, params string[] roles)
     {
         var claims = new List<Claim>

@@ -4,7 +4,7 @@
     var db = Context.RequestServices.GetService(typeof(SideSeat.Data.SideSeatDbContext)) as SideSeat.Data.SideSeatDbContext;
     var configuration = Context.RequestServices.GetService(typeof(IConfiguration)) as IConfiguration;
     var useDummyData = configuration?.GetValue<bool>("DUMMY_DATA") == true;
-    var appVersion = configuration?["SIDESEAT_VERSION"] ?? "v0.32";
+    var appVersion = configuration?["SIDESEAT_VERSION"] ?? "v0.33";
     var googleLoginEnabled =
         !string.IsNullOrWhiteSpace(configuration?["Authentication:Google:ClientId"]) &&
         !string.IsNullOrWhiteSpace(configuration?["Authentication:Google:ClientSecret"]);
@@ -566,6 +566,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.7/signalr.min.js"></script>
     <partial name="_ValidationScriptsPartial" />
     <script src="~/js/route-maps.js" asp-append-version="true"></script>
+    <script src="~/js/route-background.js" asp-append-version="true" defer></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
     @await RenderSectionAsync("Scripts", required: false)
 </body>

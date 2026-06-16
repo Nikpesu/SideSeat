@@ -815,24 +815,17 @@ html[data-theme="dark"] textarea::placeholder {
   backdrop-filter: none;
 }
 
-.ss-global-route-map {
-  opacity: 0.22;
+.ss-route-bg {
+  opacity: 0.32;
   contain: strict;
 }
 
-.ss-active-routes path {
-  animation: none;
+.ss-bg-route {
   filter: none;
 }
 
-.ss-destination-pulse {
-  animation: none;
-  opacity: 0.28;
-}
-
-.ss-map-car-blue,
-.ss-map-car-orange {
-  display: none;
+.ss-bg-node-pulse {
+  opacity: 0.3;
 }
 
 .ss-ai {

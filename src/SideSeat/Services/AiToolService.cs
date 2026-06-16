@@ -130,6 +130,81 @@ public sealed class AiToolService(
                 additionalProperties = false
             }),
         Tool(
+            "get_cities",
+            "Dohvaća i pretražuje gradove (polazišta/odredišta) s ID-evima, državom, poštanskim brojem i koordinatama. Koristi za pronalazak ID-a grada prije pripreme vožnje.",
+            new
+            {
+                type = "object",
+                properties = new
+                {
+                    search = new { type = "string" },
+                    id = new { type = "integer" },
+                    limit = new { type = "integer", minimum = 1, maximum = 100 }
+                },
+                additionalProperties = false
+            }),
+        Tool(
+            "get_vehicles",
+            "Dohvaća i pretražuje vozila s ID-evima. Dostupno samo administratoru.",
+            new
+            {
+                type = "object",
+                properties = new
+                {
+                    search = new { type = "string" },
+                    id = new { type = "integer" },
+                    limit = new { type = "integer", minimum = 1, maximum = 100 }
+                },
+                additionalProperties = false
+            }),
+        Tool(
+            "get_users",
+            "Pretražuje korisnike s ID-evima, ulogom, statusom i saldom. Dostupno samo administratoru.",
+            new
+            {
+                type = "object",
+                properties = new
+                {
+                    search = new { type = "string" },
+                    id = new { type = "integer" },
+                    limit = new { type = "integer", minimum = 1, maximum = 100 }
+                },
+                additionalProperties = false
+            }),
+        Tool(
+            "get_reviews",
+            "Dohvaća ocjene vožnji. scope: mine=ocjene koje sam napisao, received=ocjene o meni, all=sve (samo admin).",
+            new
+            {
+                type = "object",
+                properties = new
+                {
+                    scope = new
+                    {
+                        type = "string",
+                        @enum = new[] { "mine", "received", "all" }
+                    },
+                    id = new { type = "integer" },
+                    limit = new { type = "integer", minimum = 1, maximum = 100 }
+                },
+                required = new[] { "scope" },
+                additionalProperties = false
+            }),
+        Tool(
+            "get_payments",
+            "Dohvaća evidentirana plaćanja s iznosima i načinom plaćanja. Dostupno samo administratoru.",
+            new
+            {
+                type = "object",
+                properties = new
+                {
+                    id = new { type = "integer" },
+                    rezervacijaId = new { type = "integer" },
+                    limit = new { type = "integer", minimum = 1, maximum = 100 }
+                },
+                additionalProperties = false
+            }),
+        Tool(
             "prepare_create_city",
             "Priprema kreiranje grada za administratora. Ne izvršava upis bez potvrde korisnika.",
             new
@@ -573,6 +648,77 @@ public sealed class AiToolService(
             })
     ];
 
+    private enum ToolAccess
+    {
+        Everyone,
+        Driver,
+        Admin
+    }
+
+    private static readonly IReadOnlyDictionary<string, ToolAccess> ToolAccessByName =
+        new Dictionary<string, ToolAccess>(StringComparer.Ordinal)
+        {
+            ["get_current_user"] = ToolAccess.Everyone,
+            ["get_rides"] = ToolAccess.Everyone,
+            ["get_reservations"] = ToolAccess.Everyone,
+            ["get_balance"] = ToolAccess.Everyone,
+            ["search_public_web"] = ToolAccess.Everyone,
+            ["get_cities"] = ToolAccess.Everyone,
+            ["get_reviews"] = ToolAccess.Everyone,
+            ["get_vehicles"] = ToolAccess.Admin,
+            ["get_users"] = ToolAccess.Admin,
+            ["get_payments"] = ToolAccess.Admin,
+            ["prepare_create_reservation"] = ToolAccess.Everyone,
+            ["prepare_check_in_reservation"] = ToolAccess.Everyone,
+            ["prepare_create_review"] = ToolAccess.Everyone,
+            ["prepare_update_review"] = ToolAccess.Everyone,
+            ["prepare_delete_review"] = ToolAccess.Everyone,
+            ["prepare_create_balance_transaction"] = ToolAccess.Everyone,
+            ["prepare_create_ride"] = ToolAccess.Driver,
+            ["prepare_update_ride"] = ToolAccess.Driver,
+            ["prepare_delete_ride"] = ToolAccess.Driver,
+            ["prepare_start_ride"] = ToolAccess.Driver,
+            ["prepare_finish_ride"] = ToolAccess.Driver,
+            ["prepare_create_city"] = ToolAccess.Admin,
+            ["prepare_update_city"] = ToolAccess.Admin,
+            ["prepare_delete_city"] = ToolAccess.Admin,
+            ["prepare_create_vehicle"] = ToolAccess.Admin,
+            ["prepare_update_vehicle"] = ToolAccess.Admin,
+            ["prepare_delete_vehicle"] = ToolAccess.Admin,
+            ["prepare_create_user"] = ToolAccess.Admin,
+            ["prepare_update_user"] = ToolAccess.Admin,
+            ["prepare_delete_user"] = ToolAccess.Admin,
+            ["prepare_create_payment"] = ToolAccess.Admin,
+            ["prepare_update_payment"] = ToolAccess.Admin,
+            ["prepare_delete_payment"] = ToolAccess.Admin,
+            ["prepare_update_reservation"] = ToolAccess.Admin,
+            ["prepare_delete_reservation"] = ToolAccess.Admin
+        };
+
+    public IReadOnlyList<object> GetDefinitions(ClaimsPrincipal principal)
+    {
+        var isAdmin = principal.IsInRole("Admin");
+        var isDriver = isAdmin || principal.IsInRole("Driver");
+
+        bool Allowed(ToolAccess access) => access switch
+        {
+            ToolAccess.Admin => isAdmin,
+            ToolAccess.Driver => isDriver,
+            _ => true
+        };
+
+        return Definitions
+            .Where(definition =>
+                Allowed(ToolAccessByName.GetValueOrDefault(DefinitionName(definition), ToolAccess.Everyone)))
+            .ToList();
+    }
+
+    private static string DefinitionName(object definition)
+    {
+        var function = definition.GetType().GetProperty("function")?.GetValue(definition);
+        return function?.GetType().GetProperty("name")?.GetValue(function) as string ?? string.Empty;
+    }
+
     public async Task<string> ExecuteAsync(
         string toolName,
         string argumentsJson,
@@ -609,6 +755,11 @@ public sealed class AiToolService(
             "search_public_web" => await SearchPublicWebAsync(
                 arguments.RootElement,
                 cancellationToken),
+            "get_cities" => await GetCitiesAsync(arguments.RootElement, cancellationToken),
+            "get_vehicles" => await GetVehiclesAsync(principal, arguments.RootElement, cancellationToken),
+            "get_users" => await GetUsersAsync(principal, arguments.RootElement, cancellationToken),
+            "get_reviews" => await GetReviewsAsync(korisnikId.Value, principal, arguments.RootElement, cancellationToken),
+            "get_payments" => await GetPaymentsAsync(principal, arguments.RootElement, cancellationToken),
             "prepare_create_city" => PrepareCreateCity(principal, arguments.RootElement),
             "prepare_update_city" => PrepareUpdateCity(principal, arguments.RootElement),
             "prepare_delete_city" => PrepareDeleteCity(principal, arguments.RootElement),
@@ -1403,6 +1554,236 @@ public sealed class AiToolService(
                 markdown = $"[{result.Title}]({result.Url})"
             })
         }, JsonOptions);
+    }
+
+    private async Task<string> GetCitiesAsync(JsonElement arguments, CancellationToken cancellationToken)
+    {
+        var search = ReadString(arguments, "search");
+        var id = ReadInt(arguments, "id");
+        var limit = Math.Clamp(ReadInt(arguments, "limit") ?? 50, 1, 100);
+
+        var query = dbContext.Gradovi.AsNoTracking().AsQueryable();
+        if (id.HasValue)
+        {
+            query = query.Where(city => city.Id == id.Value);
+        }
+
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var term = search.Trim();
+            query = query.Where(city =>
+                city.Naziv.Contains(term) ||
+                city.Drzava.Contains(term) ||
+                city.PostanskiBroj.Contains(term));
+        }
+
+        var cities = await query
+            .OrderBy(city => city.Naziv)
+            .Take(limit)
+            .Select(city => new
+            {
+                city.Id,
+                city.Naziv,
+                city.Drzava,
+                city.PostanskiBroj,
+                city.Latitude,
+                city.Longitude
+            })
+            .ToListAsync(cancellationToken);
+
+        return JsonSerializer.Serialize(new { count = cities.Count, cities }, JsonOptions);
+    }
+
+    private async Task<string> GetVehiclesAsync(
+        ClaimsPrincipal principal,
+        JsonElement arguments,
+        CancellationToken cancellationToken)
+    {
+        if (!principal.IsInRole("Admin"))
+        {
+            return SerializeError("Samo administrator može dohvatiti vozila.");
+        }
+
+        var search = ReadString(arguments, "search");
+        var id = ReadInt(arguments, "id");
+        var limit = Math.Clamp(ReadInt(arguments, "limit") ?? 50, 1, 100);
+
+        var query = dbContext.Vozila.AsNoTracking().AsQueryable();
+        if (id.HasValue)
+        {
+            query = query.Where(vehicle => vehicle.Id == id.Value);
+        }
+
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var term = search.Trim();
+            query = query.Where(vehicle =>
+                vehicle.Marka.Contains(term) ||
+                vehicle.Model.Contains(term) ||
+                vehicle.Registracija.Contains(term));
+        }
+
+        var vehicles = await query
+            .OrderBy(vehicle => vehicle.Marka)
+            .ThenBy(vehicle => vehicle.Model)
+            .Take(limit)
+            .Select(vehicle => new
+            {
+                vehicle.Id,
+                vehicle.Marka,
+                vehicle.Model,
+                vehicle.Registracija,
+                vehicle.GodinaProizvodnje,
+                vehicle.BrojSjedala,
+                vehicle.Boja,
+                vehicle.ProsjecnaPotrosnja
+            })
+            .ToListAsync(cancellationToken);
+
+        return JsonSerializer.Serialize(new { count = vehicles.Count, vehicles }, JsonOptions);
+    }
+
+    private async Task<string> GetUsersAsync(
+        ClaimsPrincipal principal,
+        JsonElement arguments,
+        CancellationToken cancellationToken)
+    {
+        if (!principal.IsInRole("Admin"))
+        {
+            return SerializeError("Samo administrator može pretraživati korisnike.");
+        }
+
+        var search = ReadString(arguments, "search");
+        var id = ReadInt(arguments, "id");
+        var limit = Math.Clamp(ReadInt(arguments, "limit") ?? 50, 1, 100);
+
+        var query = dbContext.Korisnici.AsNoTracking().AsQueryable();
+        if (id.HasValue)
+        {
+            query = query.Where(user => user.Id == id.Value);
+        }
+
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var term = search.Trim();
+            query = query.Where(user =>
+                user.Ime.Contains(term) ||
+                user.Prezime.Contains(term) ||
+                user.Email.Contains(term) ||
+                user.BrojMobitela.Contains(term));
+        }
+
+        var users = await query
+            .OrderBy(user => user.Prezime)
+            .ThenBy(user => user.Ime)
+            .Take(limit)
+            .Select(user => new
+            {
+                user.Id,
+                user.Ime,
+                user.Prezime,
+                user.Email,
+                phone = user.BrojMobitela,
+                role = user.Tip.ToString(),
+                user.JeAktivan,
+                user.KycPodnesen,
+                user.Saldo,
+                link = $"/Korisnik/Details/{user.Id}"
+            })
+            .ToListAsync(cancellationToken);
+
+        return JsonSerializer.Serialize(new { count = users.Count, users }, JsonOptions);
+    }
+
+    private async Task<string> GetReviewsAsync(
+        int korisnikId,
+        ClaimsPrincipal principal,
+        JsonElement arguments,
+        CancellationToken cancellationToken)
+    {
+        var scope = ReadString(arguments, "scope") ?? "mine";
+        var id = ReadInt(arguments, "id");
+        var limit = Math.Clamp(ReadInt(arguments, "limit") ?? 50, 1, 100);
+        var isAdmin = principal.IsInRole("Admin");
+
+        var query = dbContext.Ocjene.AsNoTracking().AsQueryable();
+        query = scope switch
+        {
+            "received" => query.Where(review =>
+                review.Rezervacija.Voznja.VozacId == review.AutorId
+                    ? review.Rezervacija.PutnikId == korisnikId
+                    : review.Rezervacija.Voznja.VozacId == korisnikId),
+            "all" when isAdmin => query,
+            _ => query.Where(review => review.AutorId == korisnikId)
+        };
+
+        if (id.HasValue)
+        {
+            query = query.Where(review => review.Id == id.Value);
+        }
+
+        var reviews = await query
+            .OrderByDescending(review => review.Kreirano)
+            .Take(limit)
+            .Select(review => new
+            {
+                review.Id,
+                review.RezervacijaId,
+                review.AutorId,
+                author = $"{review.Autor.Ime} {review.Autor.Prezime}".Trim(),
+                route = $"{review.Rezervacija.Voznja.PolazniGrad.Naziv} → {review.Rezervacija.Voznja.OdredisniGrad.Naziv}",
+                review.BrojZvjezdica,
+                review.Komentar,
+                review.Kreirano,
+                review.Uredeno,
+                link = $"/Ocjena/Details/{review.Id}",
+                detailsMarkdown = $"[Detalji ocjene](/Ocjena/Details/{review.Id})"
+            })
+            .ToListAsync(cancellationToken);
+
+        return JsonSerializer.Serialize(new { scope, count = reviews.Count, reviews }, JsonOptions);
+    }
+
+    private async Task<string> GetPaymentsAsync(
+        ClaimsPrincipal principal,
+        JsonElement arguments,
+        CancellationToken cancellationToken)
+    {
+        if (!principal.IsInRole("Admin"))
+        {
+            return SerializeError("Samo administrator može dohvatiti plaćanja.");
+        }
+
+        var id = ReadInt(arguments, "id");
+        var reservationId = ReadInt(arguments, "rezervacijaId");
+        var limit = Math.Clamp(ReadInt(arguments, "limit") ?? 50, 1, 100);
+
+        var query = dbContext.Placanja.AsNoTracking().AsQueryable();
+        if (id.HasValue)
+        {
+            query = query.Where(payment => payment.Id == id.Value);
+        }
+
+        if (reservationId.HasValue)
+        {
+            query = query.Where(payment => payment.RezervacijaId == reservationId.Value);
+        }
+
+        var payments = await query
+            .OrderByDescending(payment => payment.VrijemePlacanja)
+            .Take(limit)
+            .Select(payment => new
+            {
+                payment.Id,
+                payment.RezervacijaId,
+                payment.Iznos,
+                nacinPlacanja = payment.NacinPlacanja.ToString(),
+                payment.Uspjesno,
+                payment.VrijemePlacanja
+            })
+            .ToListAsync(cancellationToken);
+
+        return JsonSerializer.Serialize(new { count = payments.Count, payments }, JsonOptions);
     }
 
     private static object Tool(string name, string description, object parameters) => new

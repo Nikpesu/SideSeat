@@ -619,124 +619,122 @@ textarea:focus-visible,
   gap: 1.08rem;
 }
 
-.ss-global-route-map {
+.ss-route-bg {
   position: fixed;
   inset: 0;
   z-index: 1;
   overflow: hidden;
   pointer-events: none;
-  opacity: 0.42;
+  opacity: 0.5;
+  -webkit-mask-image: radial-gradient(128% 115% at 50% 36%, #000 52%, transparent 100%);
+          mask-image: radial-gradient(128% 115% at 50% 36%, #000 52%, transparent 100%);
 }
 
-.ss-route-map-svg {
+.ss-route-bg-svg {
   width: 100%;
   height: 100%;
   overflow: visible;
 }
 
-.ss-map-network path {
-  fill: none;
-  stroke: color-mix(in srgb, var(--ss-secondary) 28%, transparent);
-  stroke-width: 1.5;
-  stroke-dasharray: 4 12;
+.ss-bg-grid-line {
+  stroke: color-mix(in srgb, var(--ss-secondary) 13%, transparent);
+  stroke-width: 1;
   vector-effect: non-scaling-stroke;
 }
 
-.ss-map-nodes circle {
-  fill: color-mix(in srgb, var(--ss-secondary) 54%, var(--ss-surface));
-  stroke: color-mix(in srgb, var(--ss-surface-strong) 80%, transparent);
+.ss-bg-route {
+  fill: none;
+  stroke: url(#ssBgRouteGrad);
   stroke-width: 3;
-  vector-effect: non-scaling-stroke;
-}
-
-.ss-active-routes path {
-  fill: none;
-  stroke: color-mix(in srgb, var(--ss-primary) 58%, transparent);
-  stroke-width: 2.5;
   stroke-linecap: round;
-  stroke-dasharray: 2 10;
-  filter: url("#ss-route-glow");
+  stroke-linejoin: round;
+  stroke-dasharray: 5 15;
+  filter: url(#ssBgGlow);
   vector-effect: non-scaling-stroke;
-  animation: ss-route-flow 1.4s linear infinite;
+  animation: ss-bg-flow 1.7s linear infinite;
+  animation-delay: var(--ss-bg-route-delay, 0s);
 }
 
-.ss-route-destinations {
-  color: var(--ss-primary);
-}
-
-.ss-destination-core {
-  fill: currentColor;
-  stroke: var(--ss-surface-strong);
-  stroke-width: 3;
+.ss-bg-node-halo {
+  fill: var(--ss-surface);
+  stroke: color-mix(in srgb, var(--ss-primary) 62%, transparent);
+  stroke-width: 2;
   vector-effect: non-scaling-stroke;
 }
 
-.ss-destination-pulse {
+.ss-bg-node-core {
+  fill: var(--ss-accent);
+  vector-effect: non-scaling-stroke;
+}
+
+.ss-bg-node-pulse {
   fill: none;
-  stroke: currentColor;
+  stroke: var(--ss-accent);
   stroke-width: 2;
   transform-box: fill-box;
   transform-origin: center;
-  animation: ss-destination-pulse 2.2s ease-out infinite;
+  animation: ss-bg-pulse 2.8s ease-out infinite;
   vector-effect: non-scaling-stroke;
 }
 
-.ss-destination-pulse.is-delayed {
-  animation-delay: -0.7s;
+.ss-bg-car {
+  filter: drop-shadow(0 6px 7px color-mix(in srgb, var(--ss-heading) 22%, transparent));
 }
 
-.ss-destination-pulse.is-late {
-  animation-delay: -1.4s;
+.ss-bg-car-beam {
+  mix-blend-mode: screen;
+  opacity: 0.7;
 }
 
-.ss-map-car {
-  filter: drop-shadow(0 8px 8px color-mix(in srgb, var(--ss-heading) 18%, transparent));
-}
-
-.ss-map-car rect {
-  stroke: color-mix(in srgb, var(--ss-surface-strong) 74%, transparent);
-  stroke-width: 2;
-  vector-effect: non-scaling-stroke;
-}
-
-.ss-map-car path {
-  fill: rgba(255, 255, 255, 0.45);
-}
-
-.ss-map-car circle {
-  fill: var(--ss-heading);
-  stroke: var(--ss-surface-strong);
+.ss-bg-car-body {
+  stroke: color-mix(in srgb, var(--ss-surface-strong) 70%, transparent);
   stroke-width: 1.5;
   vector-effect: non-scaling-stroke;
 }
 
-.ss-map-car-green rect {
-  fill: #2e8a4f;
+.ss-bg-car-glass {
+  fill: color-mix(in srgb, var(--ss-surface) 68%, transparent);
 }
 
-.ss-map-car-blue rect {
-  fill: #2e6aa1;
+.ss-bg-car-lamp {
+  fill: #fff6cf;
 }
 
-.ss-map-car-orange rect {
-  fill: #b65c2a;
+.ss-bg-car-wheel {
+  fill: color-mix(in srgb, var(--ss-heading) 72%, #000);
 }
 
-@keyframes ss-route-flow {
+.ss-bg-car-0 .ss-bg-car-body {
+  fill: #25c97a;
+}
+
+.ss-bg-car-1 .ss-bg-car-body {
+  fill: #2f7fd0;
+}
+
+.ss-bg-car-2 .ss-bg-car-body {
+  fill: #e58a2a;
+}
+
+.ss-bg-car-3 .ss-bg-car-body {
+  fill: #c2496b;
+}
+
+@keyframes ss-bg-flow {
   to {
-    stroke-dashoffset: -24;
+    stroke-dashoffset: -40;
   }
 }
 
-@keyframes ss-destination-pulse {
+@keyframes ss-bg-pulse {
   0% {
-    opacity: 0.78;
-    transform: scale(0.4);
+    opacity: 0.7;
+    transform: scale(0.5);
   }
-  75%,
+  70%,
   100% {
     opacity: 0;
-    transform: scale(1.3);
+    transform: scale(3.4);
   }
 }
 
@@ -2290,8 +2288,8 @@ html[data-theme="dark"] .ss-notification-item strong {
     padding: 1.1rem;
   }
 
-  .ss-global-route-map {
-    opacity: 0.3;
+  .ss-route-bg {
+    opacity: 0.34;
   }
 
   .ss-payment-methods {
@@ -2305,13 +2303,14 @@ html[data-theme="dark"] .ss-notification-item strong {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .ss-active-routes path,
-  .ss-destination-pulse {
+  .ss-bg-route {
     animation: none;
+    stroke-dasharray: none;
   }
 
-  .ss-map-car {
-    display: none;
+  .ss-bg-node-pulse {
+    animation: none;
+    opacity: 0;
   }
 }
 
