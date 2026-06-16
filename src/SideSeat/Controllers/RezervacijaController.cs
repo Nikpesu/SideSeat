@@ -1,9 +1,12 @@
+using System.Data;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 using SideSeat.Data;
 using SideSeat.Models;
-using SideSeat.Models.Lab3;
+using SideSeat.Models.Forms;
+using SideSeat.Models.Commands;
 using SideSeat.Models.ViewModels;
 using SideSeat.Security;
 using SideSeat.Services;
@@ -15,11 +18,16 @@ public class RezervacijaController : Controller
 {
     private readonly SideSeatDbContext _db;
     private readonly INotificationService _notifications;
+    private readonly ISideSeatCommandService _commands;
 
-    public RezervacijaController(SideSeatDbContext db, INotificationService notifications)
+    public RezervacijaController(
+        SideSeatDbContext db,
+        INotificationService notifications,
+        ISideSeatCommandService commands)
     {
         _db = db;
         _notifications = notifications;
+        _commands = commands;
     }
 
     public IActionResult Index(string? view, string? status, string? search, DateTime? date, int? pageSize)
@@ -218,6 +226,92 @@ public class RezervacijaController : Controller
         return View(rezervacija);
     }
 
+    public IActionResult Payment(int id) => RedirectToAction(nameof(Details), new { id });
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Payment(
+        int id,
+        NacinPlacanja nacinPlacanja,
+        CancellationToken cancellationToken)
+    {
+        var userId = User.GetKorisnikId();
+        if (userId is null)
+        {
+            return Challenge();
+        }
+
+        var rezervacija = await _db.Rezervacije
+            .Include(r => r.Voznja)
+            .FirstOrDefaultAsync(r => r.Id == id, cancellationToken);
+        if (rezervacija is null)
+        {
+            return NotFound();
+        }
+
+        if (!User.IsInRole("Admin") && rezervacija.PutnikId != userId.Value)
+        {
+            return Forbid();
+        }
+
+        if (rezervacija.Status == StatusRezervacije.Zavrsena ||
+            rezervacija.Voznja.Status == StatusVoznje.Zavrsena ||
+            nacinPlacanja is not (NacinPlacanja.SideSeatSaldo or NacinPlacanja.Gotovina))
+        {
+            TempData["ReservationStatus"] = "Način plaćanja nije valjan za ovu rezervaciju.";
+            return RedirectToAction(nameof(Details), new { id });
+        }
+
+        if (nacinPlacanja == NacinPlacanja.SideSeatSaldo)
+        {
+            var korisnik = await _db.Korisnici
+                .AsNoTracking()
+                .FirstOrDefaultAsync(k => k.Id == rezervacija.PutnikId, cancellationToken);
+            var committed = GetCommittedReservationAmount(rezervacija.PutnikId) -
+                            (rezervacija.NacinPlacanja == NacinPlacanja.SideSeatSaldo
+                                ? rezervacija.CijenaUkupno
+                                : 0);
+            if (korisnik is null || korisnik.Saldo < committed + rezervacija.CijenaUkupno)
+            {
+                TempData["ReservationStatus"] = "Nema dovoljno raspoloživog salda za odabrani način plaćanja.";
+                return RedirectToAction(nameof(Details), new { id });
+            }
+        }
+
+        rezervacija.NacinPlacanja = nacinPlacanja;
+        await _db.SaveChangesAsync(cancellationToken);
+        TempData["ReservationStatus"] = "Plaćanje je ažurirano.";
+        return RedirectToAction(nameof(Details), new { id });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Tip(int id, decimal napojnica, CancellationToken cancellationToken)
+    {
+        _ = napojnica;
+        await Task.CompletedTask;
+        TempData["ReservationStatus"] = "Napojnica se dodaje pri ocjenjivanju vozača karticom.";
+        return RedirectToAction(nameof(Details), new { id });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> CheckIn(
+        int id,
+        decimal? latitude,
+        decimal? longitude,
+        CancellationToken cancellationToken)
+    {
+        var result = await _commands.ExecuteAsync(
+            SideSeatActionTypes.CheckInReservation,
+            new CheckInReservationCommand(id, latitude, longitude),
+            User,
+            "MVC",
+            cancellationToken);
+        TempData["ReservationStatus"] = result.Message;
+        return RedirectToAction(nameof(Details), new { id });
+    }
+
     public IActionResult Create(int voznjaId)
     {
         var userId = User.GetKorisnikId();
@@ -247,7 +341,7 @@ public class RezervacijaController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public IActionResult Create(RezervacijaFormViewModel model)
+    public async Task<IActionResult> Create(RezervacijaFormViewModel model, CancellationToken cancellationToken)
     {
         var userId = User.GetKorisnikId();
         if (userId is null)
@@ -255,8 +349,8 @@ public class RezervacijaController : Controller
             return Challenge();
         }
 
-        var voznja = _db.Voznje
-            .FirstOrDefault(v => v.Id == model.VoznjaId);
+        var voznja = await _db.Voznje
+            .FirstOrDefaultAsync(v => v.Id == model.VoznjaId, cancellationToken);
         if (voznja is null || voznja.Status != StatusVoznje.Planirana)
         {
             return NotFound();
@@ -272,21 +366,10 @@ public class RezervacijaController : Controller
             return View(model);
         }
 
-        if (model.BrojMjesta > voznja.SlobodnaMjesta)
-        {
-            ModelState.AddModelError(nameof(model.BrojMjesta), "Nema dovoljno slobodnih mjesta za trazeni broj.");
-            ViewBag.Voznja = _db.Voznje
-                .AsNoTracking()
-                .Include(v => v.PolazniGrad)
-                .Include(v => v.OdredisniGrad)
-                .First(v => v.Id == model.VoznjaId);
-            return View(model);
-        }
-
         var cijenaNoveRezervacije = voznja.CijenaPoMjestu * model.BrojMjesta;
-        var korisnik = _db.Korisnici
+        var korisnik = await _db.Korisnici
             .AsNoTracking()
-            .FirstOrDefault(k => k.Id == userId.Value);
+            .FirstOrDefaultAsync(k => k.Id == userId.Value, cancellationToken);
         if (korisnik is null)
         {
             return NotFound();
@@ -294,7 +377,8 @@ public class RezervacijaController : Controller
 
         var rezerviranaSredstva = GetCommittedReservationAmount(userId.Value);
         var potrebanSaldo = rezerviranaSredstva + cijenaNoveRezervacije;
-        if (korisnik.Saldo < potrebanSaldo)
+        if (model.NacinPlacanja == NacinPlacanja.SideSeatSaldo &&
+            korisnik.Saldo < potrebanSaldo)
         {
             var nedostaje = potrebanSaldo - korisnik.Saldo;
             TempData["FundsToastMessage"] =
@@ -316,28 +400,29 @@ public class RezervacijaController : Controller
             return View(model);
         }
 
-        var rezervacija = new Rezervacija
+        var result = await _commands.ExecuteAsync(
+            SideSeatActionTypes.CreateReservation,
+            new CreateReservationCommand(
+                model.VoznjaId,
+                model.BrojMjesta,
+                model.Napomena,
+                model.NacinPlacanja,
+                0),
+            User,
+            "MVC",
+            cancellationToken);
+        if (!result.Succeeded)
         {
-            VoznjaId = voznja.Id,
-            PutnikId = userId.Value,
-            BrojMjesta = model.BrojMjesta,
-            CijenaUkupno = cijenaNoveRezervacije,
-            VrijemeRezervacije = DateTime.UtcNow,
-            Status = StatusRezervacije.UProcesuPotvrde,
-            Napomena = model.Napomena.Trim()
-        };
+            ModelState.AddModelError(string.Empty, result.Message);
+            ViewBag.Voznja = _db.Voznje
+                .AsNoTracking()
+                .Include(v => v.PolazniGrad)
+                .Include(v => v.OdredisniGrad)
+                .First(v => v.Id == model.VoznjaId);
+            return View(model);
+        }
 
-        _db.Rezervacije.Add(rezervacija);
-        _db.SaveChanges();
-        _notifications.Add(
-            voznja.VozacId,
-            "Nova rezervacija",
-            $"Nova rezervacija #{rezervacija.Id} čeka tvoju potvrdu.",
-            "Rezervacija",
-            $"/Voznja/Details/{voznja.Id}");
-        _db.SaveChanges();
-
-        return RedirectToAction("Reservation", "Confirmation", new { id = rezervacija.Id });
+        return RedirectToAction("Reservation", "Confirmation", new { id = result.EntityId });
     }
 
     private decimal GetCommittedReservationAmount(int korisnikId) =>
@@ -345,13 +430,14 @@ public class RezervacijaController : Controller
             .AsNoTracking()
             .Where(r =>
                 r.PutnikId == korisnikId &&
+                r.NacinPlacanja == NacinPlacanja.SideSeatSaldo &&
                 (r.Status == StatusRezervacije.UProcesuPotvrde ||
                  r.Status == StatusRezervacije.Potvrdena))
             .Sum(r => (decimal?)r.CijenaUkupno) ?? 0m;
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public IActionResult Confirm(int id, string? returnUrl)
+    public async Task<IActionResult> Confirm(int id, string? returnUrl)
     {
         var userId = User.GetKorisnikId();
         if (userId is null)
@@ -359,9 +445,10 @@ public class RezervacijaController : Controller
             return Challenge();
         }
 
-        var rezervacija = _db.Rezervacije
+        await using var transaction = await BeginSerializableTransactionAsync();
+        var rezervacija = await _db.Rezervacije
             .Include(r => r.Voznja)
-            .FirstOrDefault(r => r.Id == id);
+            .FirstOrDefaultAsync(r => r.Id == id);
         if (rezervacija is null)
         {
             return NotFound();
@@ -393,14 +480,18 @@ public class RezervacijaController : Controller
             $"Vozač je potvrdio rezervaciju #{rezervacija.Id}.",
             "Rezervacija",
             $"/Rezervacija/Details/{rezervacija.Id}");
-        _db.SaveChanges();
+        await _db.SaveChangesAsync();
+        if (transaction is not null)
+        {
+            await transaction.CommitAsync();
+        }
 
         return RedirectAfterReservationAction(returnUrl, id);
     }
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public IActionResult Reject(int id, string? returnUrl)
+    public async Task<IActionResult> Reject(int id, string? returnUrl)
     {
         var userId = User.GetKorisnikId();
         if (userId is null)
@@ -408,9 +499,10 @@ public class RezervacijaController : Controller
             return Challenge();
         }
 
-        var rezervacija = _db.Rezervacije
+        await using var transaction = await BeginSerializableTransactionAsync();
+        var rezervacija = await _db.Rezervacije
             .Include(r => r.Voznja)
-            .FirstOrDefault(r => r.Id == id);
+            .FirstOrDefaultAsync(r => r.Id == id);
         if (rezervacija is null)
         {
             return NotFound();
@@ -434,7 +526,11 @@ public class RezervacijaController : Controller
             $"Vozač je odbio rezervaciju #{rezervacija.Id}.",
             "Rezervacija",
             $"/Rezervacija/Details/{rezervacija.Id}");
-        _db.SaveChanges();
+        await _db.SaveChangesAsync();
+        if (transaction is not null)
+        {
+            await transaction.CommitAsync();
+        }
         return RedirectAfterReservationAction(returnUrl, id);
     }
 
@@ -773,5 +869,12 @@ public class RezervacijaController : Controller
         return !string.IsNullOrWhiteSpace(returnUrl) && Url.IsLocalUrl(returnUrl)
             ? LocalRedirect(returnUrl)
             : RedirectToAction(nameof(Details), new { id = rezervacijaId });
+    }
+
+    private async Task<IDbContextTransaction?> BeginSerializableTransactionAsync()
+    {
+        return _db.Database.IsRelational()
+            ? await _db.Database.BeginTransactionAsync(IsolationLevel.Serializable)
+            : null;
     }
 }

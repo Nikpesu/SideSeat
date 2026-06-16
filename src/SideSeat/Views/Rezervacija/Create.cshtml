@@ -1,4 +1,4 @@
-@model SideSeat.Models.Lab3.RezervacijaFormViewModel
+@model SideSeat.Models.Forms.RezervacijaFormViewModel
 @{
     ViewData["Title"] = "Nova rezervacija";
     var voznja = ViewBag.Voznja as SideSeat.Models.Voznja;
@@ -30,6 +30,19 @@
             <label asp-for="BrojMjesta" class="form-label"></label>
             <input asp-for="BrojMjesta" class="form-control" />
             <span asp-validation-for="BrojMjesta" class="text-danger"></span>
+        </div>
+
+        <div class="ss-payment-choice">
+            <label class="form-label">Način plaćanja</label>
+            <label>
+                <input asp-for="NacinPlacanja" type="radio" value="@SideSeat.Models.NacinPlacanja.SideSeatSaldo" />
+                <span>SideSeat saldo</span>
+            </label>
+            <label>
+                <input asp-for="NacinPlacanja" type="radio" value="@SideSeat.Models.NacinPlacanja.Gotovina" />
+                <span>Gotovina vozaču</span>
+            </label>
+            <span asp-validation-for="NacinPlacanja" class="text-danger"></span>
         </div>
 
         <div class="mb-3">
