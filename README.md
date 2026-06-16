@@ -5,13 +5,14 @@
 [![.NET](https://img.shields.io/badge/.NET-10.0-512BD4?logo=dotnet)](src/SideSeat/SideSeat.csproj)
 [![.NET CI](https://github.com/Nikpesu/SideSeat/actions/workflows/dotnet-ci.yml/badge.svg)](https://github.com/Nikpesu/SideSeat/actions/workflows/dotnet-ci.yml)
 [![Docker](https://img.shields.io/badge/Docker-Linux%20AMD64-2496ED?logo=docker&logoColor=white)](docker-compose.hub.yml)
-[![Version](https://img.shields.io/badge/version-v0.31-2ea44f)](changelogs/v0.31.md)
+[![Version](https://img.shields.io/badge/version-v0.33-2ea44f)](changelogs/v0.33.md)
 [![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
 SideSeat povezuje vozače i putnike kroz objavu vožnji, rezervacije, potvrđivanje putnika, plaćanja, ocjene i obavijesti. Projekt uključuje ASP.NET Core Identity, Google prijavu, REST API, upload slika, AI asistenta za Open WebUI ili DeepSeek, SQL Server, Docker i integracijske testove.
 
 ## Sadržaj
 
+- [Dokumentacija](#dokumentacija)
 - [Mogućnosti](#mogućnosti)
 - [Tehnologije](#tehnologije)
 - [Brzi start preko Docker Huba](#brzi-start-preko-docker-huba)
@@ -24,6 +25,21 @@ SideSeat povezuje vozače i putnike kroz objavu vožnji, rezervacije, potvrđiva
 - [Testovi](#testovi)
 - [Changelog wiki](#changelog-wiki)
 - [Dokumentacija laboratorija](#dokumentacija-laboratorija)
+
+## Dokumentacija
+
+Sva dokumentacija je u Markdownu i čitljiva izravno na GitHubu, u folderu [`docs/`](docs/README.md):
+
+| Dokument | Sadržaj |
+| --- | --- |
+| [docs/README.md](docs/README.md) | središnji indeks dokumentacije |
+| [Wiki — početna](docs/wiki/Home.md) | wikipedia-style pomoć (vodiči po ulozi, značajke) |
+| [Arhitektura, folderi i klase](docs/ARCHITECTURE.md) | kratko objašnjenje svakog foldera i klase |
+| [Vodič za putnika](docs/wiki/User-Guide.md) · [vozača](docs/wiki/Driver-Guide.md) · [admina](docs/wiki/Admin-Guide.md) | upute po ulozi |
+| [Saldo i plaćanja](docs/wiki/Payments-and-Balance.md) · [AI asistent](docs/wiki/AI-Assistant.md) | ključne značajke |
+| [REST API i MCP](docs/wiki/REST-API.md) · [Konfiguracija](docs/wiki/Configuration.md) · [Deployment](docs/wiki/Deployment.md) | tehnička referenca |
+| [Hodogram vožnje](docs/vožnja.md) | korak-po-korak za vozača i putnika |
+| [Changelog](changelogs/README.md) | povijest verzija |
 
 ## Mogućnosti
 
@@ -74,19 +90,19 @@ Aplikacija je dostupna na `http://localhost:8080`.
 Objavljeni image:
 
 ```text
-nikolica/sideseat:v0.32
+nikolica/sideseat:v0.33
 ```
 
 Tag `latest` pokazuje na isto izdanje. Image je namijenjen platformi `linux/amd64`.
 
 ```bash
-docker pull nikolica/sideseat:v0.32
+docker pull nikolica/sideseat:v0.33
 ```
 
 Digest izdanja:
 
 ```text
-sha256:279dfe02e5181805a7557ab71ee7469880c3bce81d291d530a448b1daf71aff8
+sha256:c3ef6afa16a07f8ce6a7b0cad9a69f0b54403149e72604f855a75e4b60df9085
 ```
 
 SQL podaci i uploadane slike čuvaju se u Docker volumeima. Aplikacija pri pokretanju automatski primjenjuje EF Core migracije.
@@ -384,6 +400,7 @@ Povijest izdanja organizirana je kao mala wiki baza. Klik na verziju otvara potp
 
 | Verzija | Datum | Najvažnije promjene | Docker |
 | --- | --- | --- | --- |
+| [v0.33](changelogs/v0.33.md) | 2026-06-17 | Nova pozadinska animacija auta po stvarnim rutama, role-bazirani AI alati s lookupom i kompletna dokumentacija (wiki + arhitektura) | `nikolica/sideseat:v0.33` |
 | [v0.32](changelogs/v0.32.md) | 2026-06-17 | Napojnica karticom pri ocjeni, vodič kroz vožnju, skrolabilan sidebar i profesionalna reorganizacija repozitorija | `nikolica/sideseat:v0.32` |
 | [v0.31](changelogs/v0.31.md) | 2026-06-16 | AI javna pretraga, scrollabilan sidebar i tablične liste vožnji/rezervacija | `nikolica/sideseat:v0.31` |
 | [v0.30](changelogs/v0.30.md) | 2026-06-16 | Stabilan hover bez pomicanja formi i pojačan kontrast dark teme | `nikolica/sideseat:v0.30` |
