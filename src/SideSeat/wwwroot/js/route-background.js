@@ -24,6 +24,7 @@
 
   const CAR_SPEED_MPS = 30 * 1000; // svaki auto se mice 30 km/s po stvarnoj duljini rute
   const MAX_TURN_DEG_PER_S = 60;   // maksimalna brzina zakretanja autica
+  const SPAWN_INTERVAL = 5;        // novi auto moze nastati samo svakih 5 sekundi
   const FOCUS_SECONDS = 8;         // koliko dugo kamera prati jedan auto prije prelaska
   const CAMERA_FOLLOW = 0.08;      // glatko pracenje aktivnog autica (chase kamera)
   const ZOOM = 8.7;                // blizi prikaz rute
@@ -204,7 +205,7 @@
     }).addTo(map);
 
     const marker = L.marker(straight[0], {
-      icon: carIcon(index), interactive: false, keyboard: false, zIndexOffset: 1000
+      icon: carIcon(index), interactive: false, keyboard: false, zIndexOffset: 1000, opacity: 0
     }).addTo(map);
 
     const entry = {
@@ -215,7 +216,8 @@
       halo,
       marker,
       rotEl: null,
-      offset: index * 1.5,
+      spawnAt: index * SPAWN_INTERVAL,
+      spawned: false,
       reverse: index % 2 !== 0
     };
     computeCumulative(entry);
@@ -259,7 +261,10 @@
 
   if (reduceMotion.matches) {
     map.fitBounds(CROATIA);
-    window.requestAnimationFrame(() => animated.forEach((entry) => placeCar(entry, 0.5)));
+    window.requestAnimationFrame(() => animated.forEach((entry) => {
+      entry.marker.setOpacity(1);
+      placeCar(entry, 0.5);
+    }));
     return;
   }
 
@@ -277,16 +282,27 @@
     lastTime = time;
     clock += delta;
 
-    // Svaki auto se mice 30 km/s po stvarnoj duljini rute; kamera prati po jedan.
-    const focusIndex = Math.floor(clock / FOCUS_SECONDS) % animated.length;
+    // Novi auto nastaje svakih 5 s; svaki se mice 30 km/s po stvarnoj duljini rute.
     const maxTurn = MAX_TURN_DEG_PER_S * delta;
+    const spawnedCount = Math.min(animated.length, Math.floor(clock / SPAWN_INTERVAL) + 1);
     animated.forEach((entry) => {
+      if (clock < entry.spawnAt) {
+        return;
+      }
+      if (!entry.spawned) {
+        entry.spawned = true;
+        entry.angle = undefined;
+        entry.marker.setOpacity(1);
+      }
+      const elapsed = clock - entry.spawnAt;
       const progress = entry.total > 0
-        ? ((CAR_SPEED_MPS * (clock + entry.offset)) % entry.total) / entry.total
+        ? ((CAR_SPEED_MPS * elapsed) % entry.total) / entry.total
         : 0;
       placeCar(entry, progress, maxTurn);
     });
 
+    // Kamera prati po jedan, ali samo medju vec nastalim autima.
+    const focusIndex = Math.floor(clock / FOCUS_SECONDS) % spawnedCount;
     const target = animated[focusIndex].currentPos;
     if (target) {
       camPos = camPos
