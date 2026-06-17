@@ -6,6 +6,7 @@ Ova mapa sadrži povijest verzija SideSeat aplikacije. Svako izdanje ima zasebnu
 
 | Verzija | Datum | Sažetak |
 | --- | --- | --- |
+| [v0.38](v0.38.md) | 2026-06-17 | Chase-kamera prati autić po stvarnoj ruti uz bliži zoom |
 | [v0.37](v0.37.md) | 2026-06-17 | Pozadina je pravi OpenStreetMap s animiranim autićima kao overlay |
 | [v0.36](v0.36.md) | 2026-06-17 | Veći kontrast pozadinske karte |
 | [v0.35](v0.35.md) | 2026-06-17 | Pozadina prikazuje okolne države i jače je zumirana |
@@ -42,10 +43,10 @@ Ova mapa sadrži povijest verzija SideSeat aplikacije. Svako izdanje ima zasebnu
 
 ## Trenutna verzija
 
-Trenutna stabilna verzija je [v0.37](v0.37.md):
+Trenutna stabilna verzija je [v0.38](v0.38.md):
 
 ```text
-nikolica/sideseat:v0.37
+nikolica/sideseat:v0.38
 ```
 
 Docker Hub digest:
