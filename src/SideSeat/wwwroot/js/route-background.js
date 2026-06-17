@@ -23,7 +23,7 @@
   const routeUrl = body.dataset.mapRouteUrl || "/api/maps/route";
 
   const CAR_SPEED_MPS = 30 * 1000; // svaki auto se mice 30 km/s po stvarnoj duljini rute
-  const MAX_TURN_DEG_PER_S = 60;   // maksimalna brzina zakretanja autica
+  const MIN_ROUTE_SECONDS = 5;     // i jako kratku rutu auto prelazi najmanje 5 sekundi
   const SPAWN_INTERVAL = 5;        // novi auto moze nastati samo svakih 5 sekundi
   const FOCUS_SECONDS = 8;         // koliko dugo kamera prati jedan auto prije prelaska
   const CAMERA_FOLLOW = 0.08;      // glatko pracenje aktivnog autica (chase kamera)
@@ -229,7 +229,7 @@
     }
   });
 
-  const placeCar = (entry, progress, maxTurn) => {
+  const placeCar = (entry, progress) => {
     const fraction = entry.reverse ? 1 - progress : progress;
     const ahead = Math.min(1, Math.max(0, fraction + (entry.reverse ? -0.012 : 0.012)));
     const pos = positionAt(entry, fraction);
@@ -240,21 +240,12 @@
       const node = entry.marker.getElement();
       entry.rotEl = node ? node.querySelector(".ss-bg-car-rot") : null;
     }
-    if (!entry.rotEl) {
-      return;
+    if (entry.rotEl) {
+      const p1 = map.latLngToContainerPoint(pos);
+      const p2 = map.latLngToContainerPoint(next);
+      const angle = Math.atan2(p2.y - p1.y, p2.x - p1.x) * 180 / Math.PI;
+      entry.rotEl.style.transform = `rotate(${angle.toFixed(1)}deg)`;
     }
-    const p1 = map.latLngToContainerPoint(pos);
-    const p2 = map.latLngToContainerPoint(next);
-    const target = Math.atan2(p2.y - p1.y, p2.x - p1.x) * 180 / Math.PI;
-    if (entry.angle === undefined || !(maxTurn > 0)) {
-      entry.angle = target;
-    } else {
-      // Najkraca kutna razlika u [-180, 180], ograncena na maksimalnu brzinu zakretanja.
-      let diff = ((target - entry.angle + 540) % 360) - 180;
-      diff = Math.max(-maxTurn, Math.min(maxTurn, diff));
-      entry.angle += diff;
-    }
-    entry.rotEl.style.transform = `rotate(${entry.angle.toFixed(1)}deg)`;
   };
 
   map.whenReady(() => window.requestAnimationFrame(() => map.invalidateSize(false)));
@@ -282,8 +273,7 @@
     lastTime = time;
     clock += delta;
 
-    // Novi auto nastaje svakih 5 s; svaki se mice 30 km/s po stvarnoj duljini rute.
-    const maxTurn = MAX_TURN_DEG_PER_S * delta;
+    // Novi auto nastaje svakih 5 s; mice se 30 km/s, ali kratku rutu prelazi >= 5 s.
     const spawnedCount = Math.min(animated.length, Math.floor(clock / SPAWN_INTERVAL) + 1);
     animated.forEach((entry) => {
       if (clock < entry.spawnAt) {
@@ -291,14 +281,13 @@
       }
       if (!entry.spawned) {
         entry.spawned = true;
-        entry.angle = undefined;
         entry.marker.setOpacity(1);
       }
       const elapsed = clock - entry.spawnAt;
-      const progress = entry.total > 0
-        ? ((CAR_SPEED_MPS * elapsed) % entry.total) / entry.total
-        : 0;
-      placeCar(entry, progress, maxTurn);
+      const duration = entry.total > 0
+        ? Math.max(entry.total / CAR_SPEED_MPS, MIN_ROUTE_SECONDS)
+        : MIN_ROUTE_SECONDS;
+      placeCar(entry, (elapsed % duration) / duration);
     });
 
     // Kamera prati po jedan, ali samo medju vec nastalim autima.
