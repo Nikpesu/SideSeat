@@ -5,7 +5,7 @@
 [![.NET](https://img.shields.io/badge/.NET-10.0-512BD4?logo=dotnet)](src/SideSeat/SideSeat.csproj)
 [![.NET CI](https://github.com/Nikpesu/SideSeat/actions/workflows/dotnet-ci.yml/badge.svg)](https://github.com/Nikpesu/SideSeat/actions/workflows/dotnet-ci.yml)
 [![Docker](https://img.shields.io/badge/Docker-Linux%20AMD64-2496ED?logo=docker&logoColor=white)](docker-compose.hub.yml)
-[![Version](https://img.shields.io/badge/version-v0.33-2ea44f)](changelogs/v0.33.md)
+[![Version](https://img.shields.io/badge/version-v0.34-2ea44f)](changelogs/v0.34.md)
 [![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
 SideSeat povezuje vozače i putnike kroz objavu vožnji, rezervacije, potvrđivanje putnika, plaćanja, ocjene i obavijesti. Projekt uključuje ASP.NET Core Identity, Google prijavu, REST API, upload slika, AI asistenta za Open WebUI ili DeepSeek, SQL Server, Docker i integracijske testove.
@@ -90,13 +90,13 @@ Aplikacija je dostupna na `http://localhost:8080`.
 Objavljeni image:
 
 ```text
-nikolica/sideseat:v0.33
+nikolica/sideseat:v0.34
 ```
 
 Tag `latest` pokazuje na isto izdanje. Image je namijenjen platformi `linux/amd64`.
 
 ```bash
-docker pull nikolica/sideseat:v0.33
+docker pull nikolica/sideseat:v0.34
 ```
 
 Digest izdanja:
@@ -400,6 +400,7 @@ Povijest izdanja organizirana je kao mala wiki baza. Klik na verziju otvara potp
 
 | Verzija | Datum | Najvažnije promjene | Docker |
 | --- | --- | --- | --- |
+| [v0.34](changelogs/v0.34.md) | 2026-06-17 | Automatski izračun vremena dolaska vožnje te pozadina s granicama država, sporom kamerom i 5 s po ruti | `nikolica/sideseat:v0.34` |
 | [v0.33](changelogs/v0.33.md) | 2026-06-17 | Nova pozadinska animacija auta po stvarnim rutama, role-bazirani AI alati s lookupom i kompletna dokumentacija (wiki + arhitektura) | `nikolica/sideseat:v0.33` |
 | [v0.32](changelogs/v0.32.md) | 2026-06-17 | Napojnica karticom pri ocjeni, vodič kroz vožnju, skrolabilan sidebar i profesionalna reorganizacija repozitorija | `nikolica/sideseat:v0.32` |
 | [v0.31](changelogs/v0.31.md) | 2026-06-16 | AI javna pretraga, scrollabilan sidebar i tablične liste vožnji/rezervacija | `nikolica/sideseat:v0.31` |

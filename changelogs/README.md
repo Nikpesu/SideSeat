@@ -6,6 +6,7 @@ Ova mapa sadrži povijest verzija SideSeat aplikacije. Svako izdanje ima zasebnu
 
 | Verzija | Datum | Sažetak |
 | --- | --- | --- |
+| [v0.34](v0.34.md) | 2026-06-17 | Automatski izračun vremena dolaska vožnje te pozadina s granicama država, sporom kamerom i 5 s po ruti |
 | [v0.33](v0.33.md) | 2026-06-17 | Nova pozadinska animacija auta po stvarnim rutama, role-bazirani AI alati s lookupom i kompletna dokumentacija |
 | [v0.32](v0.32.md) | 2026-06-17 | Napojnica karticom pri ocjeni, vodič kroz vožnju, skrolabilan sidebar i profesionalna reorganizacija repozitorija |
 | [v0.31](v0.31.md) | 2026-06-16 | AI javna pretraga, scrollabilan sidebar i tablične liste vožnji/rezervacija |
@@ -38,10 +39,10 @@ Ova mapa sadrži povijest verzija SideSeat aplikacije. Svako izdanje ima zasebnu
 
 ## Trenutna verzija
 
-Trenutna stabilna verzija je [v0.33](v0.33.md):
+Trenutna stabilna verzija je [v0.34](v0.34.md):
 
 ```text
-nikolica/sideseat:v0.33
+nikolica/sideseat:v0.34
 ```
 
 Docker Hub digest:
