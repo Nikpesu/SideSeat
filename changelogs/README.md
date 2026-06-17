@@ -6,6 +6,7 @@ Ova mapa sadrži povijest verzija SideSeat aplikacije. Svako izdanje ima zasebnu
 
 | Verzija | Datum | Sažetak |
 | --- | --- | --- |
+| [v0.37](v0.37.md) | 2026-06-17 | Pozadina je pravi OpenStreetMap s animiranim autićima kao overlay |
 | [v0.36](v0.36.md) | 2026-06-17 | Veći kontrast pozadinske karte |
 | [v0.35](v0.35.md) | 2026-06-17 | Pozadina prikazuje okolne države i jače je zumirana |
 | [v0.34](v0.34.md) | 2026-06-17 | Automatski izračun vremena dolaska vožnje te pozadina s granicama država, sporom kamerom i 5 s po ruti |
@@ -41,10 +42,10 @@ Ova mapa sadrži povijest verzija SideSeat aplikacije. Svako izdanje ima zasebnu
 
 ## Trenutna verzija
 
-Trenutna stabilna verzija je [v0.36](v0.36.md):
+Trenutna stabilna verzija je [v0.37](v0.37.md):
 
 ```text
-nikolica/sideseat:v0.36
+nikolica/sideseat:v0.37
 ```
 
 Docker Hub digest:
