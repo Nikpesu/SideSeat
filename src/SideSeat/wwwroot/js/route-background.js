@@ -23,9 +23,8 @@
   const routeUrl = body.dataset.mapRouteUrl || "/api/maps/route";
 
   const ROUTE_SECONDS = 5;     // svaka ruta: auto je prelazi u tocno 5 sekundi
-  const CAMERA_SLOT = 6;       // sekundi po ruti za sporu translaciju kamere
-  const CAMERA_HOLD = 0.55;    // dio vremena dok kamera miruje prije prelaska
-  const ZOOM = 7.4;            // blizi prikaz rute
+  const CAMERA_FOLLOW = 0.08;  // glatko pracenje aktivnog autica (chase kamera)
+  const ZOOM = 8.7;            // blizi prikaz rute
   const COLORS = ["#25c97a", "#2f7fd0", "#e58a2a", "#c2496b"];
   const CROATIA = L.latLngBounds([42.3, 13.4], [46.6, 19.5]);
 
@@ -136,7 +135,7 @@
       endLng: route.endLng.toFixed(6)
     });
     const controller = new AbortController();
-    const timer = window.setTimeout(() => controller.abort(), 1200);
+    const timer = window.setTimeout(() => controller.abort(), 5000);
     return fetch(`${routeUrl}?${query}`, {
       headers: { Accept: "application/json" },
       credentials: "same-origin",
@@ -210,30 +209,12 @@
     }
   });
 
-  const easeInOut = (t) => (t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2);
-
-  const cameraCenter = (clock) => {
-    if (centers.length === 0) {
-      return CROATIA.getCenter();
-    }
-    if (centers.length === 1) {
-      return centers[0];
-    }
-    const cycle = CAMERA_SLOT * centers.length;
-    const tt = ((clock % cycle) + cycle) % cycle / CAMERA_SLOT;
-    const i = Math.floor(tt) % centers.length;
-    const f = tt - Math.floor(tt);
-    const from = centers[i];
-    const to = centers[(i + 1) % centers.length];
-    const p = f < CAMERA_HOLD ? 0 : easeInOut((f - CAMERA_HOLD) / (1 - CAMERA_HOLD));
-    return L.latLng(from.lat + (to.lat - from.lat) * p, from.lng + (to.lng - from.lng) * p);
-  };
-
   const placeCar = (entry, progress) => {
     const fraction = entry.reverse ? 1 - progress : progress;
     const ahead = Math.min(1, Math.max(0, fraction + (entry.reverse ? -0.012 : 0.012)));
     const pos = positionAt(entry, fraction);
     const next = positionAt(entry, ahead);
+    entry.currentPos = pos;
     entry.marker.setLatLng(pos);
     if (!entry.rotEl) {
       const node = entry.marker.getElement();
@@ -258,6 +239,7 @@
   let clock = 0;
   let lastTime = 0;
   let frame = 0;
+  let camPos = null;
 
   const step = (time) => {
     if (!root.isConnected) {
@@ -268,11 +250,24 @@
     lastTime = time;
     clock += delta;
 
-    map.setView(cameraCenter(clock), ZOOM, { animate: false });
-    animated.forEach((entry) => {
-      const progress = (((clock + entry.phase) % ROUTE_SECONDS) / ROUTE_SECONDS);
+    // Aktivnu rutu kamera prati u cijelosti (0->1), ostali autici voze u pozadini.
+    const focusIndex = Math.floor(clock / ROUTE_SECONDS) % animated.length;
+    animated.forEach((entry, index) => {
+      const progress = index === focusIndex
+        ? (clock % ROUTE_SECONDS) / ROUTE_SECONDS
+        : (((clock + entry.phase) % ROUTE_SECONDS) / ROUTE_SECONDS);
       placeCar(entry, progress);
     });
+
+    const target = animated[focusIndex].currentPos;
+    if (target) {
+      camPos = camPos
+        ? L.latLng(
+            camPos.lat + (target.lat - camPos.lat) * CAMERA_FOLLOW,
+            camPos.lng + (target.lng - camPos.lng) * CAMERA_FOLLOW)
+        : L.latLng(target.lat, target.lng);
+      map.setView(camPos, ZOOM, { animate: false });
+    }
 
     frame = window.requestAnimationFrame(step);
   };
