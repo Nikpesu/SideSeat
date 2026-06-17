@@ -23,17 +23,20 @@ public class VoznjaController : Controller
     private readonly SideSeatDbContext _db;
     private readonly INotificationService _notifications;
     private readonly ISideSeatCommandService _commands;
+    private readonly IRouteGeometryService _routeGeometry;
 
     public VoznjaController(
         SideSeatEfRepository repository,
         SideSeatDbContext db,
         INotificationService notifications,
-        ISideSeatCommandService commands)
+        ISideSeatCommandService commands,
+        IRouteGeometryService routeGeometry)
     {
         _repository = repository;
         _db = db;
         _notifications = notifications;
         _commands = commands;
+        _routeGeometry = routeGeometry;
     }
 
     public IActionResult Index(string? view, string? status, string? search, DateTime? date, int? pageSize)
@@ -547,12 +550,12 @@ public class VoznjaController : Controller
             return View(model);
         }
 
-        if (model.OcekivaniDolazak <= model.Polazak)
-        {
-            ModelState.AddModelError(nameof(model.OcekivaniDolazak), "Ocekivani dolazak mora biti nakon polaska.");
-            PopulateFormOptions(model, isAdmin, userId.Value);
-            return View(model);
-        }
+        // Vrijeme dolaska se racuna automatski iz trajanja rute, ne unosi ga vozac.
+        model.OcekivaniDolazak = await ComputeArrivalAsync(
+            model.PolazniGradId,
+            model.OdredisniGradId,
+            model.Polazak,
+            cancellationToken);
 
         if (model.SlobodnaMjesta > model.UkupnoMjesta)
         {
@@ -671,12 +674,12 @@ public class VoznjaController : Controller
             return View(model);
         }
 
-        if (model.OcekivaniDolazak <= model.Polazak)
-        {
-            ModelState.AddModelError(nameof(model.OcekivaniDolazak), "Ocekivani dolazak mora biti nakon polaska.");
-            PopulateFormOptions(model, isAdmin, userId.Value);
-            return View(model);
-        }
+        // Vrijeme dolaska se racuna automatski iz trajanja rute, ne unosi ga vozac.
+        model.OcekivaniDolazak = await ComputeArrivalAsync(
+            model.PolazniGradId,
+            model.OdredisniGradId,
+            model.Polazak,
+            cancellationToken);
 
         if (model.SlobodnaMjesta > model.UkupnoMjesta)
         {
@@ -853,6 +856,67 @@ public class VoznjaController : Controller
             .ToList();
 
         return Json(results);
+    }
+
+    /// <summary>
+    /// Racuna ocekivani dolazak iz polaska i trajanja rute (OSRM); ako ruta nije
+    /// dostupna, koristi procjenu na temelju zracne udaljenosti.
+    /// </summary>
+    private async Task<DateTime> ComputeArrivalAsync(
+        int startCityId,
+        int endCityId,
+        DateTime departure,
+        CancellationToken cancellationToken)
+    {
+        var cities = await _db.Gradovi
+            .AsNoTracking()
+            .Where(city => city.Id == startCityId || city.Id == endCityId)
+            .Select(city => new { city.Id, city.Latitude, city.Longitude })
+            .ToListAsync(cancellationToken);
+
+        var start = cities.FirstOrDefault(city => city.Id == startCityId);
+        var end = cities.FirstOrDefault(city => city.Id == endCityId);
+
+        double durationSeconds = 0;
+        if (start is { Latitude: { } startLat, Longitude: { } startLng } &&
+            end is { Latitude: { } endLat, Longitude: { } endLng })
+        {
+            var route = await _routeGeometry.GetRouteAsync(
+                startLat, startLng, endLat, endLng, cancellationToken);
+            durationSeconds = route is { DurationSeconds: > 0 }
+                ? route.DurationSeconds
+                : EstimateDurationSeconds(startLat, startLng, endLat, endLng);
+        }
+
+        if (durationSeconds <= 0)
+        {
+            durationSeconds = 3600; // sigurnosni minimum: 1 sat
+        }
+
+        return departure.AddSeconds(Math.Ceiling(durationSeconds / 60d) * 60d);
+    }
+
+    private static double EstimateDurationSeconds(
+        decimal startLat,
+        decimal startLng,
+        decimal endLat,
+        decimal endLng)
+    {
+        const double earthRadiusKm = 6371d;
+        const double averageSpeedKmh = 75d; // prosjecna cestovna brzina
+        const double detourFactor = 1.3d;   // ceste nisu zracna linija
+
+        var lat1 = (double)startLat * Math.PI / 180d;
+        var lat2 = (double)endLat * Math.PI / 180d;
+        var deltaLat = ((double)endLat - (double)startLat) * Math.PI / 180d;
+        var deltaLng = ((double)endLng - (double)startLng) * Math.PI / 180d;
+
+        var a = Math.Sin(deltaLat / 2) * Math.Sin(deltaLat / 2) +
+                Math.Cos(lat1) * Math.Cos(lat2) *
+                Math.Sin(deltaLng / 2) * Math.Sin(deltaLng / 2);
+        var distanceKm = 2 * earthRadiusKm * Math.Asin(Math.Min(1, Math.Sqrt(a))) * detourFactor;
+
+        return distanceKm / averageSpeedKmh * 3600d;
     }
 
     private VoznjaFormViewModel BuildFormViewModel(bool isAdmin, int currentUserId)

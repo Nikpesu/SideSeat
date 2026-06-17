@@ -8,12 +8,14 @@
 
   const svg = root.querySelector(".ss-route-bg-svg");
   const gridLayer = root.querySelector("[data-ss-bg-grid]");
+  const camera = root.querySelector("[data-ss-bg-camera]");
+  const borderLayer = root.querySelector("[data-ss-bg-borders]");
   const routeLayer = root.querySelector("[data-ss-bg-routes]");
   const nodeLayer = root.querySelector("[data-ss-bg-nodes]");
   const carLayer = root.querySelector("[data-ss-bg-cars]");
   const template = root.querySelector("#ssBgCarTemplate");
   const dataEl = root.querySelector("[data-ss-route-bg-data]");
-  if (!svg || !routeLayer || !nodeLayer || !carLayer || !template) {
+  if (!svg || !camera || !routeLayer || !nodeLayer || !carLayer || !template) {
     return;
   }
 
@@ -22,19 +24,30 @@
   const VB_H = 900;
   const PAD_X = 150;
   const PAD_Y = 120;
+  const ROUTE_SECONDS = 5;   // svaka ruta: auto je prelazi u tocno 5 sekundi
+  const CAMERA_SLOT = 6;     // sekundi po ruti za sporu translaciju kamere
+  const CAMERA_HOLD = 0.55;  // dio vremena dok kamera miruje prije prelaska
+  const CAMERA_SCALE = 1.22;
   const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
   const routeUrl = document.body.dataset.mapRouteUrl || "/api/maps/route";
 
-  // Stabilni okvir Hrvatske; širi se ako rute izlaze izvan njega.
+  // Stabilni okvir Hrvatske; širi se ako rute/granice izlaze izvan njega.
   const BASE_BOUNDS = { minLat: 42.35, maxLat: 46.55, minLng: 13.4, maxLng: 19.45 };
 
-  const DEFAULT_ROUTES = [
-    { startName: "Zagreb", startLat: 45.815, startLng: 15.9819, endName: "Split", endLat: 43.5081, endLng: 16.4402 },
-    { startName: "Zagreb", startLat: 45.815, startLng: 15.9819, endName: "Rijeka", endLat: 45.3271, endLng: 14.4422 },
-    { startName: "Zagreb", startLat: 45.815, startLng: 15.9819, endName: "Osijek", endLat: 45.555, endLng: 18.6955 },
-    { startName: "Split", startLat: 43.5081, startLng: 16.4402, endName: "Dubrovnik", endLat: 42.6507, endLng: 18.0944 },
-    { startName: "Rijeka", startLat: 45.3271, startLng: 14.4422, endName: "Zadar", endLat: 44.1194, endLng: 15.2314 },
-    { startName: "Zagreb", startLat: 45.815, startLng: 15.9819, endName: "Varaždin", endLat: 46.3057, endLng: 16.3366 }
+  // Pojednostavljene granice država (silueta Hrvatske + jadranska obala Italije).
+  const BORDERS = [
+    [
+      [45.48, 13.61], [45.05, 13.61], [44.81, 13.85], [45.03, 14.10], [45.33, 14.45],
+      [44.99, 14.90], [44.27, 15.05], [44.12, 15.23], [43.74, 15.88], [43.51, 16.44],
+      [43.03, 17.43], [42.65, 18.09], [42.43, 18.53], [42.99, 17.64], [43.49, 17.04],
+      [44.20, 16.22], [45.08, 16.16], [45.18, 16.93], [45.13, 18.04], [45.08, 18.66],
+      [44.86, 18.81], [45.20, 19.05], [45.52, 18.91], [45.78, 18.86], [46.31, 16.87],
+      [46.37, 16.31], [46.21, 15.64], [45.78, 15.68], [45.49, 15.30], [45.50, 14.40],
+      [45.48, 13.61]
+    ],
+    [
+      [45.65, 13.77], [45.44, 12.34], [44.42, 12.20], [43.62, 13.51], [42.46, 14.21], [41.12, 16.87]
+    ]
   ];
 
   const isFinite = Number.isFinite;
@@ -61,23 +74,31 @@
     endLng: Number(route.endLng)
   }));
   if (routes.length === 0) {
-    routes = DEFAULT_ROUTES.slice();
+    routes = [
+      { startName: "Zagreb", startLat: 45.815, startLng: 15.9819, endName: "Split", endLat: 43.5081, endLng: 16.4402 },
+      { startName: "Zagreb", startLat: 45.815, startLng: 15.9819, endName: "Rijeka", endLat: 45.3271, endLng: 14.4422 },
+      { startName: "Zagreb", startLat: 45.815, startLng: 15.9819, endName: "Osijek", endLat: 45.555, endLng: 18.6955 },
+      { startName: "Split", startLat: 43.5081, startLng: 16.4402, endName: "Dubrovnik", endLat: 42.6507, endLng: 18.0944 },
+      { startName: "Rijeka", startLat: 45.3271, startLng: 14.4422, endName: "Zadar", endLat: 44.1194, endLng: 15.2314 },
+      { startName: "Zagreb", startLat: 45.815, startLng: 15.9819, endName: "Varaždin", endLat: 46.3057, endLng: 16.3366 }
+    ];
   }
   routes = routes.slice(0, 7);
 
   // --- Projekcija geografskih koordinata u SVG viewBox ---
-  const bounds = {
-    minLat: BASE_BOUNDS.minLat,
-    maxLat: BASE_BOUNDS.maxLat,
-    minLng: BASE_BOUNDS.minLng,
-    maxLng: BASE_BOUNDS.maxLng
+  const bounds = { ...BASE_BOUNDS };
+  const stretch = (lat, lng) => {
+    bounds.minLat = Math.min(bounds.minLat, lat);
+    bounds.maxLat = Math.max(bounds.maxLat, lat);
+    bounds.minLng = Math.min(bounds.minLng, lng);
+    bounds.maxLng = Math.max(bounds.maxLng, lng);
   };
   routes.forEach((route) => {
-    bounds.minLat = Math.min(bounds.minLat, route.startLat, route.endLat);
-    bounds.maxLat = Math.max(bounds.maxLat, route.startLat, route.endLat);
-    bounds.minLng = Math.min(bounds.minLng, route.startLng, route.endLng);
-    bounds.maxLng = Math.max(bounds.maxLng, route.startLng, route.endLng);
+    stretch(route.startLat, route.startLng);
+    stretch(route.endLat, route.endLng);
   });
+  BORDERS.forEach((line) => line.forEach(([lat, lng]) => stretch(lat, lng)));
+
   const midLatRad = ((bounds.minLat + bounds.maxLat) / 2) * Math.PI / 180;
   const cosLat = Math.max(Math.cos(midLatRad), 0.2);
   const geoW = Math.max((bounds.maxLng - bounds.minLng) * cosLat, 0.0001);
@@ -106,6 +127,16 @@
   for (let y = 0; y <= VB_H; y += 150) {
     gridLayer?.append(el("line", { x1: 0, y1: y, x2: VB_W, y2: y, class: "ss-bg-grid-line" }));
   }
+
+  // --- Granice država ---
+  BORDERS.forEach((line) => {
+    let d = "";
+    line.forEach(([lat, lng], index) => {
+      const [x, y] = project(lat, lng);
+      d += `${index === 0 ? "M" : "L"} ${x.toFixed(1)} ${y.toFixed(1)} `;
+    });
+    borderLayer?.append(el("path", { class: "ss-bg-border", d: d.trim() }));
+  });
 
   const approxPath = (a, b, direction) => {
     const dx = b[0] - a[0];
@@ -157,7 +188,7 @@
   };
 
   const nodeSeen = new Set();
-  const addNode = (point, name, isDestination) => {
+  const addNode = (point, isDestination) => {
     const key = `${point[0].toFixed(0)},${point[1].toFixed(0)}`;
     if (nodeSeen.has(key)) {
       return;
@@ -173,6 +204,7 @@
   };
 
   const cars = [];
+  const centers = [];
 
   routes.forEach((route, index) => {
     const start = project(route.startLat, route.startLng);
@@ -186,43 +218,43 @@
     });
     routeLayer.append(path);
 
-    addNode(start, route.startName, false);
-    addNode(end, route.endName, true);
+    addNode(start, false);
+    addNode(end, true);
+    centers.push({ x: (start[0] + end[0]) / 2, y: (start[1] + end[1]) / 2 });
 
     const car = template.cloneNode(true);
     car.removeAttribute("id");
     car.setAttribute("class", `ss-bg-car ss-bg-car-${index % 4}`);
     carLayer.append(car);
 
-    const entry = {
+    cars.push({
       path,
       car,
       length: path.getTotalLength(),
-      distance: (index / routes.length),
-      speed: 58 + (index % 3) * 16,
+      phase: (index / routes.length) * ROUTE_SECONDS,
       reverse: direction < 0
-    };
-    entry.distance *= entry.length;
-    cars.push(entry);
+    });
 
     if (!reduceMotion.matches) {
       fetchExact(route).then((points) => {
         if (!points) {
           return;
         }
-        const ratio = entry.length > 0 ? entry.distance / entry.length : 0;
         path.setAttribute("d", exactPath(points));
-        entry.length = path.getTotalLength();
-        entry.distance = ratio * entry.length;
+        const entry = cars[index];
+        if (entry) {
+          entry.length = path.getTotalLength();
+        }
       });
     }
   });
 
-  const placeCar = (entry) => {
+  const placeCar = (entry, progress) => {
     if (entry.length <= 0) {
       return;
     }
-    const along = entry.reverse ? entry.length - entry.distance : entry.distance;
+    const fraction = entry.reverse ? 1 - progress : progress;
+    const along = Math.min(entry.length, Math.max(0, fraction * entry.length));
     const point = entry.path.getPointAtLength(along);
     const ahead = entry.path.getPointAtLength(
       Math.min(entry.length, Math.max(0, along + (entry.reverse ? -1 : 1))));
@@ -232,14 +264,34 @@
       `translate(${point.x.toFixed(2)} ${point.y.toFixed(2)}) rotate(${angle.toFixed(1)})`);
   };
 
+  const easeInOut = (t) => (t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2);
+
+  const cameraTransform = (clock) => {
+    if (centers.length === 0) {
+      return "";
+    }
+    const slot = CAMERA_SLOT;
+    const cycle = slot * centers.length;
+    const tt = ((clock % cycle) + cycle) % cycle / slot;
+    const i = Math.floor(tt) % centers.length;
+    const f = tt - Math.floor(tt);
+    const from = centers[i];
+    const to = centers[(i + 1) % centers.length];
+    const p = f < CAMERA_HOLD ? 0 : easeInOut((f - CAMERA_HOLD) / (1 - CAMERA_HOLD));
+    const cx = from.x + (to.x - from.x) * p;
+    const cy = from.y + (to.y - from.y) * p;
+    const s = CAMERA_SCALE;
+    const tx = VB_W / 2 - s * cx;
+    const ty = VB_H / 2 - s * cy;
+    return `translate(${tx.toFixed(2)} ${ty.toFixed(2)}) scale(${s})`;
+  };
+
   if (reduceMotion.matches) {
-    cars.forEach((entry) => {
-      entry.distance = entry.length * 0.5;
-      placeCar(entry);
-    });
+    cars.forEach((entry) => placeCar(entry, 0.5));
     return;
   }
 
+  let clock = 0;
   let lastTime = 0;
   let frame = 0;
 
@@ -250,13 +302,14 @@
     }
     const delta = lastTime ? Math.min((time - lastTime) / 1000, 0.05) : 0;
     lastTime = time;
+    clock += delta;
+
     cars.forEach((entry) => {
-      entry.distance += entry.speed * delta;
-      if (entry.distance >= entry.length) {
-        entry.distance -= entry.length;
-      }
-      placeCar(entry);
+      const progress = (((clock + entry.phase) % ROUTE_SECONDS) / ROUTE_SECONDS);
+      placeCar(entry, progress);
     });
+    camera.setAttribute("transform", cameraTransform(clock));
+
     frame = window.requestAnimationFrame(step);
   };
 
@@ -274,6 +327,7 @@
     }
   });
 
-  cars.forEach(placeCar);
+  camera.setAttribute("transform", cameraTransform(0));
+  cars.forEach((entry) => placeCar(entry, entry.phase / ROUTE_SECONDS));
   start();
 })();

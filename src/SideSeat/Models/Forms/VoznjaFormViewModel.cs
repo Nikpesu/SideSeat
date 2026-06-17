@@ -23,7 +23,7 @@ public class VoznjaFormViewModel
     [Display(Name = "Polazak")]
     public DateTime Polazak { get; set; }
 
-    [Required]
+    // Racuna se automatski iz trajanja rute pri spremanju; ne unosi ga vozac.
     [Display(Name = "Ocekivani dolazak")]
     public DateTime OcekivaniDolazak { get; set; }
 

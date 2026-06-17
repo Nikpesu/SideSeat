@@ -79,9 +79,12 @@
         </defs>
 
         <g class="ss-bg-grid" data-ss-bg-grid></g>
-        <g class="ss-bg-routes" data-ss-bg-routes></g>
-        <g class="ss-bg-nodes" data-ss-bg-nodes></g>
-        <g class="ss-bg-cars" data-ss-bg-cars></g>
+        <g data-ss-bg-camera>
+            <g class="ss-bg-borders" data-ss-bg-borders></g>
+            <g class="ss-bg-routes" data-ss-bg-routes></g>
+            <g class="ss-bg-nodes" data-ss-bg-nodes></g>
+            <g class="ss-bg-cars" data-ss-bg-cars></g>
+        </g>
     </svg>
     <script type="application/json" data-ss-route-bg-data>@Html.Raw(bgRoutesJson)</script>
 </div>

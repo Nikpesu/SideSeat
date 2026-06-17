@@ -642,6 +642,15 @@ textarea:focus-visible,
   vector-effect: non-scaling-stroke;
 }
 
+.ss-bg-border {
+  fill: none;
+  stroke: color-mix(in srgb, var(--ss-secondary) 28%, transparent);
+  stroke-width: 1.5;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
+}
+
 .ss-bg-route {
   fill: none;
   stroke: url(#ssBgRouteGrad);

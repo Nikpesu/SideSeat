@@ -45,16 +45,7 @@
         Name = nameof(Model.Polazak),
         Label = "Polazak",
         Value = Model.Polazak,
-        HelpText = "Datum i vrijeme polaska unose se u lokalnom formatu preglednika.",
-        Required = true
-    };
-
-    var arrivalDate = new DateTimeInputViewModel
-    {
-        Name = nameof(Model.OcekivaniDolazak),
-        Label = "Ocekivani dolazak",
-        Value = Model.OcekivaniDolazak,
-        HelpText = "Ocekivani dolazak mora biti nakon polaska.",
+        HelpText = "Vrijeme dolaska se računa automatski iz trajanja rute.",
         Required = true
     };
 }
@@ -88,9 +79,8 @@
             <partial name="_DateTimeInput" model="departureDate" />
             <span asp-validation-for="Polazak" class="text-danger"></span>
         </div>
-        <div class="col-md-6">
-            <partial name="_DateTimeInput" model="arrivalDate" />
-            <span asp-validation-for="OcekivaniDolazak" class="text-danger"></span>
+        <div class="col-md-6 d-flex align-items-end">
+            <p class="ss-datetime-help mb-2">Očekivani dolazak izračunava se automatski iz rute pri spremanju.</p>
         </div>
     </div>
 
