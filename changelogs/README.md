@@ -6,6 +6,7 @@ Ova mapa sadrži povijest verzija SideSeat aplikacije. Svako izdanje ima zasebnu
 
 | Verzija | Datum | Sažetak |
 | --- | --- | --- |
+| [v0.40](v0.40.md) | 2026-06-17 | Novi autić svakih 5 s, limit zakretanja 60°/s i tekst uz toggle teme |
 | [v0.39](v0.39.md) | 2026-06-17 | Autići se miču 30 km/s i pouzdano prate prave OSRM ceste |
 | [v0.38](v0.38.md) | 2026-06-17 | Chase-kamera prati autić po stvarnoj ruti uz bliži zoom |
 | [v0.37](v0.37.md) | 2026-06-17 | Pozadina je pravi OpenStreetMap s animiranim autićima kao overlay |
@@ -44,10 +45,10 @@ Ova mapa sadrži povijest verzija SideSeat aplikacije. Svako izdanje ima zasebnu
 
 ## Trenutna verzija
 
-Trenutna stabilna verzija je [v0.39](v0.39.md):
+Trenutna stabilna verzija je [v0.40](v0.40.md):
 
 ```text
-nikolica/sideseat:v0.39
+nikolica/sideseat:v0.40
 ```
 
 Docker Hub digest:

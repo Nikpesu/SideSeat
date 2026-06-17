@@ -5,7 +5,7 @@
 [![.NET](https://img.shields.io/badge/.NET-10.0-512BD4?logo=dotnet)](src/SideSeat/SideSeat.csproj)
 [![.NET CI](https://github.com/Nikpesu/SideSeat/actions/workflows/dotnet-ci.yml/badge.svg)](https://github.com/Nikpesu/SideSeat/actions/workflows/dotnet-ci.yml)
 [![Docker](https://img.shields.io/badge/Docker-Linux%20AMD64-2496ED?logo=docker&logoColor=white)](docker-compose.hub.yml)
-[![Version](https://img.shields.io/badge/version-v0.39-2ea44f)](changelogs/v0.39.md)
+[![Version](https://img.shields.io/badge/version-v0.40-2ea44f)](changelogs/v0.40.md)
 [![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
 SideSeat povezuje vozače i putnike kroz objavu vožnji, rezervacije, potvrđivanje putnika, plaćanja, ocjene i obavijesti. Projekt uključuje ASP.NET Core Identity, Google prijavu, REST API, upload slika, AI asistenta za Open WebUI ili DeepSeek, SQL Server, Docker i integracijske testove.
@@ -90,13 +90,13 @@ Aplikacija je dostupna na `http://localhost:8080`.
 Objavljeni image:
 
 ```text
-nikolica/sideseat:v0.39
+nikolica/sideseat:v0.40
 ```
 
 Tag `latest` pokazuje na isto izdanje. Image je namijenjen platformi `linux/amd64`.
 
 ```bash
-docker pull nikolica/sideseat:v0.39
+docker pull nikolica/sideseat:v0.40
 ```
 
 Digest izdanja:
@@ -400,6 +400,7 @@ Povijest izdanja organizirana je kao mala wiki baza. Klik na verziju otvara potp
 
 | Verzija | Datum | Najvažnije promjene | Docker |
 | --- | --- | --- | --- |
+| [v0.40](changelogs/v0.40.md) | 2026-06-17 | Novi autić svakih 5 s, limit zakretanja 60°/s i tekst uz toggle teme | `nikolica/sideseat:v0.40` |
 | [v0.39](changelogs/v0.39.md) | 2026-06-17 | Autići se miču 30 km/s i pouzdano prate prave OSRM ceste | `nikolica/sideseat:v0.39` |
 | [v0.38](changelogs/v0.38.md) | 2026-06-17 | Chase-kamera prati autić po stvarnoj ruti uz bliži zoom | `nikolica/sideseat:v0.38` |
 | [v0.37](changelogs/v0.37.md) | 2026-06-17 | Pozadina je pravi OpenStreetMap s animiranim autićima kao overlay | `nikolica/sideseat:v0.37` |
