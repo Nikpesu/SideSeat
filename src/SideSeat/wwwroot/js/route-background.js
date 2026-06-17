@@ -23,6 +23,7 @@
   const routeUrl = body.dataset.mapRouteUrl || "/api/maps/route";
 
   const CAR_SPEED_MPS = 30 * 1000; // svaki auto se mice 30 km/s po stvarnoj duljini rute
+  const MAX_TURN_DEG_PER_S = 60;   // maksimalna brzina zakretanja autica
   const FOCUS_SECONDS = 8;         // koliko dugo kamera prati jedan auto prije prelaska
   const CAMERA_FOLLOW = 0.08;      // glatko pracenje aktivnog autica (chase kamera)
   const ZOOM = 8.7;                // blizi prikaz rute
@@ -226,7 +227,7 @@
     }
   });
 
-  const placeCar = (entry, progress) => {
+  const placeCar = (entry, progress, maxTurn) => {
     const fraction = entry.reverse ? 1 - progress : progress;
     const ahead = Math.min(1, Math.max(0, fraction + (entry.reverse ? -0.012 : 0.012)));
     const pos = positionAt(entry, fraction);
@@ -237,12 +238,21 @@
       const node = entry.marker.getElement();
       entry.rotEl = node ? node.querySelector(".ss-bg-car-rot") : null;
     }
-    if (entry.rotEl) {
-      const p1 = map.latLngToContainerPoint(pos);
-      const p2 = map.latLngToContainerPoint(next);
-      const angle = Math.atan2(p2.y - p1.y, p2.x - p1.x) * 180 / Math.PI;
-      entry.rotEl.style.transform = `rotate(${angle.toFixed(1)}deg)`;
+    if (!entry.rotEl) {
+      return;
     }
+    const p1 = map.latLngToContainerPoint(pos);
+    const p2 = map.latLngToContainerPoint(next);
+    const target = Math.atan2(p2.y - p1.y, p2.x - p1.x) * 180 / Math.PI;
+    if (entry.angle === undefined || !(maxTurn > 0)) {
+      entry.angle = target;
+    } else {
+      // Najkraca kutna razlika u [-180, 180], ograncena na maksimalnu brzinu zakretanja.
+      let diff = ((target - entry.angle + 540) % 360) - 180;
+      diff = Math.max(-maxTurn, Math.min(maxTurn, diff));
+      entry.angle += diff;
+    }
+    entry.rotEl.style.transform = `rotate(${entry.angle.toFixed(1)}deg)`;
   };
 
   map.whenReady(() => window.requestAnimationFrame(() => map.invalidateSize(false)));
@@ -269,11 +279,12 @@
 
     // Svaki auto se mice 30 km/s po stvarnoj duljini rute; kamera prati po jedan.
     const focusIndex = Math.floor(clock / FOCUS_SECONDS) % animated.length;
+    const maxTurn = MAX_TURN_DEG_PER_S * delta;
     animated.forEach((entry) => {
       const progress = entry.total > 0
         ? ((CAR_SPEED_MPS * (clock + entry.offset)) % entry.total) / entry.total
         : 0;
-      placeCar(entry, progress);
+      placeCar(entry, progress, maxTurn);
     });
 
     const target = animated[focusIndex].currentPos;
