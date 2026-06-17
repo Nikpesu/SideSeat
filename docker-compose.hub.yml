@@ -18,7 +18,7 @@ services:
       start_period: 20s
 
   sideseat-web:
-    image: nikolica/sideseat:v0.41
+    image: nikolica/sideseat:v0.42
     container_name: sideseat-web
     depends_on:
       sideseat-db:
@@ -35,14 +35,14 @@ services:
       Maps__TileUrl: "${MAPS_TILE_URL:-}"
       Maps__TileAttribution: "${MAPS_TILE_ATTRIBUTION:-}"
       Maps__NominatimBaseUrl: "${MAPS_NOMINATIM_BASE_URL:-https://nominatim.openstreetmap.org}"
-      Maps__NominatimUserAgent: "${MAPS_NOMINATIM_USER_AGENT:-SideSeat/0.41}"
+      Maps__NominatimUserAgent: "${MAPS_NOMINATIM_USER_AGENT:-SideSeat/0.42}"
       Maps__RoutingBaseUrl: "${MAPS_ROUTING_BASE_URL:-https://router.project-osrm.org}"
       Maps__RoutingTimeoutMilliseconds: "${MAPS_ROUTING_TIMEOUT_MILLISECONDS:-750}"
       Maps__ContactEmail: "${MAPS_CONTACT_EMAIL:-}"
       PublicWebSearch__Enabled: "${PUBLIC_WEB_SEARCH_ENABLED:-true}"
       PublicWebSearch__WikipediaApiUrlTemplate: "${PUBLIC_WEB_SEARCH_WIKIPEDIA_API_URL_TEMPLATE:-https://{language}.wikipedia.org/w/api.php}"
       PublicWebSearch__DuckDuckGoApiUrl: "${PUBLIC_WEB_SEARCH_DUCKDUCKGO_API_URL:-https://api.duckduckgo.com/}"
-      PublicWebSearch__UserAgent: "${PUBLIC_WEB_SEARCH_USER_AGENT:-SideSeat/0.41}"
+      PublicWebSearch__UserAgent: "${PUBLIC_WEB_SEARCH_USER_AGENT:-SideSeat/0.42}"
       PublicWebSearch__TimeoutMilliseconds: "${PUBLIC_WEB_SEARCH_TIMEOUT_MILLISECONDS:-3000}"
       PublicWebSearch__CacheMinutes: "${PUBLIC_WEB_SEARCH_CACHE_MINUTES:-15}"
       PublicWebSearch__MaxResults: "${PUBLIC_WEB_SEARCH_MAX_RESULTS:-5}"
