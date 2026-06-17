@@ -22,14 +22,14 @@
     "&copy; <a href=\"https://www.openstreetmap.org/copyright\">OpenStreetMap</a> contributors";
   const routeUrl = body.dataset.mapRouteUrl || "/api/maps/route";
 
-  const CAR_SPEED_MPS = 30 * 1000; // svaki auto se mice 30 km/s po stvarnoj duljini rute
+  const CAR_SPEED_MPS = 1000;      // auto se mice najvise 1 km/s po stvarnoj duljini rute
   const MIN_ROUTE_SECONDS = 5;     // i jako kratku rutu auto prelazi najmanje 5 sekundi
   const RESPAWN_GAP = 2;           // 2 s nakon dolaska na kraj nastaje novi auto na istoj ruti
-  const FOCUS_SECONDS = 6;         // koliko kamera ostaje na autu (zoom in)
-  const TRAVEL_SECONDS = 2.4;      // prijelaz na sljedeci auto (zoom out pa zoom in)
-  const CAMERA_FOLLOW = 0.1;       // glatko pracenje sredista kamere
-  const ZOOM_IN = 10.4;            // dosta blizu na autu
-  const ZOOM_OUT = 6.6;            // odzumirano pri prelasku medju autima
+  const FOCUS_SECONDS = 5;         // 5 s kamera ostaje na autu (zoom in)
+  const TRAVEL_SECONDS = 4;        // polagani prijelaz na sljedeci auto (zoom out pa zoom in)
+  const CAMERA_FOLLOW = 0.08;      // glatko pracenje sredista kamere
+  const ZOOM_IN = 10;              // dosta blizu na autu
+  const ZOOM_OUT = 7;              // odzumirano (pregled Hrvatske) pri prelasku
   const COLORS = ["#25c97a", "#2f7fd0", "#e58a2a", "#c2496b"];
   const CROATIA = L.latLngBounds([42.3, 13.4], [46.6, 19.5]);
 
@@ -80,7 +80,13 @@
     zoomSnap: 0,
     fadeAnimation: true
   });
-  L.tileLayer(tileUrl, { attribution, maxZoom: 19, detectRetina: true }).addTo(map);
+  L.tileLayer(tileUrl, {
+    attribution,
+    maxZoom: 19,
+    detectRetina: true,
+    keepBuffer: 8,            // zadrzi vise pločica oko vidnog polja da nema crnog ekrana
+    updateWhenZooming: false  // ne osvjezavaj pločice tijekom zumiranja, tek kad se smiri
+  }).addTo(map);
   map.fitBounds(CROATIA);
 
   const CAR_HTML =
