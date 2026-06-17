@@ -816,16 +816,12 @@ html[data-theme="dark"] textarea::placeholder {
 }
 
 .ss-route-bg {
-  opacity: 0.6;
-  contain: strict;
+  opacity: 0.5;
+  contain: layout paint;
 }
 
-.ss-bg-route {
+.ss-bg-route-line {
   filter: none;
-}
-
-.ss-bg-node-pulse {
-  opacity: 0.3;
 }
 
 .ss-ai {

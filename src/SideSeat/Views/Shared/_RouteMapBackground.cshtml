@@ -48,43 +48,6 @@
     }
 }
 <div class="ss-route-bg" aria-hidden="true" data-ss-route-bg>
-    <svg class="ss-route-bg-svg" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice" focusable="false">
-        <defs>
-            <linearGradient id="ssBgRouteGrad" x1="0" y1="0" x2="1" y2="1">
-                <stop offset="0" stop-color="var(--ss-accent)" />
-                <stop offset="1" stop-color="var(--ss-primary)" />
-            </linearGradient>
-            <radialGradient id="ssBgBeam" cx="0" cy="0.5" r="1">
-                <stop offset="0" stop-color="var(--ss-accent)" stop-opacity="0.55" />
-                <stop offset="1" stop-color="var(--ss-accent)" stop-opacity="0" />
-            </radialGradient>
-            <filter id="ssBgGlow" x="-40%" y="-40%" width="180%" height="180%">
-                <feGaussianBlur stdDeviation="6" result="blur" />
-                <feMerge>
-                    <feMergeNode in="blur" />
-                    <feMergeNode in="SourceGraphic" />
-                </feMerge>
-            </filter>
-            <g id="ssBgCarTemplate">
-                <path class="ss-bg-car-beam" d="M16 -6 L70 -22 L70 22 L16 6 Z" fill="url(#ssBgBeam)" />
-                <rect class="ss-bg-car-wheel" x="-14" y="-12" width="9" height="5" rx="2" />
-                <rect class="ss-bg-car-wheel" x="-14" y="7" width="9" height="5" rx="2" />
-                <rect class="ss-bg-car-wheel" x="6" y="-12" width="9" height="5" rx="2" />
-                <rect class="ss-bg-car-wheel" x="6" y="7" width="9" height="5" rx="2" />
-                <rect class="ss-bg-car-body" x="-18" y="-9" width="36" height="18" rx="7" />
-                <path class="ss-bg-car-glass" d="M-2 -7 L11 -5 L11 5 L-2 7 Z" />
-                <circle class="ss-bg-car-lamp" cx="16" cy="-5" r="1.8" />
-                <circle class="ss-bg-car-lamp" cx="16" cy="5" r="1.8" />
-            </g>
-        </defs>
-
-        <g class="ss-bg-grid" data-ss-bg-grid></g>
-        <g data-ss-bg-camera>
-            <g class="ss-bg-borders" data-ss-bg-borders></g>
-            <g class="ss-bg-routes" data-ss-bg-routes></g>
-            <g class="ss-bg-nodes" data-ss-bg-nodes></g>
-            <g class="ss-bg-cars" data-ss-bg-cars></g>
-        </g>
-    </svg>
+    <div class="ss-route-bg-map" data-ss-route-bg-map></div>
     <script type="application/json" data-ss-route-bg-data>@Html.Raw(bgRoutesJson)</script>
 </div>

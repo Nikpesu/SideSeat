@@ -1,81 +1,33 @@
 (() => {
   "use strict";
 
+  if (!window.L) {
+    return;
+  }
+
   const root = document.querySelector("[data-ss-route-bg]");
   if (!root) {
     return;
   }
-
-  const svg = root.querySelector(".ss-route-bg-svg");
-  const gridLayer = root.querySelector("[data-ss-bg-grid]");
-  const camera = root.querySelector("[data-ss-bg-camera]");
-  const borderLayer = root.querySelector("[data-ss-bg-borders]");
-  const routeLayer = root.querySelector("[data-ss-bg-routes]");
-  const nodeLayer = root.querySelector("[data-ss-bg-nodes]");
-  const carLayer = root.querySelector("[data-ss-bg-cars]");
-  const template = root.querySelector("#ssBgCarTemplate");
+  const mapEl = root.querySelector("[data-ss-route-bg-map]");
   const dataEl = root.querySelector("[data-ss-route-bg-data]");
-  if (!svg || !camera || !routeLayer || !nodeLayer || !carLayer || !template) {
+  if (!mapEl) {
     return;
   }
 
-  const NS = "http://www.w3.org/2000/svg";
-  const VB_W = 1440;
-  const VB_H = 900;
-  const PAD_X = 150;
-  const PAD_Y = 120;
-  const ROUTE_SECONDS = 5;   // svaka ruta: auto je prelazi u tocno 5 sekundi
-  const CAMERA_SLOT = 6;     // sekundi po ruti za sporu translaciju kamere
-  const CAMERA_HOLD = 0.55;  // dio vremena dok kamera miruje prije prelaska
-  const CAMERA_SCALE = 1.75;
   const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
-  const routeUrl = document.body.dataset.mapRouteUrl || "/api/maps/route";
+  const body = document.body;
+  const tileUrl = body.dataset.mapTileUrl || "https://tile.openstreetmap.org/{z}/{x}/{y}.png";
+  const attribution = body.dataset.mapAttribution ||
+    "&copy; <a href=\"https://www.openstreetmap.org/copyright\">OpenStreetMap</a> contributors";
+  const routeUrl = body.dataset.mapRouteUrl || "/api/maps/route";
 
-  // Stabilni okvir Hrvatske; širi se ako rute/granice izlaze izvan njega.
-  const BASE_BOUNDS = { minLat: 42.35, maxLat: 46.55, minLng: 13.4, maxLng: 19.45 };
-
-  // Pojednostavljene granice država: Hrvatska i okolne države (Slovenija, BiH,
-  // Mađarska, Srbija, Crna Gora) te jadranska obala Italije.
-  const BORDERS = [
-    // Hrvatska
-    [
-      [45.48, 13.61], [45.05, 13.61], [44.81, 13.85], [45.03, 14.10], [45.33, 14.45],
-      [44.99, 14.90], [44.27, 15.05], [44.12, 15.23], [43.74, 15.88], [43.51, 16.44],
-      [43.03, 17.43], [42.65, 18.09], [42.43, 18.53], [42.99, 17.64], [43.49, 17.04],
-      [44.20, 16.22], [45.08, 16.16], [45.18, 16.93], [45.13, 18.04], [45.08, 18.66],
-      [44.86, 18.81], [45.20, 19.05], [45.52, 18.91], [45.78, 18.86], [46.31, 16.87],
-      [46.37, 16.31], [46.21, 15.64], [45.78, 15.68], [45.49, 15.30], [45.50, 14.40],
-      [45.48, 13.61]
-    ],
-    // Slovenija
-    [
-      [45.47, 13.72], [45.88, 13.62], [46.22, 13.58], [46.44, 13.70], [46.52, 14.57],
-      [46.56, 15.55], [46.68, 16.02], [46.52, 16.37], [46.18, 16.04], [45.80, 15.67],
-      [45.58, 15.32], [45.49, 14.30], [45.47, 13.72]
-    ],
-    // Bosna i Hercegovina
-    [
-      [45.05, 16.15], [45.18, 16.92], [45.14, 18.00], [44.87, 18.81], [44.40, 19.10],
-      [43.70, 19.30], [43.40, 18.85], [42.95, 18.45], [42.72, 18.34], [42.95, 17.62],
-      [43.40, 17.30], [43.85, 16.92], [44.30, 16.40], [44.55, 16.20], [45.05, 16.15]
-    ],
-    // Mađarska (južna granica)
-    [
-      [46.52, 16.37], [46.30, 17.20], [46.18, 18.00], [45.92, 18.55], [46.13, 19.00]
-    ],
-    // Srbija (zapadna granica)
-    [
-      [45.77, 18.88], [46.13, 19.00], [46.18, 20.30], [45.00, 20.60], [44.30, 19.55], [43.85, 19.40]
-    ],
-    // Crna Gora
-    [
-      [42.72, 18.34], [42.50, 18.52], [42.29, 19.10], [42.45, 19.65], [43.10, 19.55], [43.70, 19.30]
-    ],
-    // Jadranska obala Italije
-    [
-      [45.65, 13.77], [45.44, 12.34], [44.42, 12.20], [43.62, 13.51], [42.46, 14.21], [41.12, 16.87]
-    ]
-  ];
+  const ROUTE_SECONDS = 5;     // svaka ruta: auto je prelazi u tocno 5 sekundi
+  const CAMERA_SLOT = 6;       // sekundi po ruti za sporu translaciju kamere
+  const CAMERA_HOLD = 0.55;    // dio vremena dok kamera miruje prije prelaska
+  const ZOOM = 7.4;            // blizi prikaz rute
+  const COLORS = ["#25c97a", "#2f7fd0", "#e58a2a", "#c2496b"];
+  const CROATIA = L.latLngBounds([42.3, 13.4], [46.6, 19.5]);
 
   const isFinite = Number.isFinite;
   const valid = (route) =>
@@ -93,97 +45,87 @@
     routes = [];
   }
   routes = routes.filter(valid).map((route) => ({
-    startName: route.startName || "Polazište",
     startLat: Number(route.startLat),
     startLng: Number(route.startLng),
-    endName: route.endName || "Odredište",
     endLat: Number(route.endLat),
     endLng: Number(route.endLng)
   }));
   if (routes.length === 0) {
     routes = [
-      { startName: "Zagreb", startLat: 45.815, startLng: 15.9819, endName: "Split", endLat: 43.5081, endLng: 16.4402 },
-      { startName: "Zagreb", startLat: 45.815, startLng: 15.9819, endName: "Rijeka", endLat: 45.3271, endLng: 14.4422 },
-      { startName: "Zagreb", startLat: 45.815, startLng: 15.9819, endName: "Osijek", endLat: 45.555, endLng: 18.6955 },
-      { startName: "Split", startLat: 43.5081, startLng: 16.4402, endName: "Dubrovnik", endLat: 42.6507, endLng: 18.0944 },
-      { startName: "Rijeka", startLat: 45.3271, startLng: 14.4422, endName: "Zadar", endLat: 44.1194, endLng: 15.2314 },
-      { startName: "Zagreb", startLat: 45.815, startLng: 15.9819, endName: "Varaždin", endLat: 46.3057, endLng: 16.3366 }
+      { startLat: 45.815, startLng: 15.9819, endLat: 43.5081, endLng: 16.4402 },
+      { startLat: 45.815, startLng: 15.9819, endLat: 45.3271, endLng: 14.4422 },
+      { startLat: 45.815, startLng: 15.9819, endLat: 45.555, endLng: 18.6955 },
+      { startLat: 43.5081, startLng: 16.4402, endLat: 42.6507, endLng: 18.0944 },
+      { startLat: 45.3271, startLng: 14.4422, endLat: 44.1194, endLng: 15.2314 },
+      { startLat: 45.815, startLng: 15.9819, endLat: 46.3057, endLng: 16.3366 }
     ];
   }
   routes = routes.slice(0, 7);
 
-  // --- Projekcija geografskih koordinata u SVG viewBox ---
-  const bounds = { ...BASE_BOUNDS };
-  const stretch = (lat, lng) => {
-    bounds.minLat = Math.min(bounds.minLat, lat);
-    bounds.maxLat = Math.max(bounds.maxLat, lat);
-    bounds.minLng = Math.min(bounds.minLng, lng);
-    bounds.maxLng = Math.max(bounds.maxLng, lng);
-  };
-  routes.forEach((route) => {
-    stretch(route.startLat, route.startLng);
-    stretch(route.endLat, route.endLng);
+  const map = L.map(mapEl, {
+    zoomControl: false,
+    attributionControl: false,
+    dragging: false,
+    scrollWheelZoom: false,
+    doubleClickZoom: false,
+    boxZoom: false,
+    keyboard: false,
+    touchZoom: false,
+    tap: false,
+    inertia: false,
+    zoomSnap: 0,
+    fadeAnimation: true
   });
-  BORDERS.forEach((line) => line.forEach(([lat, lng]) => stretch(lat, lng)));
+  L.tileLayer(tileUrl, { attribution, maxZoom: 19, detectRetina: true }).addTo(map);
+  map.fitBounds(CROATIA);
 
-  const midLatRad = ((bounds.minLat + bounds.maxLat) / 2) * Math.PI / 180;
-  const cosLat = Math.max(Math.cos(midLatRad), 0.2);
-  const geoW = Math.max((bounds.maxLng - bounds.minLng) * cosLat, 0.0001);
-  const geoH = Math.max(bounds.maxLat - bounds.minLat, 0.0001);
-  const scale = Math.min((VB_W - 2 * PAD_X) / geoW, (VB_H - 2 * PAD_Y) / geoH);
-  const offsetX = (VB_W - geoW * scale) / 2;
-  const offsetY = (VB_H - geoH * scale) / 2;
+  const CAR_HTML =
+    "<div class=\"ss-bg-car-rot\">" +
+    "<svg viewBox=\"-22 -14 92 28\" width=\"58\" height=\"22\">" +
+    "<path class=\"ss-bg-car-beam\" d=\"M16 -6 L70 -22 L70 22 L16 6 Z\"/>" +
+    "<rect class=\"ss-bg-car-wheel\" x=\"-14\" y=\"-12\" width=\"9\" height=\"5\" rx=\"2\"/>" +
+    "<rect class=\"ss-bg-car-wheel\" x=\"-14\" y=\"7\" width=\"9\" height=\"5\" rx=\"2\"/>" +
+    "<rect class=\"ss-bg-car-wheel\" x=\"6\" y=\"-12\" width=\"9\" height=\"5\" rx=\"2\"/>" +
+    "<rect class=\"ss-bg-car-wheel\" x=\"6\" y=\"7\" width=\"9\" height=\"5\" rx=\"2\"/>" +
+    "<rect class=\"ss-bg-car-body\" x=\"-18\" y=\"-9\" width=\"36\" height=\"18\" rx=\"7\"/>" +
+    "<path class=\"ss-bg-car-glass\" d=\"M-2 -7 L11 -5 L11 5 L-2 7 Z\"/>" +
+    "<circle class=\"ss-bg-car-lamp\" cx=\"16\" cy=\"-5\" r=\"1.8\"/>" +
+    "<circle class=\"ss-bg-car-lamp\" cx=\"16\" cy=\"5\" r=\"1.8\"/>" +
+    "</svg></div>";
 
-  const project = (lat, lng) => [
-    offsetX + (lng - bounds.minLng) * cosLat * scale,
-    offsetY + (bounds.maxLat - lat) * scale
-  ];
+  const carIcon = (index) => L.divIcon({
+    className: `ss-bg-car-icon ss-bg-car-${index % COLORS.length}`,
+    html: CAR_HTML,
+    iconSize: [58, 22],
+    iconAnchor: [29, 11]
+  });
 
-  const el = (name, attrs) => {
-    const node = document.createElementNS(NS, name);
-    for (const key in attrs) {
-      node.setAttribute(key, attrs[key]);
+  const computeCumulative = (entry) => {
+    const cum = [0];
+    let total = 0;
+    for (let i = 1; i < entry.latlngs.length; i += 1) {
+      total += entry.latlngs[i - 1].distanceTo(entry.latlngs[i]);
+      cum.push(total);
     }
-    return node;
+    entry.cum = cum;
+    entry.total = total;
   };
 
-  // --- Pozadinska mreža (graticule) ---
-  for (let x = 0; x <= VB_W; x += 180) {
-    gridLayer?.append(el("line", { x1: x, y1: 0, x2: x, y2: VB_H, class: "ss-bg-grid-line" }));
-  }
-  for (let y = 0; y <= VB_H; y += 150) {
-    gridLayer?.append(el("line", { x1: 0, y1: y, x2: VB_W, y2: y, class: "ss-bg-grid-line" }));
-  }
-
-  // --- Granice država ---
-  BORDERS.forEach((line) => {
-    let d = "";
-    line.forEach(([lat, lng], index) => {
-      const [x, y] = project(lat, lng);
-      d += `${index === 0 ? "M" : "L"} ${x.toFixed(1)} ${y.toFixed(1)} `;
-    });
-    borderLayer?.append(el("path", { class: "ss-bg-border", d: d.trim() }));
-  });
-
-  const approxPath = (a, b, direction) => {
-    const dx = b[0] - a[0];
-    const dy = b[1] - a[1];
-    const dist = Math.hypot(dx, dy) || 1;
-    const bend = Math.min(Math.max(dist * 0.18, 28), 150) * direction;
-    const nx = -dy / dist;
-    const ny = dx / dist;
-    const cx = (a[0] + b[0]) / 2 + nx * bend;
-    const cy = (a[1] + b[1]) / 2 + ny * bend;
-    return `M ${a[0].toFixed(1)} ${a[1].toFixed(1)} Q ${cx.toFixed(1)} ${cy.toFixed(1)} ${b[0].toFixed(1)} ${b[1].toFixed(1)}`;
-  };
-
-  const exactPath = (points) => {
-    let d = "";
-    points.forEach((point, index) => {
-      const [x, y] = project(point[0], point[1]);
-      d += `${index === 0 ? "M" : "L"} ${x.toFixed(1)} ${y.toFixed(1)} `;
-    });
-    return d.trim();
+  const positionAt = (entry, fraction) => {
+    if (entry.total <= 0 || entry.latlngs.length < 2) {
+      return entry.latlngs[0];
+    }
+    const target = Math.min(entry.total, Math.max(0, fraction * entry.total));
+    const cum = entry.cum;
+    let i = 1;
+    while (i < cum.length - 1 && cum[i] < target) {
+      i += 1;
+    }
+    const a = entry.latlngs[i - 1];
+    const b = entry.latlngs[i];
+    const segLength = (cum[i] - cum[i - 1]) || 1;
+    const localT = (target - cum[i - 1]) / segLength;
+    return L.latLng(a.lat + (b.lat - a.lat) * localT, a.lng + (b.lng - a.lng) * localT);
   };
 
   const fetchExact = (route) => {
@@ -206,115 +148,110 @@
         if (!payload || !Array.isArray(payload.points)) {
           return null;
         }
-        const points = payload.points.filter(
-          (point) => Array.isArray(point) && isFinite(point[0]) && isFinite(point[1]));
+        const points = payload.points
+          .filter((point) => Array.isArray(point) && isFinite(point[0]) && isFinite(point[1]))
+          .map((point) => L.latLng(point[0], point[1]));
         return points.length >= 2 ? points : null;
       })
       .catch(() => null)
       .finally(() => window.clearTimeout(timer));
   };
 
-  const nodeSeen = new Set();
-  const addNode = (point, isDestination) => {
-    const key = `${point[0].toFixed(0)},${point[1].toFixed(0)}`;
-    if (nodeSeen.has(key)) {
-      return;
-    }
-    nodeSeen.add(key);
-    const group = el("g", { transform: `translate(${point[0].toFixed(1)} ${point[1].toFixed(1)})` });
-    if (isDestination) {
-      group.append(el("circle", { r: 6, class: "ss-bg-node-pulse" }));
-    }
-    group.append(el("circle", { r: 5.5, class: "ss-bg-node-halo" }));
-    group.append(el("circle", { r: 3, class: "ss-bg-node-core" }));
-    nodeLayer.append(group);
-  };
-
-  const cars = [];
+  const animated = [];
   const centers = [];
 
   routes.forEach((route, index) => {
-    const start = project(route.startLat, route.startLng);
-    const end = project(route.endLat, route.endLng);
-    const direction = index % 2 === 0 ? 1 : -1;
+    const straight = [
+      L.latLng(route.startLat, route.startLng),
+      L.latLng(route.endLat, route.endLng)
+    ];
+    const color = COLORS[index % COLORS.length];
 
-    const path = el("path", {
-      class: "ss-bg-route",
-      d: approxPath(start, end, direction),
-      style: `--ss-bg-route-delay:${(index * -1.3).toFixed(2)}s;opacity:${(0.9 - index * 0.07).toFixed(2)}`
-    });
-    routeLayer.append(path);
+    L.polyline(straight, {
+      color: "#ffffff", weight: 8, opacity: 0.5,
+      lineCap: "round", lineJoin: "round", interactive: false
+    }).addTo(map);
+    const line = L.polyline(straight, {
+      color, weight: 4, opacity: 0.95,
+      lineCap: "round", lineJoin: "round", interactive: false,
+      className: "ss-bg-route-line"
+    }).addTo(map);
+    L.circleMarker(straight[1], {
+      radius: 4, color: "#ffffff", weight: 2, fillColor: color, fillOpacity: 1, interactive: false
+    }).addTo(map);
 
-    addNode(start, false);
-    addNode(end, true);
-    centers.push({ x: (start[0] + end[0]) / 2, y: (start[1] + end[1]) / 2 });
+    const marker = L.marker(straight[0], {
+      icon: carIcon(index), interactive: false, keyboard: false, zIndexOffset: 1000
+    }).addTo(map);
 
-    const car = template.cloneNode(true);
-    car.removeAttribute("id");
-    car.setAttribute("class", `ss-bg-car ss-bg-car-${index % 4}`);
-    carLayer.append(car);
-
-    cars.push({
-      path,
-      car,
-      length: path.getTotalLength(),
+    const entry = {
+      latlngs: straight,
+      cum: [0, 1],
+      total: 1,
+      line,
+      marker,
+      rotEl: null,
       phase: (index / routes.length) * ROUTE_SECONDS,
-      reverse: direction < 0
-    });
+      reverse: index % 2 !== 0
+    };
+    computeCumulative(entry);
+    animated.push(entry);
+    centers.push(L.latLng((route.startLat + route.endLat) / 2, (route.startLng + route.endLng) / 2));
 
     if (!reduceMotion.matches) {
       fetchExact(route).then((points) => {
         if (!points) {
           return;
         }
-        path.setAttribute("d", exactPath(points));
-        const entry = cars[index];
-        if (entry) {
-          entry.length = path.getTotalLength();
-        }
+        line.setLatLngs(points);
+        entry.latlngs = points;
+        computeCumulative(entry);
       });
     }
   });
 
-  const placeCar = (entry, progress) => {
-    if (entry.length <= 0) {
-      return;
-    }
-    const fraction = entry.reverse ? 1 - progress : progress;
-    const along = Math.min(entry.length, Math.max(0, fraction * entry.length));
-    const point = entry.path.getPointAtLength(along);
-    const ahead = entry.path.getPointAtLength(
-      Math.min(entry.length, Math.max(0, along + (entry.reverse ? -1 : 1))));
-    const angle = Math.atan2(ahead.y - point.y, ahead.x - point.x) * 180 / Math.PI;
-    entry.car.setAttribute(
-      "transform",
-      `translate(${point.x.toFixed(2)} ${point.y.toFixed(2)}) rotate(${angle.toFixed(1)})`);
-  };
-
   const easeInOut = (t) => (t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2);
 
-  const cameraTransform = (clock) => {
+  const cameraCenter = (clock) => {
     if (centers.length === 0) {
-      return "";
+      return CROATIA.getCenter();
     }
-    const slot = CAMERA_SLOT;
-    const cycle = slot * centers.length;
-    const tt = ((clock % cycle) + cycle) % cycle / slot;
+    if (centers.length === 1) {
+      return centers[0];
+    }
+    const cycle = CAMERA_SLOT * centers.length;
+    const tt = ((clock % cycle) + cycle) % cycle / CAMERA_SLOT;
     const i = Math.floor(tt) % centers.length;
     const f = tt - Math.floor(tt);
     const from = centers[i];
     const to = centers[(i + 1) % centers.length];
     const p = f < CAMERA_HOLD ? 0 : easeInOut((f - CAMERA_HOLD) / (1 - CAMERA_HOLD));
-    const cx = from.x + (to.x - from.x) * p;
-    const cy = from.y + (to.y - from.y) * p;
-    const s = CAMERA_SCALE;
-    const tx = VB_W / 2 - s * cx;
-    const ty = VB_H / 2 - s * cy;
-    return `translate(${tx.toFixed(2)} ${ty.toFixed(2)}) scale(${s})`;
+    return L.latLng(from.lat + (to.lat - from.lat) * p, from.lng + (to.lng - from.lng) * p);
   };
 
+  const placeCar = (entry, progress) => {
+    const fraction = entry.reverse ? 1 - progress : progress;
+    const ahead = Math.min(1, Math.max(0, fraction + (entry.reverse ? -0.012 : 0.012)));
+    const pos = positionAt(entry, fraction);
+    const next = positionAt(entry, ahead);
+    entry.marker.setLatLng(pos);
+    if (!entry.rotEl) {
+      const node = entry.marker.getElement();
+      entry.rotEl = node ? node.querySelector(".ss-bg-car-rot") : null;
+    }
+    if (entry.rotEl) {
+      const p1 = map.latLngToContainerPoint(pos);
+      const p2 = map.latLngToContainerPoint(next);
+      const angle = Math.atan2(p2.y - p1.y, p2.x - p1.x) * 180 / Math.PI;
+      entry.rotEl.style.transform = `rotate(${angle.toFixed(1)}deg)`;
+    }
+  };
+
+  map.whenReady(() => window.requestAnimationFrame(() => map.invalidateSize(false)));
+
   if (reduceMotion.matches) {
-    cars.forEach((entry) => placeCar(entry, 0.5));
+    map.fitBounds(CROATIA);
+    window.requestAnimationFrame(() => animated.forEach((entry) => placeCar(entry, 0.5)));
     return;
   }
 
@@ -331,11 +268,11 @@
     lastTime = time;
     clock += delta;
 
-    cars.forEach((entry) => {
+    map.setView(cameraCenter(clock), ZOOM, { animate: false });
+    animated.forEach((entry) => {
       const progress = (((clock + entry.phase) % ROUTE_SECONDS) / ROUTE_SECONDS);
       placeCar(entry, progress);
     });
-    camera.setAttribute("transform", cameraTransform(clock));
 
     frame = window.requestAnimationFrame(step);
   };
@@ -354,7 +291,5 @@
     }
   });
 
-  camera.setAttribute("transform", cameraTransform(0));
-  cars.forEach((entry) => placeCar(entry, entry.phase / ROUTE_SECONDS));
   start();
 })();

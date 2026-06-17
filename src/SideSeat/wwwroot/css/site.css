@@ -625,84 +625,60 @@ textarea:focus-visible,
   z-index: 1;
   overflow: hidden;
   pointer-events: none;
-  opacity: 0.72;
+  opacity: 0.62;
   -webkit-mask-image: radial-gradient(135% 120% at 50% 36%, #000 64%, transparent 100%);
           mask-image: radial-gradient(135% 120% at 50% 36%, #000 64%, transparent 100%);
 }
 
-.ss-route-bg-svg {
+.ss-route-bg-map {
   width: 100%;
   height: 100%;
+  background: var(--ss-surface);
+}
+
+.ss-route-bg-map .leaflet-control-container,
+.ss-route-bg-map .leaflet-control-attribution {
+  display: none;
+}
+
+/* U tamnoj temi pretvori svijetle OSM pločice u tamnu kartu (samo pločice). */
+html[data-theme="dark"] .ss-route-bg-map .leaflet-tile-pane {
+  filter: invert(1) hue-rotate(180deg) brightness(0.92) contrast(0.9);
+}
+
+.ss-bg-route-line {
+  filter: drop-shadow(0 0 3px color-mix(in srgb, var(--ss-accent) 55%, transparent));
+}
+
+.ss-bg-car-icon {
+  background: transparent;
+  border: 0;
+}
+
+.ss-bg-car-rot {
+  width: 58px;
+  height: 22px;
+  transform-origin: 50% 50%;
+  filter: drop-shadow(0 5px 6px color-mix(in srgb, var(--ss-heading) 32%, transparent));
+}
+
+.ss-bg-car-rot svg {
   overflow: visible;
 }
 
-.ss-bg-grid-line {
-  stroke: color-mix(in srgb, var(--ss-secondary) 22%, transparent);
-  stroke-width: 1;
-  vector-effect: non-scaling-stroke;
-}
-
-.ss-bg-border {
-  fill: none;
-  stroke: color-mix(in srgb, var(--ss-secondary) 52%, transparent);
-  stroke-width: 2;
-  stroke-linejoin: round;
-  stroke-linecap: round;
-  vector-effect: non-scaling-stroke;
-}
-
-.ss-bg-route {
-  fill: none;
-  stroke: url(#ssBgRouteGrad);
-  stroke-width: 3;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  stroke-dasharray: 5 15;
-  filter: url(#ssBgGlow);
-  vector-effect: non-scaling-stroke;
-  animation: ss-bg-flow 1.7s linear infinite;
-  animation-delay: var(--ss-bg-route-delay, 0s);
-}
-
-.ss-bg-node-halo {
-  fill: var(--ss-surface);
-  stroke: color-mix(in srgb, var(--ss-primary) 62%, transparent);
-  stroke-width: 2;
-  vector-effect: non-scaling-stroke;
-}
-
-.ss-bg-node-core {
-  fill: var(--ss-accent);
-  vector-effect: non-scaling-stroke;
-}
-
-.ss-bg-node-pulse {
-  fill: none;
-  stroke: var(--ss-accent);
-  stroke-width: 2;
-  transform-box: fill-box;
-  transform-origin: center;
-  animation: ss-bg-pulse 2.8s ease-out infinite;
-  vector-effect: non-scaling-stroke;
-}
-
-.ss-bg-car {
-  filter: drop-shadow(0 6px 7px color-mix(in srgb, var(--ss-heading) 22%, transparent));
-}
-
 .ss-bg-car-beam {
+  fill: #fff3c4;
+  opacity: 0.55;
   mix-blend-mode: screen;
-  opacity: 0.7;
 }
 
 .ss-bg-car-body {
-  stroke: color-mix(in srgb, var(--ss-surface-strong) 70%, transparent);
+  stroke: rgba(255, 255, 255, 0.85);
   stroke-width: 1.5;
-  vector-effect: non-scaling-stroke;
 }
 
 .ss-bg-car-glass {
-  fill: color-mix(in srgb, var(--ss-surface) 68%, transparent);
+  fill: rgba(255, 255, 255, 0.65);
 }
 
 .ss-bg-car-lamp {
@@ -710,7 +686,7 @@ textarea:focus-visible,
 }
 
 .ss-bg-car-wheel {
-  fill: color-mix(in srgb, var(--ss-heading) 72%, #000);
+  fill: #1b2330;
 }
 
 .ss-bg-car-0 .ss-bg-car-body {
@@ -727,24 +703,6 @@ textarea:focus-visible,
 
 .ss-bg-car-3 .ss-bg-car-body {
   fill: #c2496b;
-}
-
-@keyframes ss-bg-flow {
-  to {
-    stroke-dashoffset: -40;
-  }
-}
-
-@keyframes ss-bg-pulse {
-  0% {
-    opacity: 0.7;
-    transform: scale(0.5);
-  }
-  70%,
-  100% {
-    opacity: 0;
-    transform: scale(3.4);
-  }
 }
 
 @keyframes ss-reveal {
@@ -2312,14 +2270,8 @@ html[data-theme="dark"] .ss-notification-item strong {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .ss-bg-route {
-    animation: none;
-    stroke-dasharray: none;
-  }
-
-  .ss-bg-node-pulse {
-    animation: none;
-    opacity: 0;
+  .ss-route-bg {
+    opacity: 0.4;
   }
 }
 
