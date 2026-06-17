@@ -56,7 +56,7 @@ nikolica/sideseat:v0.42
 Docker Hub digest:
 
 ```text
-sha256:02a4bc73750e50bac466106cd868a97815d3e2b6be16f0a1197ffdaef720b008
+sha256:0e67da5e938a226c6299dcafe8e2315f0c1ee4123ec2734a6796c72d2dc9c3f5
 ```
 
 ## Pravilo verzioniranja
