@@ -102,7 +102,7 @@ docker pull nikolica/sideseat:v0.41
 Digest izdanja:
 
 ```text
-sha256:a6f80369a4cc3d1e44e2567861c97a66b48441559cb4c6930f1f7f9371a595e7
+sha256:02a4bc73750e50bac466106cd868a97815d3e2b6be16f0a1197ffdaef720b008
 ```
 
 SQL podaci i uploadane slike čuvaju se u Docker volumeima. Aplikacija pri pokretanju automatski primjenjuje EF Core migracije.
