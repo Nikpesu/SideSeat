@@ -27,15 +27,17 @@
   const ROUTE_SECONDS = 5;   // svaka ruta: auto je prelazi u tocno 5 sekundi
   const CAMERA_SLOT = 6;     // sekundi po ruti za sporu translaciju kamere
   const CAMERA_HOLD = 0.55;  // dio vremena dok kamera miruje prije prelaska
-  const CAMERA_SCALE = 1.22;
+  const CAMERA_SCALE = 1.75;
   const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
   const routeUrl = document.body.dataset.mapRouteUrl || "/api/maps/route";
 
   // Stabilni okvir Hrvatske; širi se ako rute/granice izlaze izvan njega.
   const BASE_BOUNDS = { minLat: 42.35, maxLat: 46.55, minLng: 13.4, maxLng: 19.45 };
 
-  // Pojednostavljene granice država (silueta Hrvatske + jadranska obala Italije).
+  // Pojednostavljene granice država: Hrvatska i okolne države (Slovenija, BiH,
+  // Mađarska, Srbija, Crna Gora) te jadranska obala Italije.
   const BORDERS = [
+    // Hrvatska
     [
       [45.48, 13.61], [45.05, 13.61], [44.81, 13.85], [45.03, 14.10], [45.33, 14.45],
       [44.99, 14.90], [44.27, 15.05], [44.12, 15.23], [43.74, 15.88], [43.51, 16.44],
@@ -45,6 +47,31 @@
       [46.37, 16.31], [46.21, 15.64], [45.78, 15.68], [45.49, 15.30], [45.50, 14.40],
       [45.48, 13.61]
     ],
+    // Slovenija
+    [
+      [45.47, 13.72], [45.88, 13.62], [46.22, 13.58], [46.44, 13.70], [46.52, 14.57],
+      [46.56, 15.55], [46.68, 16.02], [46.52, 16.37], [46.18, 16.04], [45.80, 15.67],
+      [45.58, 15.32], [45.49, 14.30], [45.47, 13.72]
+    ],
+    // Bosna i Hercegovina
+    [
+      [45.05, 16.15], [45.18, 16.92], [45.14, 18.00], [44.87, 18.81], [44.40, 19.10],
+      [43.70, 19.30], [43.40, 18.85], [42.95, 18.45], [42.72, 18.34], [42.95, 17.62],
+      [43.40, 17.30], [43.85, 16.92], [44.30, 16.40], [44.55, 16.20], [45.05, 16.15]
+    ],
+    // Mađarska (južna granica)
+    [
+      [46.52, 16.37], [46.30, 17.20], [46.18, 18.00], [45.92, 18.55], [46.13, 19.00]
+    ],
+    // Srbija (zapadna granica)
+    [
+      [45.77, 18.88], [46.13, 19.00], [46.18, 20.30], [45.00, 20.60], [44.30, 19.55], [43.85, 19.40]
+    ],
+    // Crna Gora
+    [
+      [42.72, 18.34], [42.50, 18.52], [42.29, 19.10], [42.45, 19.65], [43.10, 19.55], [43.70, 19.30]
+    ],
+    // Jadranska obala Italije
     [
       [45.65, 13.77], [45.44, 12.34], [44.42, 12.20], [43.62, 13.51], [42.46, 14.21], [41.12, 16.87]
     ]
