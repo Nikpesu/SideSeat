@@ -816,7 +816,7 @@ html[data-theme="dark"] textarea::placeholder {
 }
 
 .ss-route-bg {
-  opacity: 0.32;
+  opacity: 0.6;
   contain: strict;
 }
 

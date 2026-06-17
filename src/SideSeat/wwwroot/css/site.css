@@ -625,9 +625,9 @@ textarea:focus-visible,
   z-index: 1;
   overflow: hidden;
   pointer-events: none;
-  opacity: 0.5;
-  -webkit-mask-image: radial-gradient(128% 115% at 50% 36%, #000 52%, transparent 100%);
-          mask-image: radial-gradient(128% 115% at 50% 36%, #000 52%, transparent 100%);
+  opacity: 0.72;
+  -webkit-mask-image: radial-gradient(135% 120% at 50% 36%, #000 64%, transparent 100%);
+          mask-image: radial-gradient(135% 120% at 50% 36%, #000 64%, transparent 100%);
 }
 
 .ss-route-bg-svg {
@@ -637,15 +637,15 @@ textarea:focus-visible,
 }
 
 .ss-bg-grid-line {
-  stroke: color-mix(in srgb, var(--ss-secondary) 13%, transparent);
+  stroke: color-mix(in srgb, var(--ss-secondary) 22%, transparent);
   stroke-width: 1;
   vector-effect: non-scaling-stroke;
 }
 
 .ss-bg-border {
   fill: none;
-  stroke: color-mix(in srgb, var(--ss-secondary) 28%, transparent);
-  stroke-width: 1.5;
+  stroke: color-mix(in srgb, var(--ss-secondary) 52%, transparent);
+  stroke-width: 2;
   stroke-linejoin: round;
   stroke-linecap: round;
   vector-effect: non-scaling-stroke;
@@ -2298,7 +2298,7 @@ html[data-theme="dark"] .ss-notification-item strong {
   }
 
   .ss-route-bg {
-    opacity: 0.34;
+    opacity: 0.5;
   }
 
   .ss-payment-methods {
