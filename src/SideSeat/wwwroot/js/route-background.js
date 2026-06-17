@@ -22,9 +22,10 @@
     "&copy; <a href=\"https://www.openstreetmap.org/copyright\">OpenStreetMap</a> contributors";
   const routeUrl = body.dataset.mapRouteUrl || "/api/maps/route";
 
-  const ROUTE_SECONDS = 5;     // svaka ruta: auto je prelazi u tocno 5 sekundi
-  const CAMERA_FOLLOW = 0.08;  // glatko pracenje aktivnog autica (chase kamera)
-  const ZOOM = 8.7;            // blizi prikaz rute
+  const CAR_SPEED_MPS = 30 * 1000; // svaki auto se mice 30 km/s po stvarnoj duljini rute
+  const FOCUS_SECONDS = 8;         // koliko dugo kamera prati jedan auto prije prelaska
+  const CAMERA_FOLLOW = 0.08;      // glatko pracenje aktivnog autica (chase kamera)
+  const ZOOM = 8.7;                // blizi prikaz rute
   const COLORS = ["#25c97a", "#2f7fd0", "#e58a2a", "#c2496b"];
   const CROATIA = L.latLngBounds([42.3, 13.4], [46.6, 19.5]);
 
@@ -156,8 +157,30 @@
       .finally(() => window.clearTimeout(timer));
   };
 
+  const MAX_ROUTE_ATTEMPTS = 4;
+  const loadExactRoute = (entry, route, attempt, delay) => {
+    window.setTimeout(() => {
+      if (!root.isConnected) {
+        return;
+      }
+      fetchExact(route).then((points) => {
+        if (points) {
+          entry.line.setLatLngs(points);
+          if (entry.halo) {
+            entry.halo.setLatLngs(points);
+          }
+          entry.latlngs = points;
+          computeCumulative(entry);
+          return;
+        }
+        if (attempt + 1 < MAX_ROUTE_ATTEMPTS && root.isConnected) {
+          loadExactRoute(entry, route, attempt + 1, 1200 * (attempt + 1));
+        }
+      });
+    }, delay);
+  };
+
   const animated = [];
-  const centers = [];
 
   routes.forEach((route, index) => {
     const straight = [
@@ -166,7 +189,7 @@
     ];
     const color = COLORS[index % COLORS.length];
 
-    L.polyline(straight, {
+    const halo = L.polyline(straight, {
       color: "#ffffff", weight: 8, opacity: 0.5,
       lineCap: "round", lineJoin: "round", interactive: false
     }).addTo(map);
@@ -188,24 +211,18 @@
       cum: [0, 1],
       total: 1,
       line,
+      halo,
       marker,
       rotEl: null,
-      phase: (index / routes.length) * ROUTE_SECONDS,
+      offset: index * 1.5,
       reverse: index % 2 !== 0
     };
     computeCumulative(entry);
     animated.push(entry);
-    centers.push(L.latLng((route.startLat + route.endLat) / 2, (route.startLng + route.endLng) / 2));
 
     if (!reduceMotion.matches) {
-      fetchExact(route).then((points) => {
-        if (!points) {
-          return;
-        }
-        line.setLatLngs(points);
-        entry.latlngs = points;
-        computeCumulative(entry);
-      });
+      // Staggerano i s ponovnim pokusajima da OSRM ne odbije paralelne zahtjeve.
+      loadExactRoute(entry, route, 0, index * 450);
     }
   });
 
@@ -250,12 +267,12 @@
     lastTime = time;
     clock += delta;
 
-    // Aktivnu rutu kamera prati u cijelosti (0->1), ostali autici voze u pozadini.
-    const focusIndex = Math.floor(clock / ROUTE_SECONDS) % animated.length;
-    animated.forEach((entry, index) => {
-      const progress = index === focusIndex
-        ? (clock % ROUTE_SECONDS) / ROUTE_SECONDS
-        : (((clock + entry.phase) % ROUTE_SECONDS) / ROUTE_SECONDS);
+    // Svaki auto se mice 30 km/s po stvarnoj duljini rute; kamera prati po jedan.
+    const focusIndex = Math.floor(clock / FOCUS_SECONDS) % animated.length;
+    animated.forEach((entry) => {
+      const progress = entry.total > 0
+        ? ((CAR_SPEED_MPS * (clock + entry.offset)) % entry.total) / entry.total
+        : 0;
       placeCar(entry, progress);
     });
 
