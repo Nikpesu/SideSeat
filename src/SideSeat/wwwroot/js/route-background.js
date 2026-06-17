@@ -24,10 +24,12 @@
 
   const CAR_SPEED_MPS = 30 * 1000; // svaki auto se mice 30 km/s po stvarnoj duljini rute
   const MIN_ROUTE_SECONDS = 5;     // i jako kratku rutu auto prelazi najmanje 5 sekundi
-  const SPAWN_INTERVAL = 5;        // novi auto moze nastati samo svakih 5 sekundi
-  const FOCUS_SECONDS = 8;         // koliko dugo kamera prati jedan auto prije prelaska
-  const CAMERA_FOLLOW = 0.08;      // glatko pracenje aktivnog autica (chase kamera)
-  const ZOOM = 8.7;                // blizi prikaz rute
+  const RESPAWN_GAP = 2;           // 2 s nakon dolaska na kraj nastaje novi auto na istoj ruti
+  const FOCUS_SECONDS = 6;         // koliko kamera ostaje na autu (zoom in)
+  const TRAVEL_SECONDS = 2.4;      // prijelaz na sljedeci auto (zoom out pa zoom in)
+  const CAMERA_FOLLOW = 0.1;       // glatko pracenje sredista kamere
+  const ZOOM_IN = 10.4;            // dosta blizu na autu
+  const ZOOM_OUT = 6.6;            // odzumirano pri prelasku medju autima
   const COLORS = ["#25c97a", "#2f7fd0", "#e58a2a", "#c2496b"];
   const CROATIA = L.latLngBounds([42.3, 13.4], [46.6, 19.5]);
 
@@ -216,8 +218,9 @@
       halo,
       marker,
       rotEl: null,
-      spawnAt: index * SPAWN_INTERVAL,
-      spawned: false,
+      offset: index * 1.7,
+      visible: false,
+      currentPos: straight[index % 2 !== 0 ? 1 : 0],
       reverse: index % 2 !== 0
     };
     computeCumulative(entry);
@@ -259,10 +262,16 @@
     return;
   }
 
+  const lerp = (a, b, t) => a + (b - a) * t;
+  const easeInOut = (t) => (t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2);
+  const carStart = (entry) =>
+    entry.reverse ? entry.latlngs[entry.latlngs.length - 1] : entry.latlngs[0];
+
   let clock = 0;
   let lastTime = 0;
   let frame = 0;
   let camPos = null;
+  let camZoom = ZOOM_IN;
 
   const step = (time) => {
     if (!root.isConnected) {
@@ -273,34 +282,55 @@
     lastTime = time;
     clock += delta;
 
-    // Novi auto nastaje svakih 5 s; mice se 30 km/s, ali kratku rutu prelazi >= 5 s.
-    const spawnedCount = Math.min(animated.length, Math.floor(clock / SPAWN_INTERVAL) + 1);
+    // Svaki auto vozi svoju rutu, dodje na kraj, 2 s pauze, pa novi na istoj ruti.
     animated.forEach((entry) => {
-      if (clock < entry.spawnAt) {
-        return;
-      }
-      if (!entry.spawned) {
-        entry.spawned = true;
-        entry.marker.setOpacity(1);
-      }
-      const elapsed = clock - entry.spawnAt;
       const duration = entry.total > 0
         ? Math.max(entry.total / CAR_SPEED_MPS, MIN_ROUTE_SECONDS)
         : MIN_ROUTE_SECONDS;
-      placeCar(entry, (elapsed % duration) / duration);
+      const period = duration + RESPAWN_GAP;
+      const local = (((clock + entry.offset) % period) + period) % period;
+      const driving = local < duration;
+      if (driving !== entry.visible) {
+        entry.visible = driving;
+        entry.marker.setOpacity(driving ? 1 : 0);
+      }
+      if (driving) {
+        placeCar(entry, local / duration);
+      } else {
+        entry.currentPos = carStart(entry);
+      }
     });
 
-    // Kamera prati po jedan, ali samo medju vec nastalim autima.
-    const focusIndex = Math.floor(clock / FOCUS_SECONDS) % spawnedCount;
-    const target = animated[focusIndex].currentPos;
-    if (target) {
-      camPos = camPos
-        ? L.latLng(
-            camPos.lat + (target.lat - camPos.lat) * CAMERA_FOLLOW,
-            camPos.lng + (target.lng - camPos.lng) * CAMERA_FOLLOW)
-        : L.latLng(target.lat, target.lng);
-      map.setView(camPos, ZOOM, { animate: false });
+    // Kamera: zoom in i prati auto, pa zoom out dok putuje na sljedeci auto.
+    const count = animated.length;
+    const slot = FOCUS_SECONDS + TRAVEL_SECONDS;
+    const tour = (((clock % (slot * count)) + slot * count) % (slot * count));
+    const index = Math.floor(tour / slot) % count;
+    const slotT = tour - Math.floor(tour / slot) * slot;
+    const current = animated[index];
+
+    let targetCenter;
+    let targetZoom;
+    if (slotT < FOCUS_SECONDS) {
+      targetCenter = current.currentPos;
+      targetZoom = ZOOM_IN;
+    } else {
+      const linear = (slotT - FOCUS_SECONDS) / TRAVEL_SECONDS;
+      const next = animated[(index + 1) % count];
+      const from = current.currentPos;
+      const to = next.currentPos;
+      const moved = easeInOut(linear);
+      targetCenter = L.latLng(lerp(from.lat, to.lat, moved), lerp(from.lng, to.lng, moved));
+      targetZoom = ZOOM_IN - (ZOOM_IN - ZOOM_OUT) * Math.sin(linear * Math.PI);
     }
+
+    camPos = camPos
+      ? L.latLng(
+          lerp(camPos.lat, targetCenter.lat, CAMERA_FOLLOW),
+          lerp(camPos.lng, targetCenter.lng, CAMERA_FOLLOW))
+      : L.latLng(targetCenter.lat, targetCenter.lng);
+    camZoom = lerp(camZoom, targetZoom, CAMERA_FOLLOW);
+    map.setView(camPos, camZoom, { animate: false });
 
     frame = window.requestAnimationFrame(step);
   };
