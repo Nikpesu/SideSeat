@@ -28,8 +28,8 @@
   const FOCUS_SECONDS = 5;         // 5 s kamera ostaje na autu (zoom in)
   const TRAVEL_SECONDS = 4;        // polagani prijelaz na sljedeci auto (zoom out pa zoom in)
   const CAMERA_FOLLOW = 0.08;      // glatko pracenje sredista kamere
-  const ZOOM_IN = 10;              // dosta blizu na autu
-  const ZOOM_OUT = 7;              // odzumirano (pregled Hrvatske) pri prelasku
+  const SCALE_FOCUS = 2.0;         // CSS priblizavanje na auto (zoom in)
+  const SCALE_TOUR = 0.78;         // CSS odzumiranje (pregled Hrvatske) pri prelasku
   const COLORS = ["#25c97a", "#2f7fd0", "#e58a2a", "#c2496b"];
   const CROATIA = L.latLngBounds([42.3, 13.4], [46.6, 19.5]);
 
@@ -84,10 +84,18 @@
     attribution,
     maxZoom: 19,
     detectRetina: true,
-    keepBuffer: 8,            // zadrzi vise pločica oko vidnog polja da nema crnog ekrana
-    updateWhenZooming: false  // ne osvjezavaj pločice tijekom zumiranja, tek kad se smiri
+    keepBuffer: 8,          // zadrzi pločice oko vidnog polja
+    updateWhenIdle: true    // ucitaj pločice samo kad se karta smiri
   }).addTo(map);
-  map.fitBounds(CROATIA);
+  // Karta se postavi JEDNOM na cijelu Hrvatsku i vise se ne pomice ni zumira preko Leafleta,
+  // pa se pločice ucitaju samo jednom. Zoom in/out i pracenje auta radimo CSS transformacijom,
+  // sto znaci da nema ponovnog ucitavanja pločica tijekom animacije.
+  map.fitBounds(CROATIA, { padding: [10, 10] });
+  mapEl.style.transformOrigin = "0 0";
+  mapEl.style.willChange = "transform";
+  if (root instanceof HTMLElement) {
+    root.style.overflow = "hidden";
+  }
 
   const CAR_HTML =
     "<div class=\"ss-bg-car-rot\">" +
@@ -284,7 +292,18 @@
   let lastTime = 0;
   let frame = 0;
   let camPos = null;
-  let camZoom = ZOOM_IN;
+  let camScale = SCALE_FOCUS;
+
+  // Kamera kao CSS transformacija: drzi center u sredistu i skalira oko njega.
+  // Karta (mapEl) se vizualno pomice i zumira, a Leaflet ostaje na fiksnom prikazu.
+  const applyCamera = (center, scale) => {
+    const size = map.getSize();
+    const p = map.latLngToContainerPoint(center);
+    const tx = size.x / 2 - p.x * scale;
+    const ty = size.y / 2 - p.y * scale;
+    mapEl.style.transform =
+      `translate3d(${tx.toFixed(2)}px, ${ty.toFixed(2)}px, 0) scale(${scale.toFixed(3)})`;
+  };
 
   const step = (time) => {
     if (!root.isConnected) {
@@ -323,10 +342,10 @@
     const current = animated[index];
 
     let targetCenter;
-    let targetZoom;
+    let targetScale;
     if (slotT < FOCUS_SECONDS) {
       targetCenter = current.currentPos;
-      targetZoom = ZOOM_IN;
+      targetScale = SCALE_FOCUS;
     } else {
       const linear = (slotT - FOCUS_SECONDS) / TRAVEL_SECONDS;
       const next = animated[(index + 1) % count];
@@ -334,7 +353,7 @@
       const to = next.currentPos;
       const moved = easeInOut(linear);
       targetCenter = L.latLng(lerp(from.lat, to.lat, moved), lerp(from.lng, to.lng, moved));
-      targetZoom = ZOOM_IN - (ZOOM_IN - ZOOM_OUT) * Math.sin(linear * Math.PI);
+      targetScale = SCALE_FOCUS - (SCALE_FOCUS - SCALE_TOUR) * Math.sin(linear * Math.PI);
     }
 
     camPos = camPos
@@ -342,8 +361,8 @@
           lerp(camPos.lat, targetCenter.lat, CAMERA_FOLLOW),
           lerp(camPos.lng, targetCenter.lng, CAMERA_FOLLOW))
       : L.latLng(targetCenter.lat, targetCenter.lng);
-    camZoom = lerp(camZoom, targetZoom, CAMERA_FOLLOW);
-    map.setView(camPos, camZoom, { animate: false });
+    camScale = lerp(camScale, targetScale, CAMERA_FOLLOW);
+    applyCamera(camPos, camScale);
 
     frame = window.requestAnimationFrame(step);
   };
