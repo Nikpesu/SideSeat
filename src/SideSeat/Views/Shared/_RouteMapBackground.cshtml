@@ -7,7 +7,8 @@
     {
         var rawRoutes = bgDb.Voznje
             .AsNoTracking()
-            .Where(v => v.Status != SideSeat.Models.StatusVoznje.Otkazana
+            .Where(v => v.Status == SideSeat.Models.StatusVoznje.Planirana
+                && v.SlobodnaMjesta > 0
                 && v.PolazniGrad.Latitude != null && v.PolazniGrad.Longitude != null
                 && v.OdredisniGrad.Latitude != null && v.OdredisniGrad.Longitude != null
                 && v.PolazniGradId != v.OdredisniGradId)

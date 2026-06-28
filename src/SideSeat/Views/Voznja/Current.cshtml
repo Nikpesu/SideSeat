@@ -71,6 +71,7 @@
                                             <strong>@passenger.PutnikIme</strong>
                                             <span>@passenger.Status.ToDisplayName() · @passenger.BrojMjesta mjesta</span>
                                             <a href="tel:@passenger.PutnikTelefon">@passenger.PutnikTelefon</a>
+                                            <a class="ss-link" asp-controller="Rezervacija" asp-action="Details" asp-route-id="@passenger.RezervacijaId">Otvori rezervaciju →</a>
                                         </div>
                                         <div class="ss-live-passenger-meta">
                                             <span class="ss-badge @(passenger.CheckInAtUtc.HasValue ? "is-ok" : "is-alert")" data-ready-state>
