@@ -266,11 +266,6 @@ html[data-theme="dark"] {
   padding: .5rem .7rem;
 }
 
-.ss-nav-balance-top {
-  font-weight: 600;
-  white-space: nowrap;
-}
-
 /* Mali (i) prozorčić s objašnjenjem na hover/focus. */
 .ss-info {
   position: relative;

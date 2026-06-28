@@ -129,13 +129,6 @@
                     </button>
                     @if (isAuthenticated)
                     {
-                        @if (userSaldo.HasValue)
-                        {
-                            <a class="ss-nav-link ss-nav-balance ss-nav-balance-top @(currentController == "korisnik" && currentAction == "saldo" ? "active" : string.Empty)"
-                               asp-controller="Korisnik" asp-action="Saldo" data-testid="nav-balance">
-                                Saldo: <strong>@userSaldo.Value.ToString("0.00") EUR</strong>
-                            </a>
-                        }
                         @await Component.InvokeAsync("ObavijestiBell")
                         <a class="ss-account-link @(currentController == "korisnik" && currentAction == "settings" ? "active" : string.Empty)"
                            asp-controller="Korisnik" asp-action="Settings" data-testid="account-settings">
@@ -173,6 +166,13 @@
                            asp-controller="Rezervacija" asp-action="Index" data-testid="nav-reservations">Rezervacije</a>
                         <a class="ss-nav-link @(currentController == "ocjena" ? "active" : string.Empty)"
                            asp-controller="Ocjena" asp-action="Index" data-testid="nav-reviews">Ocjene</a>
+                        @if (userSaldo.HasValue)
+                        {
+                            <a class="ss-nav-link ss-nav-balance @(currentController == "korisnik" && currentAction == "saldo" ? "active" : string.Empty)"
+                               asp-controller="Korisnik" asp-action="Saldo" data-testid="nav-balance">
+                                Saldo: <strong>@userSaldo.Value.ToString("0.00") EUR</strong>
+                            </a>
+                        }
                     </div>
                 </div>
             }
