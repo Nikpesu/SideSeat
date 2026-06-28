@@ -28,6 +28,14 @@ Ovaj wiki je čitljiv izravno na GitHubu. Krenite od vodiča za svoju ulogu.
 - [Changelog (povijest verzija)](../../changelogs/README.md)
 - [Često postavljana pitanja (FAQ)](FAQ.md)
 
+### Laboratorijske vježbe
+- [Pregled svih labosa](Labs.md) — ciljevi, kriteriji i kako ih SideSeat ispunjava
+- [Lab 1 — C# / LINQ](Lab-1-Csharp-LINQ.md)
+- [Lab 2 — HTML / Binding](Lab-2-HTML-Binding.md)
+- [Lab 3 — EF / Routing](Lab-3-EF-Routing.md)
+- [Lab 4 — CRUD / JS](Lab-4-CRUD-JS.md)
+- [Lab 5 — API / Auth / Testovi](Lab-5-API-Auth-Tests.md)
+
 ## Što je SideSeat?
 
 SideSeat povezuje **vozače** koji objavljuju vožnje i **putnike** koji rezerviraju mjesta.
