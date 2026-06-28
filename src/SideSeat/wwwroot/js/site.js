@@ -1537,28 +1537,16 @@
 
       const actions = document.createElement("div");
       actions.className = "ss-actions";
-      const confirm = document.createElement("button");
-      confirm.type = "button";
-      confirm.className = "ss-btn";
-      confirm.textContent = action.form?.submitLabel || "Potvrdi";
+      let confirm = null;
       const cancel = document.createElement("button");
       cancel.type = "button";
       cancel.className = "ss-btn ss-btn-secondary";
       cancel.textContent = "Odustani";
-      if (action.form?.reviewUrl) {
-        const review = document.createElement("a");
-        review.className = "ss-btn ss-btn-secondary";
-        review.href = action.form.reviewUrl;
-        review.textContent = "Otvori punu formu";
-        actions.appendChild(review);
-      }
-      actions.append(confirm, cancel);
-      card.appendChild(actions);
-      messagesElement.appendChild(card);
-      messagesElement.scrollTop = messagesElement.scrollHeight;
 
       const submitAction = async (operation) => {
-        confirm.disabled = true;
+        if (confirm) {
+          confirm.disabled = true;
+        }
         cancel.disabled = true;
         try {
           const response = await fetch(
@@ -1582,13 +1570,42 @@
           appendMessage("assistant", message);
         } catch (error) {
           appendMessage("assistant", error.message || "Akcija nije izvršena.", "is-error");
-          confirm.disabled = false;
+          if (confirm) {
+            confirm.disabled = false;
+          }
           cancel.disabled = false;
         }
       };
 
-      confirm.addEventListener("click", () => submitAction("confirm"));
-      cancel.addEventListener("click", () => submitAction("cancel"));
+      if (action.targetUrl) {
+        // AI ne izvršava akciju nego vodi na pravu stranicu s predpopunjenim poljima.
+        const open = document.createElement("a");
+        open.className = "ss-btn";
+        open.href = action.targetUrl;
+        open.textContent = "Otvori i dovrši →";
+        cancel.textContent = "Odustani";
+        actions.append(open, cancel);
+        cancel.addEventListener("click", () => submitAction("cancel"));
+      } else {
+        confirm = document.createElement("button");
+        confirm.type = "button";
+        confirm.className = "ss-btn";
+        confirm.textContent = action.form?.submitLabel || "Potvrdi";
+        if (action.form?.reviewUrl) {
+          const review = document.createElement("a");
+          review.className = "ss-btn ss-btn-secondary";
+          review.href = action.form.reviewUrl;
+          review.textContent = "Otvori punu formu";
+          actions.appendChild(review);
+        }
+        actions.append(confirm, cancel);
+        confirm.addEventListener("click", () => submitAction("confirm"));
+        cancel.addEventListener("click", () => submitAction("cancel"));
+      }
+
+      card.appendChild(actions);
+      messagesElement.appendChild(card);
+      messagesElement.scrollTop = messagesElement.scrollHeight;
     };
 
     const resetSession = () => {
@@ -2137,10 +2154,41 @@
       .catch(() => {});
   };
 
+  // Predpopuni polja forme iz query stringa (npr. kad te AI asistent odvede na stranicu).
+  const prefillFromQuery = () => {
+    const params = new URLSearchParams(window.location.search);
+    const skip = new Set(["auth", "returnurl", "q", "amount", "voznjaid", "rezervacijaid", "token"]);
+    let touched = 0;
+    params.forEach((value, key) => {
+      if (!value || skip.has(key.toLowerCase())) {
+        return;
+      }
+      const field = document.querySelector(`[name="${key}"]`) || document.getElementById(key);
+      if (!field || field.type === "hidden" || field.disabled) {
+        return;
+      }
+      if (field.tagName === "SELECT") {
+        const match = Array.from(field.options).some((option) => option.value === value);
+        if (match) {
+          field.value = value;
+          touched += 1;
+        }
+      } else if (!field.value) {
+        field.value = value;
+        touched += 1;
+      }
+    });
+    if (touched > 0) {
+      const first = document.querySelector("form [name], form input, form select, form textarea");
+      first?.focus?.();
+    }
+  };
+
   initializeAiAssistant();
   initializeGlobalSearch();
   initializeEnhancedUi();
   initializeLiveRides();
   initializeCheckInForms();
   initializeRideChatDock();
+  prefillFromQuery();
 })();

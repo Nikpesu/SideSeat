@@ -38,7 +38,8 @@ public sealed record PendingActionDescriptor(
     string Title,
     string Summary,
     DateTime ExpiresAtUtc,
-    PendingFormDescriptor? Form = null);
+    PendingFormDescriptor? Form = null,
+    string? TargetUrl = null);
 
 public sealed record PendingFormDescriptor(
     string FormType,
