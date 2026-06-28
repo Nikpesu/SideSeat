@@ -367,7 +367,9 @@ public class VoznjaController : Controller
         }
 
         var now = DateTime.Now;
-        var from = now.AddHours(-4);
+        // Vožnja je relevantna od 8 h prije do 12 h nakon zakazanog polaska
+        // (pokretanje je dopušteno do 12 h nakon termina).
+        var from = now.AddHours(-12);
         var to = now.AddHours(8);
         var query = _db.Voznje
             .AsNoTracking()
@@ -400,6 +402,7 @@ public class VoznjaController : Controller
         var messages = await _db.RideChatMessages
             .AsNoTracking()
             .Include(message => message.Sender)
+            .Include(message => message.Recipient)
             .Where(message => rideIds.Contains(message.VoznjaId))
             .OrderByDescending(message => message.CreatedAtUtc)
             .Take(150)

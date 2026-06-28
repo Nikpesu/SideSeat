@@ -1906,7 +1906,10 @@
       const line = document.createElement("p");
       const sender = document.createElement("strong");
       const text = document.createElement("span");
-      sender.textContent = `${payload.senderName || "Korisnik"}: `;
+      const recipientName = payload.recipientName || payload.RecipientName;
+      const recipientId = payload.recipientId || payload.RecipientId;
+      const recipientLabel = recipientName || (recipientId ? "Korisnik" : "Svi");
+      sender.textContent = `${payload.senderName || "Korisnik"} → ${recipientLabel}: `;
       text.textContent = payload.message || "";
       line.append(sender, text);
       log.appendChild(line);
@@ -1938,6 +1941,11 @@
       if (location && payload.lastLatitude && payload.lastLongitude) {
         location.textContent = `Lokacija: ${Number(payload.lastLatitude).toFixed(6)}, ${Number(payload.lastLongitude).toFixed(6)}`;
       }
+    });
+
+    // Pri otvaranju pomakni svaki chat log na dno (najnovije poruke).
+    root.querySelectorAll("[data-chat-log]").forEach((log) => {
+      log.scrollTop = log.scrollHeight;
     });
 
     cards.forEach((card) => {
