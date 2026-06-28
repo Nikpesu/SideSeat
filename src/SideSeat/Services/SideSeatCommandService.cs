@@ -1386,6 +1386,11 @@ public sealed class SideSeatCommandService(
             return CommandResult.Fail(CommandErrorKind.Forbidden, "Nemaš pravo obrisati ovu vožnju.");
         }
 
+        if (!principal.IsInRole("Admin") && ride.Status == StatusVoznje.Zavrsena)
+        {
+            return CommandResult.Fail(CommandErrorKind.Forbidden, "Samo administrator može obrisati završenu vožnju.");
+        }
+
         if (ride.Rezervacije.Any())
         {
             return CommandResult.Fail(CommandErrorKind.BusinessRule, "Vožnja ima rezervacije i ne može se obrisati.");

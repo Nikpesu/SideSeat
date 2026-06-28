@@ -71,7 +71,7 @@ public class VoznjaController : Controller
             .Include(v => v.Rezervacije)
             .AsQueryable();
 
-        query = selectedView switch
+        var scoped = selectedView switch
         {
             "available" => query.Where(v =>
                 v.Status == StatusVoznje.Planirana &&
@@ -82,17 +82,24 @@ public class VoznjaController : Controller
             _ => query
         };
 
-        var statusCounts = query
+        var statusCounts = scoped
             .Select(v => v.Status)
             .ToList();
 
-        query = selectedStatus switch
+        // Završene vožnje su javne — vidljive svima, neovisno o povezanosti s vožnjom.
+        if (selectedStatus == "completed")
         {
-            "planned" => query.Where(v => v.Status == StatusVoznje.Planirana),
-            "completed" => query.Where(v => v.Status == StatusVoznje.Zavrsena),
-            "cancelled" => query.Where(v => v.Status == StatusVoznje.Otkazana),
-            _ => query
-        };
+            query = query.Where(v => v.Status == StatusVoznje.Zavrsena);
+        }
+        else
+        {
+            query = selectedStatus switch
+            {
+                "planned" => scoped.Where(v => v.Status == StatusVoznje.Planirana),
+                "cancelled" => scoped.Where(v => v.Status == StatusVoznje.Otkazana),
+                _ => scoped
+            };
+        }
 
         var voznje = query
             .OrderBy(v => v.Polazak)
@@ -143,7 +150,8 @@ public class VoznjaController : Controller
             SelectedStatus = selectedStatus,
             AllCount = statusCounts.Count,
             PlannedCount = statusCounts.Count(value => value == StatusVoznje.Planirana),
-            CompletedCount = statusCounts.Count(value => value == StatusVoznje.Zavrsena),
+            // Završene vožnje su javne, pa brojač prikazuje ukupan broj završenih.
+            CompletedCount = _db.Voznje.Count(value => value.Status == StatusVoznje.Zavrsena),
             CancelledCount = statusCounts.Count(value => value == StatusVoznje.Otkazana)
         });
     }
@@ -208,7 +216,8 @@ public class VoznjaController : Controller
         var canAccess = User.IsInRole("Admin")
                         || voznja.VozacId == userId.Value
                         || voznja.Rezervacije.Any(r => r.PutnikId == userId.Value)
-                        || voznja.Status == StatusVoznje.Planirana;
+                        || voznja.Status == StatusVoznje.Planirana
+                        || voznja.Status == StatusVoznje.Zavrsena;
         if (!canAccess)
         {
             return Forbid();
@@ -758,6 +767,11 @@ public class VoznjaController : Controller
             return Forbid();
         }
 
+        if (!isAdmin && voznja.Status == StatusVoznje.Zavrsena)
+        {
+            return Forbid();
+        }
+
         return View(voznja);
     }
 
@@ -781,6 +795,11 @@ public class VoznjaController : Controller
 
         var isAdmin = User.IsInRole("Admin");
         if (!isAdmin && voznja.VozacId != userId.Value)
+        {
+            return Forbid();
+        }
+
+        if (!isAdmin && voznja.Status == StatusVoznje.Zavrsena)
         {
             return Forbid();
         }

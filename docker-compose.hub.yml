@@ -18,7 +18,7 @@ services:
       start_period: 20s
 
   sideseat-web:
-    image: nikolica/sideseat:v0.50
+    image: nikolica/sideseat:v0.51
     container_name: sideseat-web
     depends_on:
       sideseat-db:
