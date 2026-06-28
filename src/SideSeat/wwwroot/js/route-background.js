@@ -28,8 +28,9 @@
   const FOCUS_SECONDS = 5;         // 5 s kamera ostaje na autu (zoom in)
   const TRAVEL_SECONDS = 4;        // polagani prijelaz na sljedeci auto (zoom out pa zoom in)
   const CAMERA_FOLLOW = 0.08;      // glatko pracenje sredista kamere
-  const SCALE_FOCUS = 2.0;         // CSS priblizavanje na auto (zoom in)
-  const SCALE_TOUR = 0.78;         // CSS odzumiranje (pregled Hrvatske) pri prelasku
+  const OVERSIZE = 1.5;            // karta je veca od vidnog polja da se rub nikad ne vidi
+  const SCALE_FOCUS = 1.85;        // CSS priblizavanje na auto (zoom in)
+  const SCALE_TOUR = 1.0;          // pregledni kadar pri prelasku (nikad ispod 1 = bez ruba)
   const COLORS = ["#25c97a", "#2f7fd0", "#e58a2a", "#c2496b"];
   const CROATIA = L.latLngBounds([42.3, 13.4], [46.6, 19.5]);
 
@@ -66,6 +67,16 @@
   }
   routes = routes.slice(0, 7);
 
+  // Element karte je veci od vidnog polja (root), pa kamera moze pomicati i blago
+  // odzumirati a da se nikad ne vidi rub karte. root skriva visak (overflow hidden).
+  if (root instanceof HTMLElement) {
+    root.style.overflow = "hidden";
+  }
+  mapEl.style.width = `${OVERSIZE * 100}%`;
+  mapEl.style.height = `${OVERSIZE * 100}%`;
+  mapEl.style.transformOrigin = "0 0";
+  mapEl.style.willChange = "transform";
+
   const map = L.map(mapEl, {
     zoomControl: false,
     attributionControl: false,
@@ -83,19 +94,14 @@
   L.tileLayer(tileUrl, {
     attribution,
     maxZoom: 19,
-    detectRetina: true,
-    keepBuffer: 8,          // zadrzi pločice oko vidnog polja
+    detectRetina: false,    // bez 4x retina pločica (postivanje OSM tile policy)
+    keepBuffer: 1,
     updateWhenIdle: true    // ucitaj pločice samo kad se karta smiri
   }).addTo(map);
   // Karta se postavi JEDNOM na cijelu Hrvatsku i vise se ne pomice ni zumira preko Leafleta,
-  // pa se pločice ucitaju samo jednom. Zoom in/out i pracenje auta radimo CSS transformacijom,
-  // sto znaci da nema ponovnog ucitavanja pločica tijekom animacije.
-  map.fitBounds(CROATIA, { padding: [10, 10] });
-  mapEl.style.transformOrigin = "0 0";
-  mapEl.style.willChange = "transform";
-  if (root instanceof HTMLElement) {
-    root.style.overflow = "hidden";
-  }
+  // pa se pločice ucitaju samo jednom (i na visoj zumaciji jer je element veci => ostrije).
+  // Zoom in/out i pracenje auta radimo CSS transformacijom (bez ponovnog ucitavanja pločica).
+  map.fitBounds(CROATIA);
 
   const CAR_HTML =
     "<div class=\"ss-bg-car-rot\">" +
@@ -275,7 +281,8 @@
   map.whenReady(() => window.requestAnimationFrame(() => map.invalidateSize(false)));
 
   if (reduceMotion.matches) {
-    map.fitBounds(CROATIA);
+    // Staticno: skaliraj cijelu (vecu) kartu na vidno polje da se vidi cijela Hrvatska bez ruba.
+    mapEl.style.transform = `scale(${(1 / OVERSIZE).toFixed(3)})`;
     window.requestAnimationFrame(() => animated.forEach((entry) => {
       entry.marker.setOpacity(1);
       placeCar(entry, 0.5);
@@ -294,13 +301,20 @@
   let camPos = null;
   let camScale = SCALE_FOCUS;
 
-  // Kamera kao CSS transformacija: drzi center u sredistu i skalira oko njega.
+  // Kamera kao CSS transformacija: drzi center u sredistu vidnog polja i skalira oko njega.
   // Karta (mapEl) se vizualno pomice i zumira, a Leaflet ostaje na fiksnom prikazu.
+  // Center se clampa tako da vidljivi kadar uvijek ostane unutar (vece) karte => bez ruba.
   const applyCamera = (center, scale) => {
-    const size = map.getSize();
+    const size = map.getSize();                 // dimenzije (vece) karte u px
+    const cw = root.clientWidth || size.x;      // vidljivo vidno polje
+    const ch = root.clientHeight || size.y;
     const p = map.latLngToContainerPoint(center);
-    const tx = size.x / 2 - p.x * scale;
-    const ty = size.y / 2 - p.y * scale;
+    const halfW = cw / (2 * scale);
+    const halfH = ch / (2 * scale);
+    const px = Math.min(Math.max(p.x, halfW), Math.max(halfW, size.x - halfW));
+    const py = Math.min(Math.max(p.y, halfH), Math.max(halfH, size.y - halfH));
+    const tx = cw / 2 - px * scale;
+    const ty = ch / 2 - py * scale;
     mapEl.style.transform =
       `translate3d(${tx.toFixed(2)}px, ${ty.toFixed(2)}px, 0) scale(${scale.toFixed(3)})`;
   };
