@@ -658,7 +658,10 @@ html[data-theme="dark"] .ss-route-bg-map .leaflet-tile-pane {
 .ss-bg-car-rot {
   width: 58px;
   height: 22px;
-  transform-origin: 50% 50%;
+  /* pivot na sredistu karoserije (viewBox 0,0), ne na svjetlima/snopu */
+  transform-origin: 14px 11px;
+  /* mali prijelaz kod zakretanja da auto glatko skrece umjesto da odsijece kut */
+  transition: transform 0.35s ease-out;
   filter: drop-shadow(0 5px 6px color-mix(in srgb, var(--ss-heading) 32%, transparent));
 }
 

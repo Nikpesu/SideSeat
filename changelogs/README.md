@@ -6,6 +6,7 @@ Ova mapa sadrži povijest verzija SideSeat aplikacije. Svako izdanje ima zasebnu
 
 | Verzija | Datum | Sažetak |
 | --- | --- | --- |
+| [v0.43](v0.43.md) | 2026-06-17 | Autići 1 km/s, spori zoom-tour i bufferana karta bez crnog ekrana |
 | [v0.42](v0.42.md) | 2026-06-17 | Kamera zoom in/out tour i novi autić na istoj ruti 2 s nakon dolaska |
 | [v0.41](v0.41.md) | 2026-06-17 | Vraćeno trenutno okretanje autića i minimalno 5 s po ruti |
 | [v0.40](v0.40.md) | 2026-06-17 | Novi autić svakih 5 s, limit zakretanja 60°/s i tekst uz toggle teme |
@@ -47,10 +48,10 @@ Ova mapa sadrži povijest verzija SideSeat aplikacije. Svako izdanje ima zasebnu
 
 ## Trenutna verzija
 
-Trenutna stabilna verzija je [v0.42](v0.42.md):
+Trenutna stabilna verzija je [v0.43](v0.43.md):
 
 ```text
-nikolica/sideseat:v0.42
+nikolica/sideseat:v0.43
 ```
 
 Docker Hub digest:

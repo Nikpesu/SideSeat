@@ -107,7 +107,7 @@
     className: `ss-bg-car-icon ss-bg-car-${index % COLORS.length}`,
     html: CAR_HTML,
     iconSize: [58, 22],
-    iconAnchor: [29, 11]
+    iconAnchor: [14, 11]
   });
 
   const computeCumulative = (entry) => {
@@ -224,6 +224,7 @@
       halo,
       marker,
       rotEl: null,
+      angle: null,
       offset: index * 1.7,
       visible: false,
       currentPos: straight[index % 2 !== 0 ? 1 : 0],
@@ -252,7 +253,13 @@
     if (entry.rotEl) {
       const p1 = map.latLngToContainerPoint(pos);
       const p2 = map.latLngToContainerPoint(next);
-      const angle = Math.atan2(p2.y - p1.y, p2.x - p1.x) * 180 / Math.PI;
+      let angle = Math.atan2(p2.y - p1.y, p2.x - p1.x) * 180 / Math.PI;
+      // Drzi kut neprekidnim da CSS prijelaz uvijek skrene kracim putem (a ne 360deg na ±180).
+      if (entry.angle != null) {
+        let diff = ((angle - entry.angle + 540) % 360) - 180;
+        angle = entry.angle + diff;
+      }
+      entry.angle = angle;
       entry.rotEl.style.transform = `rotate(${angle.toFixed(1)}deg)`;
     }
   };
