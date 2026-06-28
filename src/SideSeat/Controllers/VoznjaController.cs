@@ -382,9 +382,15 @@ public class VoznjaController : Controller
                 v.Polazak >= from &&
                 v.Polazak <= to);
 
-        if (!User.IsInRole("Admin"))
+        var isAdmin = User.IsInRole("Admin");
+        if (!isAdmin)
         {
-            query = query.Where(v => v.VozacId == userId.Value);
+            // Vozač vidi svoje vožnje; putnik vidi vožnje na kojima ima aktivnu rezervaciju.
+            query = query.Where(v =>
+                v.VozacId == userId.Value ||
+                v.Rezervacije.Any(r => r.PutnikId == userId.Value &&
+                    (r.Status == StatusRezervacije.Potvrdena ||
+                     r.Status == StatusRezervacije.UProcesuPotvrde)));
         }
 
         var rides = await query
@@ -404,6 +410,13 @@ public class VoznjaController : Controller
             Rides = rides.Select(ride =>
             {
                 var putnici = BuildPassengerRows(ride);
+                var viewerIsDriver = isAdmin || ride.VozacId == userId.Value;
+                var viewerReservation = putnici.FirstOrDefault(item => item.PutnikId == userId.Value);
+                var viewerCanCheckIn = viewerReservation is not null &&
+                    viewerReservation.Status == StatusRezervacije.Potvrdena &&
+                    viewerReservation.CheckInAtUtc is null &&
+                    (ride.Status == StatusVoznje.Planirana || ride.Status == StatusVoznje.Aktivna) &&
+                    DateTime.Now >= ride.Polazak.AddMinutes(-30);
                 return new CurrentRideItemViewModel
                 {
                     Voznja = ride,
@@ -419,7 +432,10 @@ public class VoznjaController : Controller
                     CashDue = putnici
                         .Where(item => item.Status == StatusRezervacije.Potvrdena &&
                                        item.NacinPlacanja == NacinPlacanja.Gotovina)
-                        .Sum(item => item.CijenaUkupno + item.Napojnica)
+                        .Sum(item => item.CijenaUkupno + item.Napojnica),
+                    ViewerIsDriver = viewerIsDriver,
+                    ViewerReservation = viewerReservation,
+                    ViewerCanCheckIn = viewerCanCheckIn
                 };
             }).ToList()
         });

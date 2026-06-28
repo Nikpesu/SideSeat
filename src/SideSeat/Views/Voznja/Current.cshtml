@@ -34,6 +34,8 @@
                 <article class="ss-detail-card ss-live-ride-card"
                          data-ss-live-ride
                          data-ride-id="@ride.Voznja.Id">
+                @if (ride.ViewerIsDriver)
+                {
                     <header class="ss-live-ride-head">
                         <div>
                             <span class="ss-badge @(ride.AllReady ? "is-ok" : "is-alert")">
@@ -129,6 +131,92 @@
                         <a class="ss-btn" asp-action="Finish" asp-route-id="@ride.Voznja.Id">Završi i naplati</a>
                         <a class="ss-btn ss-btn-secondary" asp-action="Details" asp-route-id="@ride.Voznja.Id">Detalji</a>
                     </div>
+                }
+                else
+                {
+                    var res = ride.ViewerReservation;
+                    var checkedIn = res?.CheckInAtUtc.HasValue == true;
+                    <header class="ss-live-ride-head">
+                        <div>
+                            <span class="ss-badge @(checkedIn ? "is-ok" : "is-alert")" data-ready-state>
+                                @(checkedIn ? "U autu" : "Čeka")
+                            </span>
+                            <h2>@ride.Voznja.PolazniGrad?.Naziv → @ride.Voznja.OdredisniGrad?.Naziv</h2>
+                            <p>@ride.Voznja.Polazak.ToString("dd.MM.yyyy HH:mm") · @ride.Voznja.Status</p>
+                            <p>Vozač: @ride.Voznja.Vozac?.Ime @ride.Voznja.Vozac?.Prezime</p>
+                        </div>
+                    </header>
+
+                    <div class="ss-workflow-steps" aria-label="Koraci vožnje">
+                        <span class="is-done">1. Rezervirano</span>
+                        <span class="@(res?.Status == SideSeat.Models.StatusRezervacije.Potvrdena ? "is-done" : "is-current")">2. Potvrda vozača</span>
+                        <span class="@(checkedIn ? "is-done" : ride.ViewerCanCheckIn ? "is-current" : "")">3. U autu</span>
+                        <span class="@(ride.Voznja.Status == SideSeat.Models.StatusVoznje.Aktivna ? "is-current" : "")">4. Vožnja aktivna</span>
+                        <span>5. Završetak</span>
+                    </div>
+
+                    <div class="ss-live-grid">
+                        <section data-reservation-id="@res?.RezervacijaId" data-passenger-id="@res?.PutnikId">
+                            <h3 class="h5">Tvoja rezervacija</h3>
+                            <p>Status: @(res?.Status.ToDisplayName())</p>
+                            @if (res?.LastLatitude.HasValue == true && res?.LastLongitude.HasValue == true)
+                            {
+                                <small data-location-state>
+                                    Lokacija: @res.LastLatitude.Value.ToString("0.000000"), @res.LastLongitude.Value.ToString("0.000000")
+                                </small>
+                            }
+                            else
+                            {
+                                <small data-location-state>Lokacija nije poslana.</small>
+                            }
+
+                            @if (ride.ViewerCanCheckIn)
+                            {
+                                <form asp-controller="Rezervacija" asp-action="CheckIn" method="post" class="ss-inline-panel" data-ss-checkin-form>
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="id" value="@res!.RezervacijaId" />
+                                    <input type="hidden" name="latitude" data-checkin-lat />
+                                    <input type="hidden" name="longitude" data-checkin-lng />
+                                    <h2 class="h5">Potvrdi da si u autu</h2>
+                                    <p>Lokacija se šalje samo ako je dopustiš u pregledniku i vidljiva je vozaču ove vožnje.</p>
+                                    <button type="submit" class="ss-btn">Spreman sam / pošalji lokaciju</button>
+                                </form>
+                            }
+                            else if (!checkedIn && res?.Status == SideSeat.Models.StatusRezervacije.Potvrdena)
+                            {
+                                <p>Check-in se otvara 30 minuta prije polaska.</p>
+                            }
+                            else if (res?.Status == SideSeat.Models.StatusRezervacije.UProcesuPotvrde)
+                            {
+                                <p>Čeka potvrdu vozača prije check-ina.</p>
+                            }
+                        </section>
+
+                        <section class="ss-live-chat" data-ss-live-chat>
+                            <h3 class="h5">Chat vožnje</h3>
+                            <div class="ss-live-chat-log" data-chat-log>
+                                @foreach (var message in ride.Messages)
+                                {
+                                    <p>
+                                        <strong>@message.Sender?.Ime @message.Sender?.Prezime:</strong>
+                                        <span>@message.Message</span>
+                                    </p>
+                                }
+                            </div>
+                            @if (res?.Status == SideSeat.Models.StatusRezervacije.Potvrdena)
+                            {
+                                <form data-chat-form>
+                                    <input name="message" class="form-control" maxlength="1000" placeholder="Poruka cijeloj vožnji..." autocomplete="off" />
+                                    <button type="submit" class="ss-btn">Pošalji</button>
+                                </form>
+                            }
+                        </section>
+                    </div>
+
+                    <div class="ss-actions">
+                        <a class="ss-btn ss-btn-secondary" asp-controller="Rezervacija" asp-action="Details" asp-route-id="@res?.RezervacijaId">Detalji rezervacije</a>
+                    </div>
+                }
                 </article>
             }
         </div>

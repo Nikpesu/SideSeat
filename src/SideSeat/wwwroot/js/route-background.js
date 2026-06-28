@@ -25,6 +25,7 @@
   const CAR_SPEED_MPS = 1000;      // auto se mice najvise 1 km/s po stvarnoj duljini rute
   const MIN_ROUTE_SECONDS = 5;     // i jako kratku rutu auto prelazi najmanje 5 sekundi
   const RESPAWN_GAP = 2;           // 2 s nakon dolaska na kraj nastaje novi auto na istoj ruti
+  const WAYPOINT_SPACING_M = 5000; // vrh rute svakih 5 km uzduz prave rute (<5 km = ravna crta)
   const FOCUS_SECONDS = 5;         // 5 s kamera ostaje na autu (zoom in)
   const TRAVEL_SECONDS = 4;        // polagani prijelaz na sljedeci auto (zoom out pa zoom in)
   const CAMERA_FOLLOW = 0.08;      // glatko pracenje sredista kamere
@@ -135,6 +136,44 @@
     entry.total = total;
   };
 
+  // Pojednostavi pravu rutu na vrh svakih `spacing` metara UZDUZ rute (prati cestu, ali s
+  // ravnim dionicama izmedu vrhova). Ako je ukupna duljina < spacing => samo ravna crta start->cilj.
+  const resampleByDistance = (points, spacing) => {
+    if (!Array.isArray(points) || points.length < 2) {
+      return points;
+    }
+    let total = 0;
+    for (let i = 1; i < points.length; i += 1) {
+      total += points[i - 1].distanceTo(points[i]);
+    }
+    if (total <= spacing) {
+      return [points[0], points[points.length - 1]];
+    }
+    const result = [points[0]];
+    let acc = 0;
+    let nextMark = spacing;
+    for (let i = 1; i < points.length; i += 1) {
+      const a = points[i - 1];
+      const b = points[i];
+      const segLen = a.distanceTo(b);
+      if (segLen <= 0) {
+        continue;
+      }
+      while (acc + segLen >= nextMark) {
+        const t = (nextMark - acc) / segLen;
+        result.push(L.latLng(a.lat + (b.lat - a.lat) * t, a.lng + (b.lng - a.lng) * t));
+        nextMark += spacing;
+      }
+      acc += segLen;
+    }
+    const last = points[points.length - 1];
+    const tail = result[result.length - 1];
+    if (tail.lat !== last.lat || tail.lng !== last.lng) {
+      result.push(last);
+    }
+    return result;
+  };
+
   const positionAt = (entry, fraction) => {
     if (entry.total <= 0 || entry.latlngs.length < 2) {
       return entry.latlngs[0];
@@ -189,11 +228,12 @@
       }
       fetchExact(route).then((points) => {
         if (points) {
-          entry.line.setLatLngs(points);
+          const waypoints = resampleByDistance(points, WAYPOINT_SPACING_M);
+          entry.line.setLatLngs(waypoints);
           if (entry.halo) {
-            entry.halo.setLatLngs(points);
+            entry.halo.setLatLngs(waypoints);
           }
-          entry.latlngs = points;
+          entry.latlngs = waypoints;
           computeCumulative(entry);
           return;
         }

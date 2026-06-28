@@ -66,6 +66,11 @@ public class CurrentRideItemViewModel
     public IReadOnlyList<RideChatMessage> Messages { get; set; } = Array.Empty<RideChatMessage>();
     public bool AllReady { get; set; }
     public decimal CashDue { get; set; }
+
+    // Perspektiva prijavljenog korisnika za ovu vožnju.
+    public bool ViewerIsDriver { get; set; }
+    public VoznjaPassengerRow? ViewerReservation { get; set; }
+    public bool ViewerCanCheckIn { get; set; }
 }
 
 public class RideSettlementViewModel
