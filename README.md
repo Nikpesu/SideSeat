@@ -5,7 +5,7 @@
 [![.NET](https://img.shields.io/badge/.NET-10.0-512BD4?logo=dotnet)](src/SideSeat/SideSeat.csproj)
 [![.NET CI](https://github.com/Nikpesu/SideSeat/actions/workflows/dotnet-ci.yml/badge.svg)](https://github.com/Nikpesu/SideSeat/actions/workflows/dotnet-ci.yml)
 [![Docker](https://img.shields.io/badge/Docker-Linux%20AMD64-2496ED?logo=docker&logoColor=white)](docker-compose.hub.yml)
-[![Version](https://img.shields.io/badge/version-v0.46-2ea44f)](changelogs/v0.46.md)
+[![Version](https://img.shields.io/badge/version-v0.47-2ea44f)](changelogs/v0.47.md)
 [![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
 SideSeat povezuje vozače i putnike kroz objavu vožnji, rezervacije, potvrđivanje putnika, plaćanja, ocjene i obavijesti. Projekt uključuje ASP.NET Core Identity, Google prijavu, REST API, upload slika, AI asistenta za Open WebUI ili DeepSeek, SQL Server, Docker i integracijske testove.
@@ -90,13 +90,13 @@ Aplikacija je dostupna na `http://localhost:8080`.
 Objavljeni image:
 
 ```text
-nikolica/sideseat:v0.46
+nikolica/sideseat:v0.47
 ```
 
 Tag `latest` pokazuje na isto izdanje. Image je namijenjen platformi `linux/amd64`.
 
 ```bash
-docker pull nikolica/sideseat:v0.46
+docker pull nikolica/sideseat:v0.47
 ```
 
 Digest izdanja:
@@ -400,6 +400,7 @@ Povijest izdanja organizirana je kao mala wiki baza. Klik na verziju otvara potp
 
 | Verzija | Datum | Najvažnije promjene | Docker |
 | --- | --- | --- | --- |
+| [v0.47](changelogs/v0.47.md) | 2026-06-28 | Chat „pošiljatelj→primatelj", plutajući chat vožnje, (i) objašnjenja koraka, saldo na vrhu, prozori check-in/pokretanja | `nikolica/sideseat:v0.47` |
 | [v0.46](changelogs/v0.46.md) | 2026-06-28 | Putnik na „Trenutna vožnja" + check-in/lokacija i notifikacija 30 min prije; ruta uzorkovana svakih 5 km | `nikolica/sideseat:v0.46` |
 | [v0.45](changelogs/v0.45.md) | 2026-06-28 | Oštrija pozadinska karta bez vidljivog ruba pri zumiranju | `nikolica/sideseat:v0.45` |
 | [v0.44](changelogs/v0.44.md) | 2026-06-28 | Pozadinska karta bez stalnog učitavanja (CSS zoom), Playwright E2E test i wiki za labose | `nikolica/sideseat:v0.44` |

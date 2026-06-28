@@ -51,11 +51,11 @@
                     </header>
 
                     <div class="ss-workflow-steps" aria-label="Koraci vožnje">
-                        <span class="is-done">1. Izrada</span>
-                        <span class="is-done">2. Rezervacije</span>
-                        <span class="@(ride.AllReady ? "is-done" : "is-current")">3. Putnici spremni</span>
-                        <span class="@(ride.Voznja.Status == SideSeat.Models.StatusVoznje.Aktivna ? "is-current" : "")">4. Aktivna</span>
-                        <span>5. Završetak</span>
+                        <span class="is-done">1. Izrada <span class="ss-info" tabindex="0" role="note" aria-label="Objašnjenje koraka">i<span class="ss-info-pop">Vožnja je objavljena s polazištem, odredištem i vremenom polaska.</span></span></span>
+                        <span class="is-done">2. Rezervacije <span class="ss-info" tabindex="0" role="note" aria-label="Objašnjenje koraka">i<span class="ss-info-pop">Putnici rezerviraju mjesta; vozač potvrđuje ili odbija rezervacije.</span></span></span>
+                        <span class="@(ride.AllReady ? "is-done" : "is-current")">3. Putnici spremni <span class="ss-info" tabindex="0" role="note" aria-label="Objašnjenje koraka">i<span class="ss-info-pop">Svaki potvrđeni putnik radi check-in i šalje lokaciju — dostupno 30 min prije polaska do pokretanja vožnje.</span></span></span>
+                        <span class="@(ride.Voznja.Status == SideSeat.Models.StatusVoznje.Aktivna ? "is-current" : "")">4. Aktivna <span class="ss-info" tabindex="0" role="note" aria-label="Objašnjenje koraka">i<span class="ss-info-pop">Vozač pokreće vožnju kad su svi spremni — moguće od 30 min prije polaska do 12 h nakon zakazanog termina.</span></span></span>
+                        <span>5. Završetak <span class="ss-info" tabindex="0" role="note" aria-label="Objašnjenje koraka">i<span class="ss-info-pop">Vozač završava vožnju i naplaćuje gotovinu/saldo; zatim slijede ocjene.</span></span></span>
                     </div>
 
                     <div class="ss-live-grid">
@@ -100,7 +100,7 @@
                                 @foreach (var message in ride.Messages)
                                 {
                                     <p>
-                                        <strong>@message.Sender?.Ime @message.Sender?.Prezime:</strong>
+                                        <strong>@message.Sender?.Ime @message.Sender?.Prezime → @(message.RecipientId == null ? "Svi" : $"{message.Recipient?.Ime} {message.Recipient?.Prezime}".Trim()):</strong>
                                         <span>@message.Message</span>
                                     </p>
                                 }
@@ -113,8 +113,8 @@
                                         <option value="@passenger.PutnikId">@passenger.PutnikIme</option>
                                     }
                                 </select>
-                                <input name="message" class="form-control" maxlength="1000" placeholder="Poruka cijeloj vožnji..." autocomplete="off" />
-                                <button type="submit" class="ss-btn">Pošalji</button>
+                                <input name="message" class="form-control" maxlength="1000" placeholder="Poruka..." autocomplete="off" />
+                                <button type="submit" class="ss-btn ss-chat-send" aria-label="Pošalji (Enter)" title="Pošalji (Enter)">⏎</button>
                             </form>
                         </section>
                     </div>
@@ -148,11 +148,11 @@
                     </header>
 
                     <div class="ss-workflow-steps" aria-label="Koraci vožnje">
-                        <span class="is-done">1. Rezervirano</span>
-                        <span class="@(res?.Status == SideSeat.Models.StatusRezervacije.Potvrdena ? "is-done" : "is-current")">2. Potvrda vozača</span>
-                        <span class="@(checkedIn ? "is-done" : ride.ViewerCanCheckIn ? "is-current" : "")">3. U autu</span>
-                        <span class="@(ride.Voznja.Status == SideSeat.Models.StatusVoznje.Aktivna ? "is-current" : "")">4. Vožnja aktivna</span>
-                        <span>5. Završetak</span>
+                        <span class="is-done">1. Rezervirano <span class="ss-info" tabindex="0" role="note" aria-label="Objašnjenje koraka">i<span class="ss-info-pop">Rezervirao si mjesto na ovoj vožnji.</span></span></span>
+                        <span class="@(res?.Status == SideSeat.Models.StatusRezervacije.Potvrdena ? "is-done" : "is-current")">2. Potvrda vozača <span class="ss-info" tabindex="0" role="note" aria-label="Objašnjenje koraka">i<span class="ss-info-pop">Vozač mora potvrditi tvoju rezervaciju prije nego možeš napraviti check-in.</span></span></span>
+                        <span class="@(checkedIn ? "is-done" : ride.ViewerCanCheckIn ? "is-current" : "")">3. U autu <span class="ss-info" tabindex="0" role="note" aria-label="Objašnjenje koraka">i<span class="ss-info-pop">Check-in i slanje lokacije dostupni su 30 min prije polaska do pokretanja vožnje.</span></span></span>
+                        <span class="@(ride.Voznja.Status == SideSeat.Models.StatusVoznje.Aktivna ? "is-current" : "")">4. Vožnja aktivna <span class="ss-info" tabindex="0" role="note" aria-label="Objašnjenje koraka">i<span class="ss-info-pop">Vozač pokreće vožnju (od 30 min prije polaska do 12 h nakon termina) kad su svi spremni.</span></span></span>
+                        <span>5. Završetak <span class="ss-info" tabindex="0" role="note" aria-label="Objašnjenje koraka">i<span class="ss-info-pop">Nakon vožnje slijede ocjena i plaćanje.</span></span></span>
                     </div>
 
                     <div class="ss-live-grid">
@@ -198,7 +198,7 @@
                                 @foreach (var message in ride.Messages)
                                 {
                                     <p>
-                                        <strong>@message.Sender?.Ime @message.Sender?.Prezime:</strong>
+                                        <strong>@message.Sender?.Ime @message.Sender?.Prezime → @(message.RecipientId == null ? "Svi" : $"{message.Recipient?.Ime} {message.Recipient?.Prezime}".Trim()):</strong>
                                         <span>@message.Message</span>
                                     </p>
                                 }
@@ -206,8 +206,12 @@
                             @if (res?.Status == SideSeat.Models.StatusRezervacije.Potvrdena)
                             {
                                 <form data-chat-form>
-                                    <input name="message" class="form-control" maxlength="1000" placeholder="Poruka cijeloj vožnji..." autocomplete="off" />
-                                    <button type="submit" class="ss-btn">Pošalji</button>
+                                    <select name="recipientId" class="form-select" aria-label="Primatelj poruke">
+                                        <option value="">Cijela vožnja</option>
+                                        <option value="@ride.Voznja.VozacId">Samo vozač (@ride.Voznja.Vozac?.Ime)</option>
+                                    </select>
+                                    <input name="message" class="form-control" maxlength="1000" placeholder="Poruka..." autocomplete="off" />
+                                    <button type="submit" class="ss-btn ss-chat-send" aria-label="Pošalji (Enter)" title="Pošalji (Enter)">⏎</button>
                                 </form>
                             }
                         </section>

@@ -4,7 +4,7 @@
     var db = Context.RequestServices.GetService(typeof(SideSeat.Data.SideSeatDbContext)) as SideSeat.Data.SideSeatDbContext;
     var configuration = Context.RequestServices.GetService(typeof(IConfiguration)) as IConfiguration;
     var useDummyData = configuration?.GetValue<bool>("DUMMY_DATA") == true;
-    var appVersion = configuration?["SIDESEAT_VERSION"] ?? "v0.46";
+    var appVersion = configuration?["SIDESEAT_VERSION"] ?? "v0.47";
     var googleLoginEnabled =
         !string.IsNullOrWhiteSpace(configuration?["Authentication:Google:ClientId"]) &&
         !string.IsNullOrWhiteSpace(configuration?["Authentication:Google:ClientSecret"]);
@@ -129,6 +129,13 @@
                     </button>
                     @if (isAuthenticated)
                     {
+                        @if (userSaldo.HasValue)
+                        {
+                            <a class="ss-nav-link ss-nav-balance ss-nav-balance-top @(currentController == "korisnik" && currentAction == "saldo" ? "active" : string.Empty)"
+                               asp-controller="Korisnik" asp-action="Saldo" data-testid="nav-balance">
+                                Saldo: <strong>@userSaldo.Value.ToString("0.00") EUR</strong>
+                            </a>
+                        }
                         @await Component.InvokeAsync("ObavijestiBell")
                         <a class="ss-account-link @(currentController == "korisnik" && currentAction == "settings" ? "active" : string.Empty)"
                            asp-controller="Korisnik" asp-action="Settings" data-testid="account-settings">
@@ -160,22 +167,12 @@
                     <div class="ss-shell ss-nav-secondary-inner">
                         <a class="ss-nav-link @(currentController == "voznja" ? "active" : string.Empty)"
                            asp-controller="Voznja" asp-action="Index" data-testid="nav-rides">Vožnje</a>
-                        @if (isDriver)
-                        {
-                            <a class="ss-nav-link @(currentController == "voznja" && currentAction == "current" ? "active" : string.Empty)"
-                               asp-controller="Voznja" asp-action="Current" data-testid="nav-current-ride">Trenutna</a>
-                        }
+                        <a class="ss-nav-link @(currentController == "voznja" && currentAction == "current" ? "active" : string.Empty)"
+                           asp-controller="Voznja" asp-action="Current" data-testid="nav-current-ride">Trenutna</a>
                         <a class="ss-nav-link @(currentController == "rezervacija" ? "active" : string.Empty)"
                            asp-controller="Rezervacija" asp-action="Index" data-testid="nav-reservations">Rezervacije</a>
                         <a class="ss-nav-link @(currentController == "ocjena" ? "active" : string.Empty)"
                            asp-controller="Ocjena" asp-action="Index" data-testid="nav-reviews">Ocjene</a>
-                        @if (userSaldo.HasValue)
-                        {
-                            <a class="ss-nav-link ss-nav-balance @(currentController == "korisnik" && currentAction == "saldo" ? "active" : string.Empty)"
-                               asp-controller="Korisnik" asp-action="Saldo" data-testid="nav-balance">
-                                Saldo: <strong>@userSaldo.Value.ToString("0.00") EUR</strong>
-                            </a>
-                        }
                     </div>
                 </div>
             }
@@ -359,6 +356,10 @@
     </footer>
 
     <partial name="_AiAssistant" />
+    @if (isAuthenticated)
+    {
+        @await Component.InvokeAsync("RideChatDock")
+    }
 
     <aside class="ss-route-preview"
            data-ss-route-preview

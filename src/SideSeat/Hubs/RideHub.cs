@@ -61,6 +61,15 @@ public sealed class RideHub(SideSeatDbContext dbContext) : Hub
         dbContext.RideChatMessages.Add(entity);
         await dbContext.SaveChangesAsync();
 
+        string? recipientName = null;
+        if (recipientId.HasValue)
+        {
+            recipientName = await dbContext.Korisnici
+                .Where(user => user.Id == recipientId.Value)
+                .Select(user => (user.Ime + " " + user.Prezime).Trim())
+                .FirstOrDefaultAsync();
+        }
+
         var payload = new
         {
             entity.Id,
@@ -68,6 +77,7 @@ public sealed class RideHub(SideSeatDbContext dbContext) : Hub
             entity.SenderId,
             senderName = Principal.Identity?.Name ?? "Korisnik",
             entity.RecipientId,
+            recipientName,
             entity.Message,
             entity.CreatedAtUtc
         };

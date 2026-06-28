@@ -1421,6 +1421,14 @@ public sealed class SideSeatCommandService(
             return CommandResult.Fail(CommandErrorKind.BusinessRule, "Samo planirana vožnja može se pokrenuti.");
         }
 
+        var nowStart = DateTime.Now;
+        if (nowStart < ride.Polazak.AddMinutes(-30) || nowStart > ride.Polazak.AddHours(12))
+        {
+            return CommandResult.Fail(
+                CommandErrorKind.BusinessRule,
+                "Vožnja se može pokrenuti od 30 min prije polaska do 12 h nakon zakazanog termina.");
+        }
+
         var confirmed = ride.Rezervacije
             .Where(reservation => reservation.Status == StatusRezervacije.Potvrdena)
             .ToList();
