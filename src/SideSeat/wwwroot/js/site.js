@@ -2004,9 +2004,143 @@
     });
   };
 
+  const initializeRideChatDock = () => {
+    const root = document.querySelector("[data-ss-ridechat]");
+    if (!root || typeof signalR === "undefined") {
+      return;
+    }
+    const fab = root.querySelector("[data-ss-rcd-toggle]");
+    const panel = root.querySelector("[data-ss-rcd-panel]");
+    const closeBtn = root.querySelector("[data-ss-rcd-close]");
+    const select = root.querySelector("[data-ss-rcd-select]");
+    const log = root.querySelector("[data-ss-rcd-log]");
+    const form = root.querySelector("[data-ss-rcd-form]");
+    const input = root.querySelector("[data-ss-rcd-input]");
+    const recipient = root.querySelector("[data-ss-rcd-recipient]");
+    if (!fab || !panel || !select || !log || !form) {
+      return;
+    }
+
+    let currentRideId = 0;
+    const joined = new Set();
+    const connection = new signalR.HubConnectionBuilder()
+      .withUrl("/hubs/rides")
+      .withAutomaticReconnect()
+      .build();
+
+    const addLine = (payload) => {
+      const line = document.createElement("p");
+      const sender = document.createElement("strong");
+      const text = document.createElement("span");
+      const recName = payload.recipientName || payload.RecipientName;
+      const recId = payload.recipientId || payload.RecipientId;
+      const recLabel = recName || (recId ? "Korisnik" : "Svi");
+      sender.textContent = `${payload.senderName || "Korisnik"} → ${recLabel}: `;
+      text.textContent = payload.message || "";
+      line.append(sender, text);
+      log.appendChild(line);
+      log.scrollTop = log.scrollHeight;
+    };
+
+    const loadRide = async (rideId) => {
+      currentRideId = rideId;
+      log.innerHTML = "";
+      if (recipient) {
+        recipient.innerHTML = '<option value="">Cijela vožnja</option>';
+      }
+      try {
+        const response = await fetch(`/api/rides/${rideId}/chat`, {
+          headers: { Accept: "application/json" },
+          credentials: "same-origin"
+        });
+        if (!response.ok) {
+          log.innerHTML = "<p>Chat nije dostupan.</p>";
+          return;
+        }
+        const data = await response.json();
+        (data.messages || []).forEach(addLine);
+        if (recipient && Array.isArray(data.participants)) {
+          data.participants.forEach((participant) => {
+            const option = document.createElement("option");
+            option.value = participant.id;
+            option.textContent = participant.name;
+            recipient.appendChild(option);
+          });
+        }
+        log.scrollTop = log.scrollHeight;
+      } catch {
+        log.innerHTML = "<p>Chat nije dostupan.</p>";
+      }
+      if (connection.state === "Connected" && !joined.has(rideId)) {
+        try {
+          await connection.invoke("JoinRide", rideId);
+          joined.add(rideId);
+        } catch {
+          // pristup chatu nije dostupan za ovu vožnju
+        }
+      }
+    };
+
+    const openPanel = () => {
+      panel.hidden = false;
+      fab.setAttribute("aria-expanded", "true");
+      const rideId = Number(select.value || "0");
+      if (rideId && rideId !== currentRideId) {
+        loadRide(rideId);
+      } else {
+        log.scrollTop = log.scrollHeight;
+      }
+    };
+    const closePanel = () => {
+      panel.hidden = true;
+      fab.setAttribute("aria-expanded", "false");
+    };
+
+    fab.addEventListener("click", () => (panel.hidden ? openPanel() : closePanel()));
+    closeBtn?.addEventListener("click", closePanel);
+    select.addEventListener("change", () => {
+      const rideId = Number(select.value || "0");
+      if (rideId) {
+        loadRide(rideId);
+      }
+    });
+
+    connection.on("RideMessage", (payload) => {
+      const rideId = payload.voznjaId || payload.VoznjaId;
+      if (rideId === currentRideId && !panel.hidden) {
+        addLine(payload);
+      }
+    });
+
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const message = input?.value.trim();
+      if (!currentRideId || !message) {
+        return;
+      }
+      const recipientId = recipient && recipient.value ? Number(recipient.value) : null;
+      try {
+        await connection.invoke("SendMessage", currentRideId, message, recipientId);
+        input.value = "";
+      } catch {
+        // slanje nije uspjelo
+      }
+    });
+
+    connection.start()
+      .then(() => {
+        const rideId = Number(select.value || "0");
+        if (rideId && !panel.hidden) {
+          loadRide(rideId);
+        }
+      })
+      .catch(() => {});
+  };
+
   initializeAiAssistant();
   initializeGlobalSearch();
   initializeEnhancedUi();
   initializeLiveRides();
   initializeCheckInForms();
+  initializeRideChatDock();
 })();

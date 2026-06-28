@@ -356,6 +356,10 @@
     </footer>
 
     <partial name="_AiAssistant" />
+    @if (isAuthenticated)
+    {
+        @await Component.InvokeAsync("RideChatDock")
+    }
 
     <aside class="ss-route-preview"
            data-ss-route-preview

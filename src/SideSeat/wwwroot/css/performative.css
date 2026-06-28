@@ -1386,3 +1386,120 @@ html[data-theme="dark"] textarea::placeholder {
   }
 
 }
+
+/* Plutajući chat vožnje (dolje-lijevo, zrcalno AI asistentu). */
+.ss-rcd {
+  position: fixed;
+  left: clamp(1rem, 2vw, 1.7rem);
+  bottom: clamp(1rem, 2vw, 1.7rem);
+  z-index: 2040;
+  display: grid;
+  justify-items: start;
+  gap: 0.8rem;
+}
+
+.ss-rcd-fab {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 999px;
+  padding: 0.55rem 0.9rem 0.55rem 0.6rem;
+  color: #fff;
+  background: linear-gradient(180deg, #101913, #060a07);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(77, 190, 85, 0.18);
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.ss-rcd-fab:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 16px 38px rgba(0, 0, 0, 0.34), 0 0 24px rgba(77, 190, 85, 0.22);
+}
+
+.ss-rcd-fab-icon {
+  width: 2.1rem;
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: var(--ss-gradient);
+  box-shadow: 0 0 18px rgba(77, 190, 85, 0.24);
+}
+
+.ss-rcd-fab-copy {
+  display: grid;
+  text-align: left;
+  line-height: 1.05;
+}
+
+.ss-rcd-fab-copy strong {
+  font-size: 0.82rem;
+}
+
+.ss-rcd-fab-copy small {
+  margin-top: 0.25rem;
+  color: #a9a3bb;
+  font-size: 0.62rem;
+}
+
+.ss-rcd-panel {
+  width: min(380px, calc(100vw - 2rem));
+  max-height: min(560px, calc(100vh - 7rem));
+  display: grid;
+  grid-template-rows: auto auto minmax(120px, 1fr) auto;
+  gap: 0.6rem;
+  padding: 0.9rem;
+  overflow: hidden;
+  border: 1px solid rgba(121, 237, 145, 0.22);
+  border-radius: 20px;
+  color: var(--ss-text);
+  background: color-mix(in srgb, var(--ss-surface-strong) 92%, transparent);
+  box-shadow: 0 20px 54px rgba(0, 0, 0, 0.32);
+  transform-origin: bottom left;
+}
+
+.ss-rcd-panel[hidden] {
+  display: none;
+}
+
+.ss-rcd-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.ss-rcd-close {
+  background: none;
+  border: none;
+  color: inherit;
+  font-size: 1.3rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.ss-rcd-log {
+  display: grid;
+  gap: 0.5rem;
+  align-content: start;
+  overflow-y: auto;
+  padding: 0.5rem;
+  border-radius: 0.6rem;
+  background: rgba(0, 0, 0, 0.12);
+  font-size: 0.85rem;
+}
+
+.ss-rcd-log p {
+  margin: 0;
+}
+
+.ss-rcd-form {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.ss-rcd-form .form-control {
+  flex: 1 1 auto;
+}
