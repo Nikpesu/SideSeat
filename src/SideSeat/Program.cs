@@ -53,6 +53,11 @@ namespace SideSeat
             builder.Services.AddScoped<ISideSeatCommandService, SideSeatCommandService>();
             builder.Services.AddScoped<IPendingActionService, PendingActionService>();
             builder.Services.AddScoped<IAuditService, AuditService>();
+            if (!builder.Environment.IsEnvironment("Testing"))
+            {
+                // Podsjeti putnika (zvonce) ~30 min prije polaska da napravi check-in.
+                builder.Services.AddHostedService<CheckInReminderService>();
+            }
             builder.Services.AddHttpContextAccessor();
             builder.Services.AddMemoryCache();
             builder.Services.Configure<MapsOptions>(
