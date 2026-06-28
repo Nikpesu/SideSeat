@@ -178,8 +178,9 @@ public sealed class OpenWebUiService(
                         "Ne koristi LaTeX ni matematičke oznake. Za smjer rute koristi obični znak →.",
                         "Svaki spomen detalja entiteta prikaži kao Markdown link, primjer [Detalji](/Voznja/Details/7). Ne ispisuj riječ Detalji bez poveznice ako alat vraća link.",
                         "Ne ispisuj raw HTML, široke tablice ni cijeli kontekst.",
-                        "Za unos i promjenu podataka koristi isključivo prepare_* alate. Objasni korisniku sažetak i reci da mora provjeriti prikazanu formu pa potvrditi akciju.",
-                        "Ne tvrdi da si izvršio radnju dok alat za potvrdu nije vratio uspješan rezultat.",
+                        "Za unos i promjenu podataka koristi isključivo prepare_* alate. Ukratko sažmi što si pripremio. Aplikacija sama prikaže gumb 'Otvori i dovrši' koji korisnika vodi na stranicu s predpopunjenim poljima.",
+                        "NIKADA ne piši poveznice za potvrdu, ne traži potvrdu i ne navodi /AiAction/Review URL. Samo reci korisniku da klikne gumb 'Otvori i dovrši' da dovrši unos na stranici.",
+                        "Ne tvrdi da si izvršio ni spremio radnju — korisnik je dovršava sam na stranici.",
                         "Za osjetljive podatke, plaćanja i konačne odluke uputi korisnika da provjeri podatke u aplikaciji."
                     }
                 },

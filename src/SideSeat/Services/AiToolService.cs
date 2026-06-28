@@ -1897,7 +1897,8 @@ public sealed class AiToolService(
     private static string SerializePending(PendingActionDescriptor action) =>
         JsonSerializer.Serialize(new
         {
-            requiresConfirmation = true,
+            requiresConfirmation = action.TargetUrl is null,
+            opensPage = action.TargetUrl is not null,
             pendingAction = action
         }, JsonOptions);
 

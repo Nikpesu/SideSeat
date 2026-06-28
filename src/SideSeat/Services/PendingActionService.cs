@@ -26,6 +26,7 @@ public sealed class PendingActionService(
             ?? throw new InvalidOperationException("Korisnik nije prijavljen.");
         var token = Convert.ToHexString(RandomNumberGenerator.GetBytes(24)).ToLowerInvariant();
         var expiresAt = DateTime.UtcNow.Add(Lifetime);
+        var targetUrl = AiActionTargets.Resolve(actionType, payload);
         var envelope = new PendingActionEnvelope(
             actionType,
             korisnikId,
@@ -33,9 +34,9 @@ public sealed class PendingActionService(
             summary,
             JsonSerializer.Serialize(payload, JsonOptions),
             expiresAt,
-            BuildForm(token, actionType, title, summary, payload));
+            BuildForm(token, actionType, title, summary, payload, targetUrl));
         cache.Set(CacheKey(token), envelope, expiresAt);
-        return ToDescriptor(token, envelope, AiActionTargets.Resolve(actionType, payload));
+        return ToDescriptor(token, envelope, targetUrl);
     }
 
     public PendingActionDescriptor? GetDescriptor(string token, ClaimsPrincipal principal)
@@ -121,7 +122,8 @@ public sealed class PendingActionService(
         string actionType,
         string title,
         string summary,
-        T payload)
+        T payload,
+        string? targetUrl = null)
     {
         var fields = typeof(T)
             .GetProperties(BindingFlags.Instance | BindingFlags.Public)
@@ -153,7 +155,7 @@ public sealed class PendingActionService(
             actionType,
             title,
             actionType.Contains("delete", StringComparison.OrdinalIgnoreCase) ? "Potvrdi brisanje" : "Submit",
-            $"/AiAction/Review/{token}",
+            targetUrl ?? $"/AiAction/Review/{token}",
             [new PendingFormSection("Podaci za provjeru", fields)],
             warnings);
     }
