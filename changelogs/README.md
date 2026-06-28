@@ -6,6 +6,28 @@ Ova mapa sadrži povijest verzija SideSeat aplikacije. Svako izdanje ima zasebnu
 
 | Verzija | Datum | Sažetak |
 | --- | --- | --- |
+| [v0.43](v0.43.md) | 2026-06-17 | Autići 1 km/s, spori zoom-tour i bufferana karta bez crnog ekrana |
+| [v0.42](v0.42.md) | 2026-06-17 | Kamera zoom in/out tour i novi autić na istoj ruti 2 s nakon dolaska |
+| [v0.41](v0.41.md) | 2026-06-17 | Vraćeno trenutno okretanje autića i minimalno 5 s po ruti |
+| [v0.40](v0.40.md) | 2026-06-17 | Novi autić svakih 5 s, limit zakretanja 60°/s i tekst uz toggle teme |
+| [v0.39](v0.39.md) | 2026-06-17 | Autići se miču 30 km/s i pouzdano prate prave OSRM ceste |
+| [v0.38](v0.38.md) | 2026-06-17 | Chase-kamera prati autić po stvarnoj ruti uz bliži zoom |
+| [v0.37](v0.37.md) | 2026-06-17 | Pozadina je pravi OpenStreetMap s animiranim autićima kao overlay |
+| [v0.36](v0.36.md) | 2026-06-17 | Veći kontrast pozadinske karte |
+| [v0.35](v0.35.md) | 2026-06-17 | Pozadina prikazuje okolne države i jače je zumirana |
+| [v0.34](v0.34.md) | 2026-06-17 | Automatski izračun vremena dolaska vožnje te pozadina s granicama država, sporom kamerom i 5 s po ruti |
+| [v0.33](v0.33.md) | 2026-06-17 | Nova pozadinska animacija auta po stvarnim rutama, role-bazirani AI alati s lookupom i kompletna dokumentacija |
+| [v0.32](v0.32.md) | 2026-06-17 | Napojnica karticom pri ocjeni, vodič kroz vožnju, skrolabilan sidebar i profesionalna reorganizacija repozitorija |
+| [v0.31](v0.31.md) | 2026-06-16 | AI javna pretraga, scrollabilan sidebar i tablične liste vožnji/rezervacija |
+| [v0.30](v0.30.md) | 2026-06-16 | Stabilan hover bez pomicanja formi i pojačan kontrast dark teme |
+| [v0.29](v0.29.md) | 2026-06-16 | AI/MCP full CRUD pending forme, live ride workflow i settlement plaćanja |
+| [v0.28](v0.28.md) | 2026-06-15 | Točne OSRM cestovne rute, brzi fallback i stabilan hover prikaz |
+| [v0.27](v0.27.md) | 2026-06-15 | Redizajnirana početna i carousel ruta s kartom |
+| [v0.26](v0.26.md) | 2026-06-15 | OpenStreetMap rute, geocoding i MCP produkcijska konfiguracija |
+| [v0.25](v0.25.md) | 2026-06-15 | Dvoredni navbar, role-aware sidebar i mobilna navigacija |
+| [v0.23](v0.23.md) | 2026-06-11 | Ispravno formatirane AI rute i klikabilni detalji |
+| [v0.22](v0.22.md) | 2026-06-11 | AI alati, autorizirani sitemap i trajna petominutna sesija |
+| [v0.21](v0.21.md) | 2026-06-11 | AI provider podrška za Open WebUI i DeepSeek |
 | [v0.20](v0.20.md) | 2026-06-11 | Potpuni AI poslovni kontekst i OpenWebUI konfiguracija kroz Docker |
 | [v0.19](v0.19.md) | 2026-06-11 | AI kontekst, admin feedback i novi kartični prikaz podataka |
 | [v0.18](v0.18.md) | 2026-06-10 | Docker release v0.18 i ažurirani hub tagovi |
@@ -26,16 +48,16 @@ Ova mapa sadrži povijest verzija SideSeat aplikacije. Svako izdanje ima zasebnu
 
 ## Trenutna verzija
 
-Trenutna stabilna verzija je [v0.20](v0.20.md):
+Trenutna stabilna verzija je [v0.43](v0.43.md):
 
 ```text
-nikolica/sideseat:v0.20
+nikolica/sideseat:v0.43
 ```
 
 Docker Hub digest:
 
 ```text
-sha256:f80a84e538890b61ddb9c2120b53e1e9c545a3908ef6709f0e598f03f2ea88fb
+sha256:0e67da5e938a226c6299dcafe8e2315f0c1ee4123ec2734a6796c72d2dc9c3f5
 ```
 
 ## Pravilo verzioniranja

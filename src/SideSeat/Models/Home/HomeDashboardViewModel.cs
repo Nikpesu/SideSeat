@@ -1,5 +1,3 @@
-using SideSeat.Models;
-
 namespace SideSeat.Models.Home;
 
 public class HomeDashboardViewModel
@@ -14,7 +12,6 @@ public class HomeDashboardViewModel
     public int BrojAktivnihVoznji { get; set; }
     public int BrojMojihVoznji { get; set; }
     public int BrojMojihRezervacija { get; set; }
-    public List<HomeVoznjaRow> NadolazeceVoznje { get; set; } = new();
     public int? SearchFrom { get; set; }
     public int? SearchTo { get; set; }
     public string SearchFromText { get; set; } = string.Empty;
@@ -23,20 +20,16 @@ public class HomeDashboardViewModel
     public List<HomeVoznjaSearchRow> SearchResults { get; set; } = new();
 }
 
-public class HomeVoznjaRow
-{
-    public DateTime Polazak { get; set; }
-    public string PolazniGrad { get; set; } = string.Empty;
-    public string OdredisniGrad { get; set; } = string.Empty;
-    public StatusVoznje Status { get; set; }
-}
-
 public class HomeVoznjaSearchRow
 {
     public int Id { get; set; }
     public DateTime Polazak { get; set; }
     public string PolazniGrad { get; set; } = string.Empty;
     public string OdredisniGrad { get; set; } = string.Empty;
+    public decimal? PolazniGradLatitude { get; set; }
+    public decimal? PolazniGradLongitude { get; set; }
+    public decimal? OdredisniGradLatitude { get; set; }
+    public decimal? OdredisniGradLongitude { get; set; }
     public int SlobodnaMjesta { get; set; }
     public decimal CijenaPoMjestu { get; set; }
     public string Vozac { get; set; } = string.Empty;

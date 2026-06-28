@@ -197,8 +197,9 @@ public sealed class AiContextService(SideSeatDbContext dbContext) : IAiContextSe
         var reservedFunds = reservations
             .Where(reservation =>
                 reservation.Voznja.Status == StatusVoznje.Planirana &&
+                reservation.NacinPlacanja == NacinPlacanja.SideSeatSaldo &&
                 reservation.Status is StatusRezervacije.UProcesuPotvrde or StatusRezervacije.Potvrdena)
-            .Sum(reservation => reservation.CijenaUkupno);
+            .Sum(reservation => reservation.CijenaUkupno + reservation.Napojnica);
 
         var context = new
         {
@@ -269,6 +270,8 @@ public sealed class AiContextService(SideSeatDbContext dbContext) : IAiContextSe
                 driver = $"{reservation.Voznja.Vozac.Ime} {reservation.Voznja.Vozac.Prezime}".Trim(),
                 reservation.BrojMjesta,
                 reservation.CijenaUkupno,
+                reservation.Napojnica,
+                reservation.NacinPlacanja,
                 reservation.Voznja.CijenaPoMjestu,
                 reservation.Voznja.SlobodnaMjesta,
                 note = Clean(reservation.Napomena, 300),
@@ -298,6 +301,8 @@ public sealed class AiContextService(SideSeatDbContext dbContext) : IAiContextSe
                         status = reservation.Status.ToDisplayName(),
                         reservation.BrojMjesta,
                         reservation.CijenaUkupno,
+                        reservation.Napojnica,
+                        reservation.NacinPlacanja,
                         createdAt = reservation.VrijemeRezervacije,
                         note = Clean(reservation.Napomena, 300),
                         reservationLink = $"/Rezervacija/Details/{reservation.Id}"

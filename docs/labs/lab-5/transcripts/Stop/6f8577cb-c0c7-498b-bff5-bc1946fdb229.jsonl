@@ -1,0 +1,4 @@
+{"type":"session.start","data":{"sessionId":"6f8577cb-c0c7-498b-bff5-bc1946fdb229","version":1,"producer":"copilot-agent","copilotVersion":"0.52.0","vscodeVersion":"1.124.0","startTime":"2026-06-11T06:50:21.241Z"},"id":"caed1f5d-01c5-4356-9f98-7bdb9182a89d","timestamp":"2026-06-11T06:50:21.241Z","parentId":null}
+{"type":"user.message","data":{"content":"upload to docker v0.24","attachments":[]},"id":"cf1eeb57-a1bd-4493-84dd-df75668116e9","timestamp":"2026-06-11T06:50:27.143Z","parentId":"caed1f5d-01c5-4356-9f98-7bdb9182a89d"}
+{"type":"assistant.turn_start","data":{"turnId":"0"},"id":"20253417-c968-40b2-884b-470c82707743","timestamp":"2026-06-11T06:50:28.658Z","parentId":"cf1eeb57-a1bd-4493-84dd-df75668116e9"}
+{"type":"assistant.turn_end","data":{"turnId":"0"},"id":"add40eb0-9ab8-4809-b816-4d30650afc52","timestamp":"2026-06-11T06:50:29.723Z","parentId":"20253417-c968-40b2-884b-470c82707743"}

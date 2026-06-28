@@ -8,6 +8,8 @@ public class GradDto
     public string Naziv { get; set; } = string.Empty;
     public string Drzava { get; set; } = string.Empty;
     public string PostanskiBroj { get; set; } = string.Empty;
+    public decimal? Latitude { get; set; }
+    public decimal? Longitude { get; set; }
 }
 
 public class GradRequest
@@ -18,6 +20,10 @@ public class GradRequest
     public string Drzava { get; set; } = string.Empty;
     [Required, StringLength(12)]
     public string PostanskiBroj { get; set; } = string.Empty;
+    [Range(-90, 90)]
+    public decimal? Latitude { get; set; }
+    [Range(-180, 180)]
+    public decimal? Longitude { get; set; }
 }
 
 public class KorisnikDto
@@ -130,6 +136,13 @@ public class RezervacijaDto
     public decimal CijenaUkupno { get; set; }
     public DateTime VrijemeRezervacije { get; set; }
     public StatusRezervacije Status { get; set; }
+    public NacinPlacanja NacinPlacanja { get; set; }
+    public decimal Napojnica { get; set; }
+    public DateTime? CheckInAtUtc { get; set; }
+    public decimal? LastLatitude { get; set; }
+    public decimal? LastLongitude { get; set; }
+    public DateTime? LastLocationAtUtc { get; set; }
+    public DateTime? CashCollectedAtUtc { get; set; }
     public string Napomena { get; set; } = string.Empty;
 }
 
@@ -142,6 +155,9 @@ public class RezervacijaRequest
     [Range(1, 10)]
     public int BrojMjesta { get; set; } = 1;
     public StatusRezervacije Status { get; set; } = StatusRezervacije.UProcesuPotvrde;
+    public NacinPlacanja NacinPlacanja { get; set; } = NacinPlacanja.SideSeatSaldo;
+    [Range(0, 10000)]
+    public decimal Napojnica { get; set; }
     [StringLength(500)]
     public string Napomena { get; set; } = string.Empty;
 }

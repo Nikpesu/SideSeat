@@ -3,7 +3,9 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Localization;
 using Microsoft.Data.SqlClient;
 using SideSeat.Data;
+using SideSeat.Hubs;
 using SideSeat.Models;
+using SideSeat.Middleware;
 using SideSeat.Repositories;
 using SideSeat.Security;
 using SideSeat.Services;
@@ -18,6 +20,12 @@ namespace SideSeat
         public static async Task Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
+            builder.Logging.AddJsonConsole(options =>
+            {
+                options.IncludeScopes = true;
+                options.TimestampFormat = "yyyy-MM-ddTHH:mm:ss.fffZ";
+                options.UseUtcTimestamp = true;
+            });
             var connectionString = builder.Configuration.GetConnectionString("SideSeatDbContext");
             if (builder.Environment.IsEnvironment("Docker") &&
                 string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("ConnectionStrings__SideSeatDbContext")))
@@ -42,7 +50,46 @@ namespace SideSeat
             builder.Services.AddScoped<INotificationService, NotificationService>();
             builder.Services.AddScoped<IAiContextService, AiContextService>();
             builder.Services.AddScoped<IAiToolService, AiToolService>();
+            builder.Services.AddScoped<ISideSeatCommandService, SideSeatCommandService>();
+            builder.Services.AddScoped<IPendingActionService, PendingActionService>();
+            builder.Services.AddScoped<IAuditService, AuditService>();
+            builder.Services.AddHttpContextAccessor();
             builder.Services.AddMemoryCache();
+            builder.Services.Configure<MapsOptions>(
+                builder.Configuration.GetSection(MapsOptions.SectionName));
+            builder.Services.Configure<PublicWebSearchOptions>(
+                builder.Configuration.GetSection(PublicWebSearchOptions.SectionName));
+            builder.Services.AddHttpClient("Nominatim", client =>
+            {
+                client.Timeout = TimeSpan.FromSeconds(15);
+            });
+            builder.Services.AddHttpClient("Routing", client =>
+            {
+                client.Timeout = TimeSpan.FromSeconds(2);
+            });
+            builder.Services.AddHttpClient("PublicWebSearch", client =>
+            {
+                client.Timeout = TimeSpan.FromSeconds(10);
+            });
+            builder.Services.AddSingleton<ICityGeocodingService, NominatimCityGeocodingService>();
+            builder.Services.AddSingleton<IRouteGeometryService, OsrmRouteGeometryService>();
+            builder.Services.AddSingleton<IPublicWebSearchService, PublicWebSearchService>();
+            builder.Services.AddProblemDetails(options =>
+            {
+                options.CustomizeProblemDetails = context =>
+                {
+                    context.ProblemDetails.Extensions["correlationId"] =
+                        context.HttpContext.TraceIdentifier;
+                };
+            });
+            builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+            builder.Services.AddSignalR();
+            builder.Services.AddHealthChecks()
+                .AddCheck<DatabaseHealthCheck>("database", tags: ["ready"]);
+            builder.Services.AddMcpServer()
+                .WithHttpTransport()
+                .WithToolsFromAssembly()
+                .WithResourcesFromAssembly();
             builder.Services.Configure<OpenWebUiOptions>(
                 builder.Configuration.GetSection(OpenWebUiOptions.SectionName));
             builder.Services.AddHttpClient<IOpenWebUiService, OpenWebUiService>(client =>
@@ -59,6 +106,16 @@ namespace SideSeat
                             PermitLimit = 12,
                             Window = TimeSpan.FromMinutes(1),
                             QueueLimit = 2,
+                            QueueProcessingOrder = QueueProcessingOrder.OldestFirst
+                        }));
+                options.AddPolicy("maps", context =>
+                    RateLimitPartition.GetFixedWindowLimiter(
+                        context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+                        _ => new FixedWindowRateLimiterOptions
+                        {
+                            PermitLimit = 120,
+                            Window = TimeSpan.FromMinutes(1),
+                            QueueLimit = 4,
                             QueueProcessingOrder = QueueProcessingOrder.OldestFirst
                         }));
                 options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
@@ -140,17 +197,22 @@ namespace SideSeat
             // Configure the HTTP request pipeline.
             if (!app.Environment.IsDevelopment())
             {
-                app.UseExceptionHandler("/Home/Error");
+                app.UseExceptionHandler();
                 // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
                 app.UseHsts();
             }
 
-            app.UseHttpsRedirection();
+            if (!app.Environment.IsEnvironment("Docker"))
+            {
+                app.UseHttpsRedirection();
+            }
             app.UseStaticFiles();
             app.UseRouting();
 
             app.UseAuthentication();
             app.UseAuthorization();
+            app.UseMiddleware<RequestObservabilityMiddleware>();
+            app.UseMiddleware<McpApiKeyMiddleware>();
             app.UseRateLimiter();
             app.UseStatusCodePagesWithReExecute("/Home/HttpStatus/{0}");
 
@@ -159,7 +221,25 @@ namespace SideSeat
                 var dbContext = scope.ServiceProvider.GetRequiredService<SideSeatDbContext>();
                 if (app.Environment.IsDevelopment() || app.Environment.IsEnvironment("Docker"))
                 {
-                    await dbContext.Database.MigrateAsync();
+                    var logger = scope.ServiceProvider
+                        .GetRequiredService<ILoggerFactory>()
+                        .CreateLogger("DatabaseMigration");
+                    for (var attempt = 1; attempt <= 6; attempt++)
+                    {
+                        try
+                        {
+                            await dbContext.Database.MigrateAsync();
+                            break;
+                        }
+                        catch (Exception exception) when (attempt < 6)
+                        {
+                            logger.LogWarning(
+                                exception,
+                                "Database migration attempt {Attempt} failed. Retrying.",
+                                attempt);
+                            await Task.Delay(TimeSpan.FromSeconds(attempt * 3));
+                        }
+                    }
                 }
 
                 if (app.Environment.IsEnvironment("Docker") && !useDummyData)
@@ -195,6 +275,16 @@ namespace SideSeat
                 name: "default",
                 pattern: "{controller=Home}/{action=Index}/{id?}")
                 .WithStaticAssets();
+            app.MapHealthChecks("/health/live", new()
+            {
+                Predicate = _ => false
+            });
+            app.MapHealthChecks("/health/ready", new()
+            {
+                Predicate = registration => registration.Tags.Contains("ready")
+            });
+            app.MapHub<RideHub>("/hubs/rides");
+            app.MapMcp("/mcp");
 
             if (useDummyData)
             {

@@ -1,15 +1,32 @@
 @model SideSeat.Models.Rezervacija
+@using SideSeat.Models.ViewModels
 @{
 	ViewData["Title"] = "Detalji rezervacije";
 	var currentUserId = int.TryParse(User.FindFirst(SideSeat.Security.SideSeatClaimTypes.KorisnikId)?.Value, out var idValue) ? idValue : 0;
 	var canConfirm = User.IsInRole("Admin") || Model.Voznja?.VozacId == currentUserId;
+	var isPassenger = Model.PutnikId == currentUserId;
 	var isAdmin = User.IsInRole("Admin");
+	var canCheckIn = isPassenger
+		&& Model.Status == SideSeat.Models.StatusRezervacije.Potvrdena
+		&& Model.Voznja?.Status is SideSeat.Models.StatusVoznje.Planirana or SideSeat.Models.StatusVoznje.Aktivna
+		&& DateTime.Now >= Model.Voznja.Polazak.AddMinutes(-30);
 	var statusClass = Model.Status == SideSeat.Models.StatusRezervacije.Potvrdena
 		|| Model.Status == SideSeat.Models.StatusRezervacije.Zavrsena
 		? "is-ok"
 		: Model.Status == SideSeat.Models.StatusRezervacije.UProcesuPotvrde
 			? "is-alert"
 			: "is-off";
+	var routeMap = new RouteMapViewModel
+	{
+		StartName = Model.Voznja?.PolazniGrad?.Naziv ?? string.Empty,
+		StartLatitude = Model.Voznja?.PolazniGrad?.Latitude,
+		StartLongitude = Model.Voznja?.PolazniGrad?.Longitude,
+		EndName = Model.Voznja?.OdredisniGrad?.Naziv ?? string.Empty,
+		EndLatitude = Model.Voznja?.OdredisniGrad?.Latitude,
+		EndLongitude = Model.Voznja?.OdredisniGrad?.Longitude,
+		Title = $"Ruta rezervacije #{Model.Id}",
+		CssClass = "ss-detail-route-map"
+	};
 }
 
 <section class="ss-page">
@@ -31,6 +48,16 @@
 		{
 			<div class="alert alert-info" role="status">@reservationStatus</div>
 		}
+		<partial name="_RouteMap" model="routeMap" />
+
+		<div class="ss-workflow-steps" aria-label="Koraci rezervacije">
+			<span class="is-done">1. Rezervirano</span>
+			<span class="@(Model.Status == SideSeat.Models.StatusRezervacije.UProcesuPotvrde ? "is-current" : "is-done")">2. Potvrda vozača</span>
+			<span class="@(Model.CheckInAtUtc.HasValue ? "is-done" : canCheckIn ? "is-current" : "")">3. U autu</span>
+			<span class="@(Model.Voznja?.Status == SideSeat.Models.StatusVoznje.Aktivna ? "is-current" : "")">4. Vožnja aktivna</span>
+			<span class="@(Model.Status == SideSeat.Models.StatusRezervacije.Zavrsena ? "is-done" : "")">5. Ocjena i plaćanje</span>
+		</div>
+
 		<dl class="ss-detail-grid">
 			<div>
 				<dt>ID</dt>
@@ -59,7 +86,21 @@
 			</div>
 			<div>
 				<dt>Ukupna cijena</dt>
-				<dd>@Model.CijenaUkupno.ToString("0.00") EUR</dd>
+				<dd>
+					@Model.CijenaUkupno.ToString("0.00") EUR
+					@if (Model.Napojnica > 0)
+					{
+						<span class="ss-muted d-block">Napojnica dana karticom pri ocjeni: @Model.Napojnica.ToString("0.00") EUR</span>
+					}
+				</dd>
+			</div>
+			<div>
+				<dt>Način plaćanja</dt>
+				<dd>@Model.NacinPlacanja</dd>
+			</div>
+			<div>
+				<dt>Check-in</dt>
+				<dd>@(Model.CheckInAtUtc.HasValue ? Model.CheckInAtUtc.Value.ToLocalTime().ToString("dd.MM.yyyy HH:mm") : "Nije potvrđeno")</dd>
 			</div>
 			<div>
 				<dt>Vrijeme rezervacije</dt>
@@ -70,6 +111,39 @@
 				<dd>@(string.IsNullOrWhiteSpace(Model.Napomena) ? "Nema napomene." : Model.Napomena)</dd>
 			</div>
 		</dl>
+
+		@if (isPassenger && Model.Status != SideSeat.Models.StatusRezervacije.Zavrsena)
+		{
+			<section class="ss-inline-panel">
+				<h2 class="h5">Plaćanje</h2>
+				<p class="ss-muted">Napojnica se dodaje nakon završene vožnje, u formi za ocjenu vozača i isključivo karticom.</p>
+				<form asp-action="Payment" method="post" class="ss-inline-form">
+					@Html.AntiForgeryToken()
+					<input type="hidden" name="id" value="@Model.Id" />
+					<label>
+						<span>Način plaćanja</span>
+						<select name="nacinPlacanja" class="form-select">
+							<option value="@SideSeat.Models.NacinPlacanja.SideSeatSaldo" selected="@(Model.NacinPlacanja == SideSeat.Models.NacinPlacanja.SideSeatSaldo)">SideSeat saldo</option>
+							<option value="@SideSeat.Models.NacinPlacanja.Gotovina" selected="@(Model.NacinPlacanja == SideSeat.Models.NacinPlacanja.Gotovina)">Gotovina vozaču</option>
+						</select>
+					</label>
+					<button type="submit" class="ss-btn">Spremi plaćanje</button>
+				</form>
+			</section>
+		}
+
+		@if (canCheckIn && Model.CheckInAtUtc is null)
+		{
+			<form asp-action="CheckIn" method="post" class="ss-inline-panel" data-ss-checkin-form>
+				@Html.AntiForgeryToken()
+				<input type="hidden" name="id" value="@Model.Id" />
+				<input type="hidden" name="latitude" data-checkin-lat />
+				<input type="hidden" name="longitude" data-checkin-lng />
+				<h2 class="h5">Potvrdi da si u autu</h2>
+				<p>Lokacija se šalje samo ako je dopustiš u pregledniku i vidljiva je vozaču ove vožnje.</p>
+				<button type="submit" class="ss-btn">Spreman sam / u autu</button>
+			</form>
+		}
 
 		<div class="ss-actions">
 			@if (canConfirm && Model.Status == SideSeat.Models.StatusRezervacije.UProcesuPotvrde)

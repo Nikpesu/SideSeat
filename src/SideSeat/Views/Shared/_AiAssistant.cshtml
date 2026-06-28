@@ -15,6 +15,7 @@
 <aside class="ss-ai"
        data-ss-ai
        data-endpoint="@Url.Action("Chat", "Ai")"
+       data-action-base="/api/ai/actions"
        data-token="@requestToken"
        data-configured="@(aiConfigured ? "true" : "false")"
        data-user-key="@(User.FindFirst(SideSeat.Security.SideSeatClaimTypes.KorisnikId)?.Value ?? "anonymous")">

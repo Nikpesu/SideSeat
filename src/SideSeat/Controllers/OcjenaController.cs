@@ -8,6 +8,7 @@ using SideSeat.Models.ViewModels;
 using SideSeat.Repositories;
 using SideSeat.Security;
 using SideSeat.Services;
+using System.Text.RegularExpressions;
 
 namespace SideSeat.Controllers;
 
@@ -19,6 +20,9 @@ public class OcjenaController : Controller
 {
     private const int MaxReviewImageCount = 5;
     private const long MaxReviewImageBytes = 5 * 1024 * 1024;
+    private static readonly Regex CardNumberPattern = new(@"^\d{4}([ -]?)\d{4}\1\d{4}\1\d{4}$", RegexOptions.Compiled);
+    private static readonly Regex CardExpiryPattern = new(@"^\d{2}/\d{2}$", RegexOptions.Compiled);
+    private static readonly Regex CardCvvPattern = new(@"^\d{3,4}$", RegexOptions.Compiled);
     private static readonly HashSet<string> AllowedImageExtensions = new(StringComparer.OrdinalIgnoreCase)
     {
         ".jpg",
@@ -236,17 +240,15 @@ public class OcjenaController : Controller
         }
 
         var previousReviewCount = _db.Ocjene.Count(o => o.RezervacijaId == rezervacijaId && o.AutorId == userId.Value);
+        var korisnik = _db.Korisnici.AsNoTracking().FirstOrDefault(k => k.Id == userId.Value);
 
-        var targetName = rezervacija.Voznja.VozacId == userId.Value
-            ? $"{rezervacija.Putnik.Ime} {rezervacija.Putnik.Prezime}"
-            : $"{rezervacija.Voznja.Vozac.Ime} {rezervacija.Voznja.Vozac.Prezime}";
-
-        return View(new CreateOcjenaViewModel
+        var model = new CreateOcjenaViewModel
         {
             RezervacijaId = rezervacijaId,
-            TargetName = targetName,
             IsAdditional = previousReviewCount > 0
-        });
+        };
+        PopulateCreateReviewModel(model, rezervacija, userId.Value, korisnik, previousReviewCount);
+        return View(model);
     }
 
     [HttpPost]
@@ -279,19 +281,19 @@ public class OcjenaController : Controller
             return Forbid();
         }
 
+        var currentUser = await _db.Korisnici.FirstOrDefaultAsync(k => k.Id == userId.Value);
+        var previousReviewCount = await _db.Ocjene.CountAsync(o =>
+            o.RezervacijaId == model.RezervacijaId && o.AutorId == userId.Value);
+        PopulateCreateReviewModel(model, rezervacija, userId.Value, currentUser, previousReviewCount);
+        ValidateTipPayment(model, currentUser);
+
         if (!ModelState.IsValid)
         {
-            model.TargetName = rezervacija.Voznja.VozacId == userId.Value
-                ? $"{rezervacija.Putnik.Ime} {rezervacija.Putnik.Prezime}"
-                : $"{rezervacija.Voznja.Vozac.Ime} {rezervacija.Voznja.Vozac.Prezime}";
             return View(model);
         }
 
         if (!ValidateReviewImages(model.Slike, nameof(model.Slike)))
         {
-            model.TargetName = rezervacija.Voznja.VozacId == userId.Value
-                ? $"{rezervacija.Putnik.Ime} {rezervacija.Putnik.Prezime}"
-                : $"{rezervacija.Voznja.Vozac.Ime} {rezervacija.Voznja.Vozac.Prezime}";
             return View(model);
         }
 
@@ -305,6 +307,7 @@ public class OcjenaController : Controller
         };
 
         _db.Ocjene.Add(ocjena);
+        ApplyCardTipIfRequested(model, rezervacija, currentUser);
         await _db.SaveChangesAsync();
         await SaveReviewImagesAsync(ocjena.Id, model.Slike);
         var targetId = rezervacija.Voznja.VozacId == userId.Value
@@ -316,6 +319,15 @@ public class OcjenaController : Controller
             $"Dobio si ocjenu {model.BrojZvjezdica}/5 za rezervaciju #{rezervacija.Id}.",
             "Ocjena",
             $"/Ocjena/Details/{ocjena.Id}");
+        if (model.Napojnica > 0 && model.CanTipDriver)
+        {
+            _notifications.Add(
+                rezervacija.Voznja.VozacId,
+                "Napojnica karticom",
+                $"Putnik je ostavio {model.Napojnica:0.00} EUR napojnice za rezervaciju #{rezervacija.Id}.",
+                "Plaćanje",
+                $"/Rezervacija/Details/{rezervacija.Id}");
+        }
         await _db.SaveChangesAsync();
         return RedirectToAction("Index", "Rezervacija");
     }
@@ -725,6 +737,134 @@ public class OcjenaController : Controller
             .ToList();
 
         return Json(results);
+    }
+
+    private static void PopulateCreateReviewModel(
+        CreateOcjenaViewModel model,
+        Rezervacija rezervacija,
+        int currentUserId,
+        Korisnik? currentUser,
+        int previousReviewCount)
+    {
+        model.TargetName = ResolveTargetName(rezervacija, currentUserId);
+        model.IsAdditional = previousReviewCount > 0;
+        model.ExistingTip = rezervacija.Napojnica;
+        model.CanTipDriver =
+            rezervacija.PutnikId == currentUserId &&
+            rezervacija.Voznja.VozacId != currentUserId &&
+            previousReviewCount == 0 &&
+            rezervacija.Napojnica <= 0;
+
+        if (currentUser is null)
+        {
+            return;
+        }
+
+        if (!string.IsNullOrWhiteSpace(currentUser.SpremljenaKarticaZadnjeCetiri))
+        {
+            model.SavedCardDisplay = $"•••• {currentUser.SpremljenaKarticaZadnjeCetiri}";
+        }
+
+        if (string.IsNullOrWhiteSpace(model.CardholderName))
+        {
+            model.CardholderName = currentUser.SpremljenaKarticaIme;
+        }
+
+        if (string.IsNullOrWhiteSpace(model.CardExpiry))
+        {
+            model.CardExpiry = currentUser.SpremljenaKarticaVrijediDo;
+        }
+    }
+
+    private void ValidateTipPayment(CreateOcjenaViewModel model, Korisnik? currentUser)
+    {
+        if (model.Napojnica <= 0)
+        {
+            return;
+        }
+
+        if (!model.CanTipDriver)
+        {
+            ModelState.AddModelError(nameof(model.Napojnica), "Napojnica se moze dodati samo pri prvoj ocjeni vozaca.");
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(model.CardholderName))
+        {
+            ModelState.AddModelError(nameof(model.CardholderName), "Ime na kartici je obavezno za napojnicu.");
+        }
+
+        var hasSavedCard = !string.IsNullOrWhiteSpace(currentUser?.SpremljenaKarticaZadnjeCetiri);
+        var enteredNewCard = !string.IsNullOrWhiteSpace(model.CardNumber);
+        if (!hasSavedCard || enteredNewCard)
+        {
+            if (string.IsNullOrWhiteSpace(model.CardNumber) ||
+                !CardNumberPattern.IsMatch(model.CardNumber.Trim()))
+            {
+                ModelState.AddModelError(nameof(model.CardNumber), "Broj kartice mora imati 16 znamenki.");
+            }
+        }
+
+        if (string.IsNullOrWhiteSpace(model.CardExpiry) ||
+            !CardExpiryPattern.IsMatch(model.CardExpiry.Trim()))
+        {
+            ModelState.AddModelError(nameof(model.CardExpiry), "Vrijedi do mora biti u formatu MM/YY.");
+        }
+
+        if (string.IsNullOrWhiteSpace(model.CardCvv) ||
+            !CardCvvPattern.IsMatch(model.CardCvv.Trim()))
+        {
+            ModelState.AddModelError(nameof(model.CardCvv), "CVV mora imati 3 ili 4 znamenke.");
+        }
+    }
+
+    private void ApplyCardTipIfRequested(
+        CreateOcjenaViewModel model,
+        Rezervacija rezervacija,
+        Korisnik? currentUser)
+    {
+        if (model.Napojnica <= 0 || !model.CanTipDriver)
+        {
+            return;
+        }
+
+        rezervacija.Napojnica = model.Napojnica;
+        var driver = rezervacija.Voznja.Vozac;
+        var driverBalanceBefore = driver.Saldo;
+        driver.Saldo += model.Napojnica;
+
+        _db.Placanja.Add(new Placanje
+        {
+            RezervacijaId = rezervacija.Id,
+            Iznos = model.Napojnica,
+            VrijemePlacanja = DateTime.UtcNow,
+            NacinPlacanja = NacinPlacanja.Kartica,
+            Uspjesno = true
+        });
+
+        _db.SaldoTransakcije.Add(new SaldoTransakcija
+        {
+            KorisnikId = driver.Id,
+            Iznos = model.Napojnica,
+            Tip = $"napojnica-kartica:{rezervacija.Id}",
+            Komentar = $"Napojnica karticom nakon ocjene rezervacije #{rezervacija.Id}.",
+            SaldoPrije = driverBalanceBefore,
+            SaldoPoslije = driver.Saldo,
+            Vrijeme = DateTime.UtcNow
+        });
+
+        if (currentUser is not null &&
+            model.SaveCard &&
+            !string.IsNullOrWhiteSpace(model.CardNumber))
+        {
+            var digits = new string(model.CardNumber.Where(char.IsDigit).ToArray());
+            if (digits.Length >= 4)
+            {
+                currentUser.SpremljenaKarticaZadnjeCetiri = digits[^4..];
+                currentUser.SpremljenaKarticaIme = model.CardholderName?.Trim();
+                currentUser.SpremljenaKarticaVrijediDo = model.CardExpiry?.Trim();
+            }
+        }
     }
 
     private static List<OcjenaSlikaViewModel> MapImages(IEnumerable<OcjenaSlika> slike, bool canDelete = false) =>

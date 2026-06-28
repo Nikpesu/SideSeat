@@ -29,6 +29,7 @@ public class ApiCrudTests : IClassFixture<SideSeatTestFactory>
 
         var created = await client.PostAsJsonAsync("/api/gradovi", new { naziv = "Osijek", drzava = "Hrvatska", postanskiBroj = "31000" });
         Assert.Equal(HttpStatusCode.Created, created.StatusCode);
+        Assert.Contains("\"latitude\":45.123456", await created.Content.ReadAsStringAsync());
         var dto = await created.Content.ReadFromJsonAsync<SimpleDto>();
 
         (await client.GetAsync($"/api/gradovi/{dto!.id}")).EnsureSuccessStatusCode();
@@ -36,6 +37,12 @@ public class ApiCrudTests : IClassFixture<SideSeatTestFactory>
         Assert.Equal(HttpStatusCode.NotFound, (await client.PutAsJsonAsync("/api/gradovi/999", new { naziv = "X", drzava = "Y", postanskiBroj = "1" })).StatusCode);
         Assert.Equal(HttpStatusCode.NoContent, (await client.DeleteAsync($"/api/gradovi/{dto.id}")).StatusCode);
         Assert.Equal(HttpStatusCode.NotFound, (await client.DeleteAsync($"/api/gradovi/{dto.id}")).StatusCode);
+
+        var geocodingFailure = await client.PostAsJsonAsync(
+            "/api/gradovi",
+            new { naziv = "Bez Lokacije", drzava = "Hrvatska", postanskiBroj = "99999" });
+        Assert.Equal(HttpStatusCode.UnprocessableEntity, geocodingFailure.StatusCode);
+        Assert.Contains("Lokacija grada nije pronađena", await geocodingFailure.Content.ReadAsStringAsync());
     }
 
     [Fact]
@@ -97,8 +104,8 @@ public class ApiCrudTests : IClassFixture<SideSeatTestFactory>
         Assert.Contains("data-ss-ai", passengerHtml);
         Assert.Contains("SideSeat Copilot", passengerHtml);
         Assert.Contains("data-configured=\"false\"", passengerHtml);
-        Assert.Contains("class=\"ss-global-route-map\"", passengerHtml);
-        Assert.Contains("<animateMotion", passengerHtml);
+        Assert.Contains("class=\"ss-route-bg\"", passengerHtml);
+        Assert.Contains("data-ss-route-bg", passengerHtml);
         Assert.Contains("Dostupne vožnje", passengerHtml);
         Assert.DoesNotContain("Moje vožnje", passengerHtml);
         Assert.Contains("Moja voženja", passengerHtml);
@@ -187,7 +194,10 @@ public class ApiCrudTests : IClassFixture<SideSeatTestFactory>
         {
             var db = scope.ServiceProvider.GetRequiredService<SideSeatDbContext>();
             var passengerUser = await db.Korisnici.SingleAsync(k => k.Id == 2);
-            passengerUser.Saldo = 25;
+            passengerUser.Saldo = 5;
+            db.Ocjene.RemoveRange(db.Ocjene);
+            db.Placanja.RemoveRange(db.Placanja);
+            db.Rezervacije.RemoveRange(db.Rezervacije);
             await db.SaveChangesAsync();
         }
 
@@ -210,7 +220,7 @@ public class ApiCrudTests : IClassFixture<SideSeatTestFactory>
         using (var scope = _factory.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<SideSeatDbContext>();
-            Assert.Single(await db.Rezervacije.ToListAsync());
+            Assert.Empty(await db.Rezervacije.ToListAsync());
         }
 
         var topUpPage = await passenger.GetStringAsync("/Korisnik/Uplata?amount=15&returnUrl=/Rezervacija/Create%3FvoznjaId%3D1");
@@ -220,7 +230,7 @@ public class ApiCrudTests : IClassFixture<SideSeatTestFactory>
         Assert.Contains("maxlength=\"19\"", topUpPage);
         Assert.Contains("maxlength=\"5\"", topUpPage);
         Assert.Contains("maxlength=\"4\"", topUpPage);
-        Assert.Contains("Verzija v0.14", topUpPage);
+        Assert.Contains("Verzija v0.43", topUpPage);
         var topUpToken = ExtractAntiforgeryToken(topUpPage);
         using var topUpForm = new FormUrlEncodedContent(new Dictionary<string, string>
         {
@@ -247,7 +257,7 @@ public class ApiCrudTests : IClassFixture<SideSeatTestFactory>
         {
             var db = scope.ServiceProvider.GetRequiredService<SideSeatDbContext>();
             var korisnik = await db.Korisnici.SingleAsync(k => k.Id == 2);
-            Assert.Equal(40, korisnik.Saldo);
+            Assert.Equal(20, korisnik.Saldo);
             Assert.Equal("4242", korisnik.SpremljenaKarticaZadnjeCetiri);
             Assert.Equal("Test adresa 15, 10000, Hrvatska", korisnik.SpremljenaAdresaPlacanja);
             Assert.Contains(await db.SaldoTransakcije.ToListAsync(), t =>
@@ -270,7 +280,7 @@ public class ApiCrudTests : IClassFixture<SideSeatTestFactory>
         using (var scope = _factory.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<SideSeatDbContext>();
-            Assert.Equal(2, await db.Rezervacije.CountAsync());
+            Assert.Single(await db.Rezervacije.ToListAsync());
         }
     }
 

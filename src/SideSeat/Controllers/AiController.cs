@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using SideSeat.Models.Ai;
@@ -6,11 +7,13 @@ using SideSeat.Services;
 namespace SideSeat.Controllers;
 
 [ApiController]
+[Authorize]
 [Route("api/ai")]
 [EnableRateLimiting("ai")]
 public sealed class AiController(
     IOpenWebUiService openWebUi,
     IAiContextService aiContext,
+    IPendingActionService pendingActions,
     ILogger<AiController> logger) : ControllerBase
 {
     [HttpPost("chat")]
@@ -64,5 +67,47 @@ public sealed class AiController(
                 title: "SideSeat AI trenutačno nije dostupan.",
                 detail: "Veza s AI servisom nije uspjela. Pokušaj ponovno kasnije.");
         }
+    }
+
+    [HttpPost("actions/{token}/confirm")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Confirm(
+        string token,
+        CancellationToken cancellationToken)
+    {
+        var result = await pendingActions.ConfirmAsync(
+            token,
+            User,
+            "AI",
+            cancellationToken);
+        return ToActionResult(result);
+    }
+
+    [HttpPost("actions/{token}/cancel")]
+    [ValidateAntiForgeryToken]
+    public IActionResult Cancel(string token)
+    {
+        return pendingActions.Cancel(token, User)
+            ? Ok(new { message = "Akcija je otkazana." })
+            : NotFound(new { message = "Akcija ne postoji ili pripada drugom korisniku." });
+    }
+
+    private IActionResult ToActionResult(SideSeat.Models.Commands.CommandResult result)
+    {
+        if (result.Succeeded)
+        {
+            return Ok(result);
+        }
+
+        var status = result.ErrorKind switch
+        {
+            SideSeat.Models.Commands.CommandErrorKind.Validation => StatusCodes.Status400BadRequest,
+            SideSeat.Models.Commands.CommandErrorKind.Forbidden => StatusCodes.Status403Forbidden,
+            SideSeat.Models.Commands.CommandErrorKind.NotFound => StatusCodes.Status404NotFound,
+            SideSeat.Models.Commands.CommandErrorKind.Conflict => StatusCodes.Status409Conflict,
+            SideSeat.Models.Commands.CommandErrorKind.BusinessRule => StatusCodes.Status422UnprocessableEntity,
+            _ => StatusCodes.Status400BadRequest
+        };
+        return Problem(statusCode: status, title: result.Message);
     }
 }

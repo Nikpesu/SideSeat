@@ -5,13 +5,14 @@
 [![.NET](https://img.shields.io/badge/.NET-10.0-512BD4?logo=dotnet)](src/SideSeat/SideSeat.csproj)
 [![.NET CI](https://github.com/Nikpesu/SideSeat/actions/workflows/dotnet-ci.yml/badge.svg)](https://github.com/Nikpesu/SideSeat/actions/workflows/dotnet-ci.yml)
 [![Docker](https://img.shields.io/badge/Docker-Linux%20AMD64-2496ED?logo=docker&logoColor=white)](docker-compose.hub.yml)
-[![Version](https://img.shields.io/badge/version-v0.23-2ea44f)](changelogs/v0.23.md)
+[![Version](https://img.shields.io/badge/version-v0.43-2ea44f)](changelogs/v0.43.md)
 [![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
 SideSeat povezuje vozače i putnike kroz objavu vožnji, rezervacije, potvrđivanje putnika, plaćanja, ocjene i obavijesti. Projekt uključuje ASP.NET Core Identity, Google prijavu, REST API, upload slika, AI asistenta za Open WebUI ili DeepSeek, SQL Server, Docker i integracijske testove.
 
 ## Sadržaj
 
+- [Dokumentacija](#dokumentacija)
 - [Mogućnosti](#mogućnosti)
 - [Tehnologije](#tehnologije)
 - [Brzi start preko Docker Huba](#brzi-start-preko-docker-huba)
@@ -24,6 +25,21 @@ SideSeat povezuje vozače i putnike kroz objavu vožnji, rezervacije, potvrđiva
 - [Testovi](#testovi)
 - [Changelog wiki](#changelog-wiki)
 - [Dokumentacija laboratorija](#dokumentacija-laboratorija)
+
+## Dokumentacija
+
+Sva dokumentacija je u Markdownu i čitljiva izravno na GitHubu, u folderu [`docs/`](docs/README.md):
+
+| Dokument | Sadržaj |
+| --- | --- |
+| [docs/README.md](docs/README.md) | središnji indeks dokumentacije |
+| [Wiki — početna](docs/wiki/Home.md) | wikipedia-style pomoć (vodiči po ulozi, značajke) |
+| [Arhitektura, folderi i klase](docs/ARCHITECTURE.md) | kratko objašnjenje svakog foldera i klase |
+| [Vodič za putnika](docs/wiki/User-Guide.md) · [vozača](docs/wiki/Driver-Guide.md) · [admina](docs/wiki/Admin-Guide.md) | upute po ulozi |
+| [Saldo i plaćanja](docs/wiki/Payments-and-Balance.md) · [AI asistent](docs/wiki/AI-Assistant.md) | ključne značajke |
+| [REST API i MCP](docs/wiki/REST-API.md) · [Konfiguracija](docs/wiki/Configuration.md) · [Deployment](docs/wiki/Deployment.md) | tehnička referenca |
+| [Hodogram vožnje](docs/vožnja.md) | korak-po-korak za vozača i putnika |
+| [Changelog](changelogs/README.md) | povijest verzija |
 
 ## Mogućnosti
 
@@ -42,6 +58,9 @@ SideSeat povezuje vozače i putnike kroz objavu vožnji, rezervacije, potvrđiva
 - Globalna animirana karta rute i prikaz verzije aplikacije u footeru.
 - SideSeat AI Copilot povezan na privatni Open WebUI server kroz sigurni backend proxy.
 - REST API s DTO modelima, validacijom, pretragom i CRUD operacijama.
+- Globalna role-aware pretraga dostupna preko `Ctrl+K`.
+- AI i MCP write alati s pregledom i jednokratnom potvrdom prije upisa.
+- JSON request logging, correlation ID, audit zapis i health endpointi.
 - Docker Compose okruženje s aplikacijom, SQL Serverom i trajnim volumeima.
 
 ## Tehnologije
@@ -71,19 +90,19 @@ Aplikacija je dostupna na `http://localhost:8080`.
 Objavljeni image:
 
 ```text
-nikolica/sideseat:v0.23
+nikolica/sideseat:v0.43
 ```
 
 Tag `latest` pokazuje na isto izdanje. Image je namijenjen platformi `linux/amd64`.
 
 ```bash
-docker pull nikolica/sideseat:v0.23
+docker pull nikolica/sideseat:v0.43
 ```
 
 Digest izdanja:
 
 ```text
-sha256:f80a84e538890b61ddb9c2120b53e1e9c545a3908ef6709f0e598f03f2ea88fb
+sha256:0e67da5e938a226c6299dcafe8e2315f0c1ee4123ec2734a6796c72d2dc9c3f5
 ```
 
 SQL podaci i uploadane slike čuvaju se u Docker volumeima. Aplikacija pri pokretanju automatski primjenjuje EF Core migracije.
@@ -171,6 +190,11 @@ AI_API_TYPE=OpenWebUi
 AI_BASE_URL=https://ai.pesut.win
 AI_API_KEY=
 AI_MODEL=
+APP_DOMAIN=sideseat.example.com
+MCP_API_KEY=generiraj_dugi_nasumicni_kljuc
+MCP_USER_ID=1
+MAPS_ROUTING_BASE_URL=https://router.project-osrm.org
+MAPS_ROUTING_TIMEOUT_MILLISECONDS=750
 ```
 
 Verzija, `ASPNETCORE_ENVIRONMENT` i `ASPNETCORE_URLS` ugrađeni su u Docker image. Aplikacija u Dockeru automatski sastavlja connection string za `sideseat-db`; preko `.env` mijenja se samo `SA_PASSWORD`. Napredni overrideovi ostavljeni su zakomentirani u Compose datotekama.
@@ -180,6 +204,8 @@ Verzija, `ASPNETCORE_ENVIRONMENT` i `ASPNETCORE_URLS` ugrađeni su u Docker imag
 ```dotenv
 DUMMY_DATA=true
 ```
+
+Točne cestovne linije dohvaćaju se preko OSRM route servisa. Aplikacija odmah crta lokalni fallback, čeka najviše 750 ms na OSRM te uspješne geometrije cacheira sedam dana.
 
 SideSeat AI podržava Open WebUI i direktni DeepSeek API. API ključ ostaje samo u Docker environmentu i nikada se ne šalje pregledniku.
 
@@ -292,6 +318,59 @@ Podržani su JPG, PNG, GIF i WEBP, najviše pet slika i 5 MB po slici. Prikazuju
 
 Profilne slike koriste `wwwroot/uploads/profili/{korisnikId}` i također se u bazi sprema samo relativna putanja.
 
+## MCP
+
+Streamable HTTP MCP endpoint je `/mcp` i zahtijeva `Authorization: Bearer <MCP_API_KEY>`.
+Servisni korisnik i uloge postavljaju se kroz `MCP_USER_ID` i `Mcp__Roles__*`. MCP izlaže
+role-aware read alate, prepare/confirm write alate te resurse `sideseat://sitemap` i
+`sideseat://api-summary`.
+
+Primjer za Codex ili VS Code MCP konfiguraciju:
+
+```json
+{
+  "servers": {
+    "sideseat": {
+      "type": "http",
+      "url": "https://sideseat.example.com/mcp",
+      "headers": {
+        "Authorization": "Bearer ${input:sideseat-mcp-key}"
+      }
+    }
+  }
+}
+```
+
+Endpoint se može provjeriti i službenim MCP Inspectorom uz isti URL i Bearer header.
+
+## Produkcijski deployment
+
+`docker-compose.prod.yml` pokreće SQL Server, aplikaciju i Caddy s automatskim HTTPS-om:
+
+```bash
+docker compose -f docker-compose.prod.yml pull
+docker compose -f docker-compose.prod.yml up -d
+docker compose -f docker-compose.prod.yml ps
+```
+
+Prije nadogradnje napravi backup:
+
+```bash
+set -a && source .env && set +a
+bash scripts/backup-sql.sh
+```
+
+Rollback se radi postavljanjem prethodnog immutable image taga u `SIDESEAT_IMAGE`, zatim:
+
+```bash
+docker compose -f docker-compose.prod.yml pull sideseat-web
+docker compose -f docker-compose.prod.yml up -d --no-deps sideseat-web
+```
+
+Za povrat baze koristi `scripts/restore-sql.sh` s putanjom `.bak` datoteke unutar backup
+volumea. SQL podaci, uploadi, backupi i Caddy certifikati ostaju u trajnim volumeima, a
+Docker JSON logovi rotiraju se na pet datoteka po 10 MB.
+
 ## Testovi
 
 GitHub Actions automatski pokreće Release build i sve integracijske testove na svaki push i pull request prema grani `main`. TRX rezultat i code coverage spremaju se kao `sideseat-test-results` artefakt.
@@ -299,8 +378,6 @@ GitHub Actions automatski pokreće Release build i sve integracijske testove na 
 ```bash
 dotnet test tests/SideSeat.IntegrationTests/SideSeat.IntegrationTests.csproj
 ```
-
-Trenutni rezultat: **28/28 integracijskih testova prolazi**.
 
 Testovi pokrivaju:
 
@@ -314,6 +391,8 @@ Testovi pokrivaju:
 - profilne slike i slike recenzija.
 - uključivanje i čišćenje demo podataka preko `DUMMY_DATA`.
 - autorizirane AI alate, tool-call krug, sitemap i oba AI providera.
+- confirmation tokene, globalnu pretragu, health endpointove, audit i MCP autentikaciju.
+- stvarne SQL Server migracije i relacijska unique ograničenja u CI okruženju.
 
 ## Changelog wiki
 
@@ -321,6 +400,25 @@ Povijest izdanja organizirana je kao mala wiki baza. Klik na verziju otvara potp
 
 | Verzija | Datum | Najvažnije promjene | Docker |
 | --- | --- | --- | --- |
+| [v0.43](changelogs/v0.43.md) | 2026-06-17 | Autići 1 km/s, spori zoom-tour i bufferana karta bez crnog ekrana | `nikolica/sideseat:v0.43` |
+| [v0.42](changelogs/v0.42.md) | 2026-06-17 | Kamera zoom in/out tour i novi autić na istoj ruti 2 s nakon dolaska | `nikolica/sideseat:v0.42` |
+| [v0.41](changelogs/v0.41.md) | 2026-06-17 | Vraćeno trenutno okretanje autića i minimalno 5 s po ruti | `nikolica/sideseat:v0.41` |
+| [v0.40](changelogs/v0.40.md) | 2026-06-17 | Novi autić svakih 5 s, limit zakretanja 60°/s i tekst uz toggle teme | `nikolica/sideseat:v0.40` |
+| [v0.39](changelogs/v0.39.md) | 2026-06-17 | Autići se miču 30 km/s i pouzdano prate prave OSRM ceste | `nikolica/sideseat:v0.39` |
+| [v0.38](changelogs/v0.38.md) | 2026-06-17 | Chase-kamera prati autić po stvarnoj ruti uz bliži zoom | `nikolica/sideseat:v0.38` |
+| [v0.37](changelogs/v0.37.md) | 2026-06-17 | Pozadina je pravi OpenStreetMap s animiranim autićima kao overlay | `nikolica/sideseat:v0.37` |
+| [v0.36](changelogs/v0.36.md) | 2026-06-17 | Veći kontrast pozadinske karte | `nikolica/sideseat:v0.36` |
+| [v0.35](changelogs/v0.35.md) | 2026-06-17 | Pozadina prikazuje okolne države i jače je zumirana | `nikolica/sideseat:v0.35` |
+| [v0.34](changelogs/v0.34.md) | 2026-06-17 | Automatski izračun vremena dolaska vožnje te pozadina s granicama država, sporom kamerom i 5 s po ruti | `nikolica/sideseat:v0.34` |
+| [v0.33](changelogs/v0.33.md) | 2026-06-17 | Nova pozadinska animacija auta po stvarnim rutama, role-bazirani AI alati s lookupom i kompletna dokumentacija (wiki + arhitektura) | `nikolica/sideseat:v0.33` |
+| [v0.32](changelogs/v0.32.md) | 2026-06-17 | Napojnica karticom pri ocjeni, vodič kroz vožnju, skrolabilan sidebar i profesionalna reorganizacija repozitorija | `nikolica/sideseat:v0.32` |
+| [v0.31](changelogs/v0.31.md) | 2026-06-16 | AI javna pretraga, scrollabilan sidebar i tablične liste vožnji/rezervacija | `nikolica/sideseat:v0.31` |
+| [v0.30](changelogs/v0.30.md) | 2026-06-16 | Stabilan hover bez pomicanja formi i pojačan kontrast dark teme | `nikolica/sideseat:v0.30` |
+| [v0.29](changelogs/v0.29.md) | 2026-06-16 | AI/MCP full CRUD pending forme, live ride workflow, gotovina/saldo settlement i pravila kolizije | `nikolica/sideseat:v0.29` |
+| [v0.28](changelogs/v0.28.md) | 2026-06-15 | Točne OSRM cestovne rute, brzi fallback, cache i stabilan hover prikaz | `nikolica/sideseat:v0.28` |
+| [v0.27](changelogs/v0.27.md) | 2026-06-15 | Redizajnirana početna i beskonačni carousel do 20 ruta s kartom ispod | `nikolica/sideseat:v0.27` |
+| [v0.26](changelogs/v0.26.md) | 2026-06-15 | OpenStreetMap rute, geocoding, AI/MCP potvrde i stabilniji produkcijski runtime | `nikolica/sideseat:v0.26` |
+| [v0.25](changelogs/v0.25.md) | 2026-06-15 | Dvoredni navbar, role-aware sidebar i mobilna navigacija | `nikolica/sideseat:v0.25` |
 | [v0.23](changelogs/v0.23.md) | 2026-06-11 | Ispravno formatirane AI rute i klikabilni detalji | `nikolica/sideseat:v0.23` |
 | [v0.22](changelogs/v0.22.md) | 2026-06-11 | AI alati, autorizirani sitemap i trajna petominutna sesija | `nikolica/sideseat:v0.22` |
 | [v0.21](changelogs/v0.21.md) | 2026-06-11 | AI provider podrška za Open WebUI i DeepSeek | `nikolica/sideseat:v0.21` |
@@ -346,10 +444,11 @@ Za objedinjeni indeks vidi [Changelog Wiki](changelogs/README.md).
 
 ## Dokumentacija laboratorija
 
-- [Lab 3 dokumentacija](lab3Doc.md)
-- [Lab 4 dokumentacija](lab4Doc.md)
-- [Lab 5 dokumentacija za predaju](lab5Doc.md)
-- [Originalni Lab 5 zadatak](lab-5/Lab5.md)
+- [Lab 3 dokumentacija](docs/labs/lab3Doc.md)
+- [Lab 4 dokumentacija](docs/labs/lab4Doc.md)
+- [Lab 5 dokumentacija za predaju](docs/labs/lab5Doc.md)
+- [Originalni Lab 5 zadatak](docs/labs/lab-5/Lab5.md)
+- [Vodič kroz vožnju](docs/vožnja.md)
 
 Lab 5 pokriva REST API, DTO modele, ASP.NET Core Identity, autorizaciju, Google prijavu, upload i integracijske testove.
 
@@ -360,10 +459,11 @@ SideSeat/
 ├── src/SideSeat/                    # MVC aplikacija
 ├── tests/SideSeat.IntegrationTests/ # integracijski testovi
 ├── changelogs/                      # wiki izdanja
-├── lab-1/ ... lab-5/                # zadaci i materijali
+├── docs/                            # dokumentacija
+│   ├── vožnja.md                    # vodič kroz vožnju
+│   └── labs/                        # lab-1 ... lab-5 + labXDoc.md
 ├── docker-compose.yml               # lokalni build
-├── docker-compose.hub.yml           # pokretanje gotovog imagea
-└── lab5Doc.md                       # dokumentacija za predaju
+└── docker-compose.hub.yml           # pokretanje gotovog imagea
 ```
 
 ## Licenca

@@ -1,0 +1,32 @@
+@model SideSeat.Models.ViewModels.RouteMapViewModel
+@using System.Globalization
+@{
+    var startLatitude = Model.StartLatitude?.ToString(CultureInfo.InvariantCulture) ?? string.Empty;
+    var startLongitude = Model.StartLongitude?.ToString(CultureInfo.InvariantCulture) ?? string.Empty;
+    var endLatitude = Model.EndLatitude?.ToString(CultureInfo.InvariantCulture) ?? string.Empty;
+    var endLongitude = Model.EndLongitude?.ToString(CultureInfo.InvariantCulture) ?? string.Empty;
+}
+
+<section class="ss-route-map-panel @Model.CssClass"
+         data-ss-route-map
+         data-route-start-name="@Model.StartName"
+         data-route-start-lat="@startLatitude"
+         data-route-start-lng="@startLongitude"
+         data-route-end-name="@Model.EndName"
+         data-route-end-lat="@endLatitude"
+         data-route-end-lng="@endLongitude"
+         aria-label="@Model.Title">
+    <header class="ss-route-map-header">
+        <div>
+            <span class="ss-kicker">OpenStreetMap</span>
+            <h2>@Model.Title</h2>
+        </div>
+        <span class="ss-route-map-route" data-ss-route-map-label>
+            @Model.StartName → @Model.EndName
+        </span>
+    </header>
+    <div class="ss-route-map-canvas" data-ss-route-map-canvas></div>
+    <p class="ss-route-map-fallback" data-ss-route-map-fallback hidden>
+        Koordinate rute nisu dostupne.
+    </p>
+</section>

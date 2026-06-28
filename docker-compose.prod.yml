@@ -1,0 +1,102 @@
+services:
+  sideseat-db:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    restart: unless-stopped
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: "${SA_PASSWORD:?SA_PASSWORD is required}"
+      MSSQL_PID: "Express"
+    volumes:
+      - sideseat-sql-data:/var/opt/mssql
+      - sideseat-backups:/var/opt/mssql/backups
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c '</dev/tcp/localhost/1433'"]
+      interval: 10s
+      timeout: 5s
+      retries: 18
+      start_period: 30s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+  sideseat-web:
+    image: "${SIDESEAT_IMAGE:-nikolica/sideseat:latest}"
+    restart: unless-stopped
+    depends_on:
+      sideseat-db:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: Docker
+      ASPNETCORE_HTTP_PORTS: "8080"
+      SA_PASSWORD: "${SA_PASSWORD:?SA_PASSWORD is required}"
+      Authentication__Google__ClientId: "${GOOGLE_CLIENT_ID:-}"
+      Authentication__Google__ClientSecret: "${GOOGLE_CLIENT_SECRET:-}"
+      OpenWebUi__ApiType: "${AI_API_TYPE:-OpenWebUi}"
+      OpenWebUi__BaseUrl: "${AI_BASE_URL:-}"
+      OpenWebUi__ApiKey: "${AI_API_KEY:-}"
+      OpenWebUi__Model: "${AI_MODEL:-}"
+      Maps__TileUrl: "${MAPS_TILE_URL:-}"
+      Maps__TileAttribution: "${MAPS_TILE_ATTRIBUTION:-}"
+      Maps__NominatimBaseUrl: "${MAPS_NOMINATIM_BASE_URL:-https://nominatim.openstreetmap.org}"
+      Maps__NominatimUserAgent: "${MAPS_NOMINATIM_USER_AGENT:-SideSeat/0.43}"
+      Maps__RoutingBaseUrl: "${MAPS_ROUTING_BASE_URL:-https://router.project-osrm.org}"
+      Maps__RoutingTimeoutMilliseconds: "${MAPS_ROUTING_TIMEOUT_MILLISECONDS:-750}"
+      Maps__ContactEmail: "${MAPS_CONTACT_EMAIL:-}"
+      PublicWebSearch__Enabled: "${PUBLIC_WEB_SEARCH_ENABLED:-true}"
+      PublicWebSearch__WikipediaApiUrlTemplate: "${PUBLIC_WEB_SEARCH_WIKIPEDIA_API_URL_TEMPLATE:-https://{language}.wikipedia.org/w/api.php}"
+      PublicWebSearch__DuckDuckGoApiUrl: "${PUBLIC_WEB_SEARCH_DUCKDUCKGO_API_URL:-https://api.duckduckgo.com/}"
+      PublicWebSearch__UserAgent: "${PUBLIC_WEB_SEARCH_USER_AGENT:-SideSeat/0.43}"
+      PublicWebSearch__TimeoutMilliseconds: "${PUBLIC_WEB_SEARCH_TIMEOUT_MILLISECONDS:-3000}"
+      PublicWebSearch__CacheMinutes: "${PUBLIC_WEB_SEARCH_CACHE_MINUTES:-15}"
+      PublicWebSearch__MaxResults: "${PUBLIC_WEB_SEARCH_MAX_RESULTS:-5}"
+      Mcp__ApiKey: "${MCP_API_KEY:?MCP_API_KEY is required}"
+      Mcp__KorisnikId: "${MCP_USER_ID:-1}"
+      Mcp__Actor: sideseat-mcp
+      Mcp__Roles__0: Admin
+      Mcp__Roles__1: Driver
+      Mcp__Roles__2: Passenger
+      DUMMY_DATA: "${DUMMY_DATA:-false}"
+    volumes:
+      - sideseat-uploads:/app/wwwroot/uploads
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "--silent", "http://localhost:8080/health/ready"]
+      interval: 15s
+      timeout: 5s
+      retries: 12
+      start_period: 45s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    depends_on:
+      sideseat-web:
+        condition: service_healthy
+    environment:
+      APP_DOMAIN: "${APP_DOMAIN:?APP_DOMAIN is required}"
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+volumes:
+  sideseat-sql-data:
+  sideseat-uploads:
+  sideseat-backups:
+  caddy-data:
+  caddy-config:

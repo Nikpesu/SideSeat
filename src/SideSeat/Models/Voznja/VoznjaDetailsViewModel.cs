@@ -13,6 +13,9 @@ public class VoznjaDetailsViewModel
     public List<VoznjaRatingRow> OcjeneVozaca { get; set; } = new();
     public double ProsjecnaOcjenaVozaca { get; set; }
     public int BrojOcjenaVozaca { get; set; }
+    public decimal CashDue { get; set; }
+    public decimal SaldoDue { get; set; }
+    public bool AllConfirmedPassengersReady { get; set; }
 }
 
 public class VoznjaPassengerRow
@@ -22,6 +25,15 @@ public class VoznjaPassengerRow
     public string PutnikIme { get; set; } = string.Empty;
     public StatusRezervacije Status { get; set; }
     public int BrojMjesta { get; set; }
+    public string? PutnikTelefon { get; set; }
+    public NacinPlacanja NacinPlacanja { get; set; }
+    public decimal CijenaUkupno { get; set; }
+    public decimal Napojnica { get; set; }
+    public DateTime? CheckInAtUtc { get; set; }
+    public decimal? LastLatitude { get; set; }
+    public decimal? LastLongitude { get; set; }
+    public DateTime? LastLocationAtUtc { get; set; }
+    public DateTime? CashCollectedAtUtc { get; set; }
     public bool VozacJeOcijenio { get; set; }
     public bool PutnikJeOcijenio { get; set; }
 }
@@ -40,4 +52,27 @@ public class VoznjaRatingRow
     public DateTime? AdminFeedbackAt { get; set; }
     public string? AdminFeedbackAuthor { get; set; }
     public List<OcjenaSlikaViewModel> Slike { get; set; } = new();
+}
+
+public class CurrentRideViewModel
+{
+    public IReadOnlyList<CurrentRideItemViewModel> Rides { get; set; } = Array.Empty<CurrentRideItemViewModel>();
+}
+
+public class CurrentRideItemViewModel
+{
+    public Voznja Voznja { get; set; } = null!;
+    public IReadOnlyList<VoznjaPassengerRow> Putnici { get; set; } = Array.Empty<VoznjaPassengerRow>();
+    public IReadOnlyList<RideChatMessage> Messages { get; set; } = Array.Empty<RideChatMessage>();
+    public bool AllReady { get; set; }
+    public decimal CashDue { get; set; }
+}
+
+public class RideSettlementViewModel
+{
+    public Voznja Voznja { get; set; } = null!;
+    public IReadOnlyList<VoznjaPassengerRow> Putnici { get; set; } = Array.Empty<VoznjaPassengerRow>();
+    public decimal CashDue { get; set; }
+    public decimal SaldoDue { get; set; }
+    public bool HasCashDue => CashDue > 0;
 }

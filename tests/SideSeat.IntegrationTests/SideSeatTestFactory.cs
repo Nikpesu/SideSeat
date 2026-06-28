@@ -10,6 +10,7 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using SideSeat;
 using SideSeat.Data;
 using SideSeat.Models;
+using SideSeat.Services;
 
 namespace SideSeat.IntegrationTests;
 
@@ -30,7 +31,12 @@ public class SideSeatTestFactory : WebApplicationFactory<Program>, IDisposable
             {
                 ["ConnectionStrings:SideSeatDbContext"] = "TestConnection",
                 ["Authentication:Google:ClientId"] = "test-client-id",
-                ["Authentication:Google:ClientSecret"] = "test-client-secret"
+                ["Authentication:Google:ClientSecret"] = "test-client-secret",
+                ["Mcp:ApiKey"] = "test-mcp-key",
+                ["Mcp:KorisnikId"] = "1",
+                ["Mcp:Roles:0"] = "Admin",
+                ["Mcp:Roles:1"] = "Driver",
+                ["Mcp:Roles:2"] = "Passenger"
             });
         });
 
@@ -40,7 +46,13 @@ public class SideSeatTestFactory : WebApplicationFactory<Program>, IDisposable
             services.RemoveAll<DbContextOptions>();
             services.RemoveAll<IDbContextOptionsConfiguration<SideSeatDbContext>>();
             services.RemoveAll<IDatabaseProvider>();
+            services.RemoveAll<ICityGeocodingService>();
+            services.RemoveAll<IRouteGeometryService>();
+            services.RemoveAll<IPublicWebSearchService>();
             services.AddDbContext<SideSeatDbContext>(options => options.UseInMemoryDatabase(_databaseName));
+            services.AddSingleton<ICityGeocodingService, TestCityGeocodingService>();
+            services.AddSingleton<IRouteGeometryService, TestRouteGeometryService>();
+            services.AddSingleton<IPublicWebSearchService, TestPublicWebSearchService>();
             services.AddAuthentication(options =>
             {
                 options.DefaultAuthenticateScheme = TestAuthHandler.SchemeName;
@@ -81,9 +93,21 @@ public class SideSeatTestFactory : WebApplicationFactory<Program>, IDisposable
         await db.Database.EnsureCreatedAsync();
 
         db.Gradovi.AddRange(
-            new Grad { Id = 1, Naziv = "Zagreb", Drzava = "Hrvatska", PostanskiBroj = "10000" },
-            new Grad { Id = 2, Naziv = "Split", Drzava = "Hrvatska", PostanskiBroj = "21000" },
-            new Grad { Id = 3, Naziv = "Rijeka", Drzava = "Hrvatska", PostanskiBroj = "51000" });
+            new Grad
+            {
+                Id = 1, Naziv = "Zagreb", Drzava = "Hrvatska", PostanskiBroj = "10000",
+                Latitude = 45.815010m, Longitude = 15.981919m
+            },
+            new Grad
+            {
+                Id = 2, Naziv = "Split", Drzava = "Hrvatska", PostanskiBroj = "21000",
+                Latitude = 43.508133m, Longitude = 16.440193m
+            },
+            new Grad
+            {
+                Id = 3, Naziv = "Rijeka", Drzava = "Hrvatska", PostanskiBroj = "51000",
+                Latitude = 45.327063m, Longitude = 14.442176m
+            });
 
         db.Korisnici.AddRange(
             new Korisnik
@@ -147,4 +171,74 @@ public class SideSeatTestFactory : WebApplicationFactory<Program>, IDisposable
             Directory.Delete(WebRootPath, recursive: true);
         }
     }
+}
+
+internal sealed class TestRouteGeometryService : IRouteGeometryService
+{
+    public Task<RouteGeometryResult?> GetRouteAsync(
+        decimal startLatitude,
+        decimal startLongitude,
+        decimal endLatitude,
+        decimal endLongitude,
+        CancellationToken cancellationToken = default) =>
+        Task.FromResult<RouteGeometryResult?>(new RouteGeometryResult(
+            [
+                new((double)startLatitude, (double)startLongitude),
+                new(
+                    (double)((startLatitude + endLatitude) / 2),
+                    (double)((startLongitude + endLongitude) / 2)),
+                new((double)endLatitude, (double)endLongitude)
+            ],
+            410000,
+            14400));
+}
+
+internal sealed class TestCityGeocodingService : ICityGeocodingService
+{
+    public Task<CityCoordinateResult> ResolveAsync(
+        string name,
+        string country,
+        string postalCode,
+        decimal? latitude,
+        decimal? longitude,
+        CancellationToken cancellationToken = default)
+    {
+        if (latitude.HasValue != longitude.HasValue)
+        {
+            return Task.FromResult(CityCoordinateResult.Failure(
+                "Potrebno je unijeti obje koordinate ili obje ostaviti praznima."));
+        }
+
+        if (latitude.HasValue && longitude.HasValue)
+        {
+            return Task.FromResult(
+                latitude is >= -90 and <= 90 && longitude is >= -180 and <= 180
+                    ? CityCoordinateResult.Success(latitude.Value, longitude.Value)
+                    : CityCoordinateResult.Failure("Koordinate nisu u dopuštenom rasponu."));
+        }
+
+        return Task.FromResult(
+            name.Contains("Bez Lokacije", StringComparison.OrdinalIgnoreCase)
+                ? CityCoordinateResult.Failure("Lokacija grada nije pronađena. Unesite koordinate ručno.")
+                : CityCoordinateResult.Success(45.123456m, 15.654321m));
+    }
+}
+
+internal sealed class TestPublicWebSearchService : IPublicWebSearchService
+{
+    public Task<PublicWebSearchResponse> SearchAsync(
+        PublicWebSearchRequest request,
+        CancellationToken cancellationToken = default) =>
+        Task.FromResult(new PublicWebSearchResponse(
+            request.Query,
+            string.IsNullOrWhiteSpace(request.Source) ? "auto" : request.Source,
+            string.IsNullOrWhiteSpace(request.Language) ? "hr" : request.Language,
+            DateTimeOffset.UtcNow,
+            [
+                new PublicWebSearchResult(
+                    "SideSeat test rezultat",
+                    $"Sažetak javne pretrage za {request.Query}.",
+                    "https://example.test/sideseat",
+                    "Test")
+            ]));
 }

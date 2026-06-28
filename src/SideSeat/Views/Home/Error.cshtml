@@ -1,0 +1,15 @@
+@model SideSeat.Models.ErrorViewModel
+@{
+    ViewData["Title"] = "Greška";
+}
+
+<section class="ss-page">
+    <div class="ss-page-head">
+        <span class="ss-kicker">Correlation ID: @Model.RequestId</span>
+        <h1>Dogodila se neočekivana greška</h1>
+        <p>Pokušaj ponovno. Ako se problem ponavlja, navedi correlation ID administratoru.</p>
+        <div class="ss-actions">
+            <a class="ss-btn" asp-controller="Home" asp-action="Index">Povratak na početnu</a>
+        </div>
+    </div>
+</section>

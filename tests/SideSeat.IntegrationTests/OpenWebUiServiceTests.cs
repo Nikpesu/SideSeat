@@ -252,6 +252,9 @@ public class OpenWebUiServiceTests
 
         public string? LastToolName { get; private set; }
 
+        public IReadOnlyList<object> GetDefinitions(System.Security.Claims.ClaimsPrincipal principal) =>
+            Definitions;
+
         public Task<string> ExecuteAsync(
             string toolName,
             string argumentsJson,

@@ -1,0 +1,137 @@
+@{
+    ViewData["Title"] = "Vodič kroz vožnju";
+}
+
+<section class="ss-page">
+    <nav class="ss-breadcrumb" aria-label="Breadcrumb">
+        <a asp-controller="Home" asp-action="Index">Pocetna</a>
+        <span class="ss-breadcrumb-sep">/</span>
+        <span class="current" aria-current="page">Vodič kroz vožnju</span>
+    </nav>
+
+    <div class="ss-page-head">
+        <h1>Vožnja — hodogram za vozače i putnike</h1>
+        <p>
+            Cijeli tijek vožnje na SideSeat platformi: kako putnik rezervira i plati, kako vozač odradi vožnju
+            i naplati, te kako se novac <strong>nadoplaćuje</strong> i <strong>isplaćuje</strong> s aplikacije.
+        </p>
+    </div>
+
+    <div class="ss-detail-card">
+        <p class="ss-muted">
+            <strong>Napomena o napojnici:</strong> napojnica se daje <strong>isključivo karticom</strong> i
+            <strong>isključivo u obrascu za ocjenu vozača</strong>, nakon završene vožnje. Ne skida se sa SideSeat
+            salda putnika i unosi se samo jednom (pri prvoj ocjeni vozača).
+        </p>
+    </div>
+
+    <div class="ss-detail-card">
+        <h2 class="h4">1. Hodogram za putnika</h2>
+        <ol>
+            <li><strong>Pronađi vožnju</strong> — na početnoj stranici pretraži po polazištu, odredištu i datumu.</li>
+            <li><strong>Rezerviraj</strong> — otvori vožnju i ispuni rezervaciju (broj mjesta, način plaćanja).</li>
+            <li>
+                <strong>Plati</strong> — odaberi način plaćanja:
+                <ul>
+                    <li><strong>SideSeat saldo</strong> — iznos se rezervira s tvog salda (mora biti dovoljno sredstava).</li>
+                    <li><strong>Gotovina / kartica kod vozača</strong> — plaćaš izravno vozaču pri vožnji.</li>
+                </ul>
+            </li>
+            <li><strong>Čekaj potvrdu</strong> — vozač/sustav potvrđuje rezervaciju; status prelazi u <em>Potvrđena</em>.</li>
+            <li><strong>Vožnja</strong> — prijaviš se (check-in) i odvezeš se do odredišta.</li>
+            <li><strong>Završetak</strong> — kad vozač označi vožnju kao <em>Završena</em>, rezervacija postaje <em>Završena</em>.</li>
+            <li>
+                <strong>Ocijeni i (opcionalno) ostavi napojnicu</strong> — u obrascu za ocjenu vozača daš ocjenu (1–5),
+                komentar i, ako želiš, <strong>napojnicu karticom</strong>. Napojnica ide izravno na saldo vozača.
+            </li>
+        </ol>
+    </div>
+
+    <div class="ss-detail-card">
+        <h2 class="h4">2. Hodogram za vozača</h2>
+        <ol>
+            <li><strong>Aktiviraj vozačku ulogu</strong> — ispuni KYC obrazac (<em>Račun → KYC vozača</em>).</li>
+            <li><strong>Dodaj vozilo</strong> — vozilo mora biti povezano s tvojim računom.</li>
+            <li><strong>Objavi vožnju</strong> — <em>Akcije → Nova vožnja</em>: polazište, odredište, vrijeme, broj mjesta, cijena po mjestu.</li>
+            <li><strong>Upravljaj rezervacijama</strong> — prati i potvrđuj dolazne rezervacije putnika.</li>
+            <li><strong>Trenutna vožnja</strong> — na stranici <em>Trenutna vožnja</em> pratiš putnike, check-in i status.</li>
+            <li><strong>Završi vožnju</strong> — označi vožnju kao <em>Završena</em>.</li>
+            <li><strong>Naplata</strong> — zarada od vožnje (i napojnice karticom) sjeda na tvoj <strong>SideSeat saldo</strong>.</li>
+            <li><strong>Isplata</strong> — sredstva sa salda isplaćuješ na stranici <em>Saldo</em>.</li>
+        </ol>
+    </div>
+
+    <div class="ss-detail-card">
+        <h2 class="h4">3. Kako nadoplatiti novce (uplata na saldo)</h2>
+        <ol>
+            <li>Idi na <strong>Račun → Uplati sredstva</strong> (<em>Korisnik/Uplata</em>).</li>
+            <li>Unesi <strong>iznos</strong> uplate.</li>
+            <li>
+                Odaberi <strong>način plaćanja</strong>: Kartica, PayPal ili Revolut Pay.
+                <ul>
+                    <li>Za karticu: ime na kartici, broj (<code>4444 4444 4444 4444</code>), vrijedi do (MM/GG), CVV. Karticu po želji možeš spremiti za sljedeći put.</li>
+                    <li>Za PayPal/Revolut: ime računa i potvrda mock transakcije.</li>
+                </ul>
+            </li>
+            <li>Ispuni <strong>adresu naplate</strong> (ulica, kućni broj, poštanski broj, država).</li>
+            <li>Potvrdi — saldo se <strong>poveća</strong> za uneseni iznos.</li>
+        </ol>
+        <p class="ss-muted">Uplata je mock (demo) — stvarna naplata se ne izvršava. Svaka uplata se bilježi u povijesti transakcija.</p>
+    </div>
+
+    <div class="ss-detail-card">
+        <h2 class="h4">4. Kako isplatiti novce (isplata sa salda)</h2>
+        <ol>
+            <li>Idi na <strong>Račun → Saldo</strong> (<em>Korisnik/Saldo</em>).</li>
+            <li>Unesi <strong>iznos isplate</strong> i pokreni akciju <em>Isplata</em>.</li>
+            <li>Sustav provjerava <strong>raspoloživo za isplatu</strong>: <code>raspoloživo = trenutni saldo − sredstva rezervirana za zakazane rezervacije</code>.</li>
+            <li>Ako je iznos u granicama raspoloživog, saldo se <strong>smanji</strong> i isplata se zabilježi.</li>
+        </ol>
+        <p class="ss-muted">
+            Sredstva koja su rezervirana za potvrđene/u procesu rezervacije (plaćene saldom) ne mogu se isplatiti
+            dok se vožnja ne završi ili rezervacija ne otkaže.
+        </p>
+    </div>
+
+    <div class="ss-detail-card">
+        <h2 class="h4">5. Tijek novca — sažetak</h2>
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Događaj</th>
+                        <th>Učinak na saldo</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Uplata (Kartica / PayPal / Revolut)</td>
+                        <td><strong>+</strong> povećava saldo putnika/vozača</td>
+                    </tr>
+                    <tr>
+                        <td>Rezervacija plaćena saldom</td>
+                        <td>sredstva <strong>rezervirana</strong> (zaključana do završetka)</td>
+                    </tr>
+                    <tr>
+                        <td>Završena vožnja (zarada vozača)</td>
+                        <td><strong>+</strong> sjeda na saldo vozača</td>
+                    </tr>
+                    <tr>
+                        <td>Napojnica karticom pri ocjeni</td>
+                        <td><strong>+</strong> sjeda na saldo vozača (ne dira saldo putnika)</td>
+                    </tr>
+                    <tr>
+                        <td>Isplata sa salda</td>
+                        <td><strong>−</strong> smanjuje saldo (do iznosa raspoloživog za isplatu)</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <p class="ss-muted">Sve promjene salda vidljive su u povijesti transakcija na stranici <strong>Saldo</strong>.</p>
+    </div>
+
+    <div class="ss-actions">
+        <a class="ss-btn" asp-controller="Korisnik" asp-action="Uplata">Uplati sredstva</a>
+        <a class="ss-btn ss-btn-secondary" asp-controller="Korisnik" asp-action="Saldo">Otvori saldo</a>
+    </div>
+</section>

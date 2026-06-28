@@ -72,13 +72,13 @@ public class AiToolServiceTests : IClassFixture<SideSeatTestFactory>
 
         using var rides = JsonDocument.Parse(ridesJson);
         Assert.Equal(1, rides.RootElement.GetProperty("count").GetInt32());
-        Assert.Equal(1, rides.RootElement.GetProperty("rides")[0].GetProperty("Id").GetInt32());
+        Assert.Equal(1, rides.RootElement.GetProperty("rides")[0].GetProperty("id").GetInt32());
 
         using var reservations = JsonDocument.Parse(reservationsJson);
         Assert.Equal(1, reservations.RootElement.GetProperty("count").GetInt32());
         Assert.Equal(
             1,
-            reservations.RootElement.GetProperty("reservations")[0].GetProperty("Id").GetInt32());
+            reservations.RootElement.GetProperty("reservations")[0].GetProperty("id").GetInt32());
 
         using var balance = JsonDocument.Parse(balanceJson);
         Assert.Equal(50, balance.RootElement.GetProperty("balance").GetDecimal());
@@ -86,6 +86,73 @@ public class AiToolServiceTests : IClassFixture<SideSeatTestFactory>
 
         using var unauthorizedAllRides = JsonDocument.Parse(unauthorizedAllRidesJson);
         Assert.Equal(0, unauthorizedAllRides.RootElement.GetProperty("count").GetInt32());
+    }
+
+    [Fact]
+    public async Task Tools_ExposeAndExecutePublicWebSearch()
+    {
+        await _factory.SeedAsync();
+        using var scope = _factory.Services.CreateScope();
+        var tools = scope.ServiceProvider.GetRequiredService<IAiToolService>();
+        var principal = CreatePrincipal("2", "Passenger");
+
+        var definitionsJson = JsonSerializer.Serialize(tools.Definitions);
+        Assert.Contains("search_public_web", definitionsJson);
+
+        var resultJson = await tools.ExecuteAsync(
+            "search_public_web",
+            """{"query":"OpenStreetMap","source":"wikipedia","language":"hr","limit":3}""",
+            principal,
+            CancellationToken.None);
+
+        using var result = JsonDocument.Parse(resultJson);
+        Assert.Equal("OpenStreetMap", result.RootElement.GetProperty("query").GetString());
+        Assert.Equal(1, result.RootElement.GetProperty("count").GetInt32());
+        Assert.Equal(
+            "https://example.test/sideseat",
+            result.RootElement.GetProperty("results")[0].GetProperty("url").GetString());
+        Assert.Contains(
+            "[SideSeat test rezultat](https://example.test/sideseat)",
+            resultJson);
+    }
+
+    [Fact]
+    public async Task Tools_RespectRoleBasedAccessAndCityLookup()
+    {
+        await _factory.SeedAsync();
+        using var scope = _factory.Services.CreateScope();
+        var tools = scope.ServiceProvider.GetRequiredService<IAiToolService>();
+
+        var passenger = CreatePrincipal("2", "Passenger");
+        var admin = CreatePrincipal("1", "Admin");
+
+        var passengerTools = JsonSerializer.Serialize(tools.GetDefinitions(passenger));
+        var adminTools = JsonSerializer.Serialize(tools.GetDefinitions(admin));
+
+        // Alat za sve je vidljiv putniku, ali admin/vozač alati nisu.
+        Assert.Contains("get_cities", passengerTools);
+        Assert.DoesNotContain("get_users", passengerTools);
+        Assert.DoesNotContain("prepare_create_city", passengerTools);
+        Assert.DoesNotContain("prepare_create_ride", passengerTools);
+
+        // Administrator vidi sve te alate.
+        Assert.Contains("get_users", adminTools);
+        Assert.Contains("prepare_create_city", adminTools);
+        Assert.Contains("prepare_create_ride", adminTools);
+
+        // Izvršna provjera role: putnik ne može dohvatiti korisnike.
+        var deniedJson = await tools.ExecuteAsync("get_users", "{}", passenger, CancellationToken.None);
+        Assert.Contains("administrator", deniedJson);
+
+        // Lookup gradova radi za putnika.
+        var citiesJson = await tools.ExecuteAsync(
+            "get_cities",
+            """{"search":"Zagreb"}""",
+            passenger,
+            CancellationToken.None);
+        using var cities = JsonDocument.Parse(citiesJson);
+        Assert.True(cities.RootElement.GetProperty("count").GetInt32() >= 1);
+        Assert.Contains("Zagreb", citiesJson);
     }
 
     private static ClaimsPrincipal CreatePrincipal(string korisnikId, params string[] roles)

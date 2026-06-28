@@ -1,0 +1,82 @@
+@model SideSeat.Models.Rides.RideSettlementViewModel
+@{
+    ViewData["Title"] = "Završetak vožnje";
+}
+
+<section class="ss-page">
+    <nav class="ss-breadcrumb" aria-label="Breadcrumb">
+        <a asp-controller="Home" asp-action="Index">Dashboard</a>
+        <span class="ss-breadcrumb-sep">/</span>
+        <a asp-controller="Voznja" asp-action="Current">Trenutna vožnja</a>
+        <span class="ss-breadcrumb-sep">/</span>
+        <span class="current" aria-current="page">Završetak</span>
+    </nav>
+
+    <div class="ss-page-head">
+        <h1>Završi vožnju</h1>
+        <p>Pregled naplate prije označavanja vožnje završenom.</p>
+    </div>
+
+    <article class="ss-detail-card">
+        @if (TempData["RideExecuted"] is string status)
+        {
+            <div class="alert alert-info" role="status">@status</div>
+        }
+
+        <div class="ss-settlement-summary">
+            <div>
+                <span>Saldo naplata</span>
+                <strong>@Model.SaldoDue.ToString("0.00") EUR</strong>
+            </div>
+            <div>
+                <span>Gotovina za vozača</span>
+                <strong>@Model.CashDue.ToString("0.00") EUR</strong>
+            </div>
+        </div>
+
+        <div class="ss-table-shell" role="region" aria-label="Settlement putnika" tabindex="0">
+            <table class="ss-table">
+                <thead>
+                    <tr>
+                        <th>Putnik</th>
+                        <th>Status</th>
+                        <th>Plaćanje</th>
+                        <th>Ukupno</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var passenger in Model.Putnici.Where(p => p.Status == SideSeat.Models.StatusRezervacije.Potvrdena))
+                    {
+                        <tr>
+                            <td>@passenger.PutnikIme</td>
+                            <td>@passenger.Status.ToDisplayName()</td>
+                            <td>@passenger.NacinPlacanja</td>
+                            <td>@passenger.CijenaUkupno.ToString("0.00") EUR</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <form asp-action="Finish" method="post" class="mt-4">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="id" value="@Model.Voznja.Id" />
+            @if (Model.HasCashDue)
+            {
+                <label class="ss-check-row">
+                    <input type="checkbox" name="cashCollected" value="true" required />
+                    <span>Potvrđujem da je vozač primio @Model.CashDue.ToString("0.00") EUR gotovine.</span>
+                </label>
+            }
+            else
+            {
+                <input type="hidden" name="cashCollected" value="true" />
+            }
+
+            <div class="ss-actions">
+                <button type="submit" class="ss-btn">Završi vožnju</button>
+                <a class="ss-btn ss-btn-secondary" asp-action="Details" asp-route-id="@Model.Voznja.Id">Odustani</a>
+            </div>
+        </form>
+    </article>
+</section>
