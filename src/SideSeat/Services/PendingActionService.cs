@@ -35,7 +35,7 @@ public sealed class PendingActionService(
             expiresAt,
             BuildForm(token, actionType, title, summary, payload));
         cache.Set(CacheKey(token), envelope, expiresAt);
-        return ToDescriptor(token, envelope);
+        return ToDescriptor(token, envelope, AiActionTargets.Resolve(actionType, payload));
     }
 
     public PendingActionDescriptor? GetDescriptor(string token, ClaimsPrincipal principal)
@@ -103,14 +103,18 @@ public sealed class PendingActionService(
 
     private static string CacheKey(string token) => $"sideseat:pending-action:{token}";
 
-    private static PendingActionDescriptor ToDescriptor(string token, PendingActionEnvelope action) =>
+    private static PendingActionDescriptor ToDescriptor(
+        string token,
+        PendingActionEnvelope action,
+        string? targetUrl = null) =>
         new(
             token,
             action.ActionType,
             action.Title,
             action.Summary,
             action.ExpiresAtUtc,
-            action.Form);
+            action.Form,
+            targetUrl);
 
     private static PendingFormDescriptor BuildForm<T>(
         string token,
