@@ -19,7 +19,7 @@ RUN dotnet publish "src/SideSeat/SideSeat.csproj" \
     /p:UseAppHost=false
 
 FROM base AS final
-ARG APP_VERSION=v0.52
+ARG APP_VERSION=v0.53
 LABEL org.opencontainers.image.title="SideSeat Web"
 LABEL org.opencontainers.image.version="${APP_VERSION}"
 LABEL com.sideseat.container.version="${APP_VERSION}"

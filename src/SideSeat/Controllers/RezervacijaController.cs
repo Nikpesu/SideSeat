@@ -299,19 +299,27 @@ public class RezervacijaController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> CheckIn(
         int id,
-        decimal? latitude,
-        decimal? longitude,
+        string? latitude,
+        string? longitude,
         CancellationToken cancellationToken)
     {
+        // Preglednik šalje koordinate s točkom kao decimalnim znakom (toFixed),
+        // a zahtjev je lokaliziran na hr-HR (zarez) pa decimal binder ne uspije.
+        // Parsiramo invarijantno da lokacija ne ispadne null.
         var result = await _commands.ExecuteAsync(
             SideSeatActionTypes.CheckInReservation,
-            new CheckInReservationCommand(id, latitude, longitude),
+            new CheckInReservationCommand(id, ParseCoordinate(latitude), ParseCoordinate(longitude)),
             User,
             "MVC",
             cancellationToken);
         TempData["ReservationStatus"] = result.Message;
         return RedirectToAction(nameof(Details), new { id });
     }
+
+    private static decimal? ParseCoordinate(string? value) =>
+        decimal.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out var parsed)
+            ? parsed
+            : null;
 
     public IActionResult Create(int voznjaId)
     {
