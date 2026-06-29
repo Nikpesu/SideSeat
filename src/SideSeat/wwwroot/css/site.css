@@ -2643,6 +2643,17 @@ html[data-theme="dark"] .ss-notification-item strong {
   padding: .45rem .72rem;
 }
 
+.ss-checkin-status {
+  font-weight: 600;
+  margin: .25rem 0 .5rem;
+}
+
+.ss-checkin-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .5rem;
+}
+
 .ss-account-link {
   display: flex;
   align-items: center;
