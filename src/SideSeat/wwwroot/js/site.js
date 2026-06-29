@@ -2023,6 +2023,19 @@
         return;
       }
 
+      const describeGeoError = (error) => {
+        switch (error && error.code) {
+          case 1:
+            return "Pristup lokaciji je odbijen u pregledniku ili u postavkama operacijskog sustava.";
+          case 2:
+            return "Lokacija nije dostupna. Na računalu uključi lokacijske servise sustava (Postavke → Privatnost → Lokacija) i provjeri internetsku vezu.";
+          case 3:
+            return "Dohvaćanje lokacije je isteklo. Pokušaj ponovno.";
+          default:
+            return error && error.message ? error.message : "Nepoznata greška pri dohvaćanju lokacije.";
+        }
+      };
+
       locateButton.addEventListener("click", () => {
         const originalLabel = locateButton.textContent;
         locateButton.disabled = true;
@@ -2034,25 +2047,51 @@
           locateButton.textContent = originalLabel;
         };
 
-        // Mrežna lokacija je brža i pouzdanija na desktopu od GPS-a, 12 s timeout.
+        // Geolokacija radi samo na sigurnom kontekstu (HTTPS ili localhost).
+        if (window.isSecureContext === false) {
+          setStatus("Geolokacija radi samo preko HTTPS-a. Otvori stranicu na https:// adresi.");
+          restore();
+          return;
+        }
+
+        const onSuccess = (position) => {
+          const lat = position.coords.latitude.toFixed(6);
+          const lng = position.coords.longitude.toFixed(6);
+          if (latField) {
+            latField.value = lat;
+          }
+          if (lngField) {
+            lngField.value = lng;
+          }
+          setStatus(`Lokacija pronađena: ${lat}, ${lng}. Sada klikni „Pošalji lokaciju".`);
+          restore();
+        };
+
+        // Prvi pokušaj: mrežna lokacija (brza na desktopu). Ako padne zbog
+        // nedostupnosti/isteka, pokušaj GPS-om (enableHighAccuracy) prije odustajanja.
+        const tryHighAccuracy = (firstError) => {
+          navigator.geolocation.getCurrentPosition(
+            onSuccess,
+            (error) => {
+              setStatus(`Nije moguće dohvatiti lokaciju: ${describeGeoError(error || firstError)}`);
+              restore();
+            },
+            { enableHighAccuracy: true, maximumAge: 60000, timeout: 15000 });
+        };
+
         navigator.geolocation.getCurrentPosition(
-          (position) => {
-            const lat = position.coords.latitude.toFixed(6);
-            const lng = position.coords.longitude.toFixed(6);
-            if (latField) {
-              latField.value = lat;
+          onSuccess,
+          (error) => {
+            // Odbijena dozvola (code 1) — nema smisla ponavljati.
+            if (error && error.code === 1) {
+              setStatus(`Nije moguće dohvatiti lokaciju: ${describeGeoError(error)}`);
+              restore();
+              return;
             }
-            if (lngField) {
-              lngField.value = lng;
-            }
-            setStatus(`Lokacija pronađena: ${lat}, ${lng}. Sada klikni „Pošalji lokaciju".`);
-            restore();
+            setStatus("Lokacija nije odmah dostupna, pokušavam preciznije (GPS)…");
+            tryHighAccuracy(error);
           },
-          () => {
-            setStatus("Nije moguće dohvatiti lokaciju. Provjeri dozvolu za lokaciju u pregledniku i pokušaj ponovno.");
-            restore();
-          },
-          { enableHighAccuracy: false, maximumAge: 60000, timeout: 12000 });
+          { enableHighAccuracy: false, maximumAge: 60000, timeout: 8000 });
       });
     });
   };
