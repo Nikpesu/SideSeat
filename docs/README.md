@@ -18,6 +18,7 @@ Wikipedia-style pomoć za korisnike i razvojne programere:
 - [FAQ](wiki/FAQ.md)
 
 ## Arhitektura
+- [Dubinski vodič kroz cijeli projekt](wiki/Project-Deep-Dive.md) — opširno objašnjenje svakog dijela uz dijagrame, tablice i sheme (za učenje i onboarding).
 - [Arhitektura, folderi i klase](ARCHITECTURE.md) — kratko objašnjenje svakog foldera i klase.
 
 ## Vodiči i procesi

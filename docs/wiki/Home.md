@@ -24,6 +24,7 @@ Ovaj wiki je čitljiv izravno na GitHubu. Krenite od vodiča za svoju ulogu.
 - [Hodogram vožnje](../vožnja.md) — korak-po-korak za vozače i putnike
 
 ### Za razvojne programere
+- [Dubinski vodič kroz cijeli projekt](Project-Deep-Dive.md) — opširno objašnjenje svakog dijela uz dijagrame i tablice (za učenje i onboarding)
 - [Arhitektura, folderi i klase](../ARCHITECTURE.md)
 - [Changelog (povijest verzija)](../../changelogs/README.md)
 - [Često postavljana pitanja (FAQ)](FAQ.md)
