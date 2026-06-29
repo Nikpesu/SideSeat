@@ -5,7 +5,7 @@
 [![.NET](https://img.shields.io/badge/.NET-10.0-512BD4?logo=dotnet)](src/SideSeat/SideSeat.csproj)
 [![.NET CI](https://github.com/Nikpesu/SideSeat/actions/workflows/dotnet-ci.yml/badge.svg)](https://github.com/Nikpesu/SideSeat/actions/workflows/dotnet-ci.yml)
 [![Docker](https://img.shields.io/badge/Docker-Linux%20AMD64-2496ED?logo=docker&logoColor=white)](docker-compose.hub.yml)
-[![Version](https://img.shields.io/badge/version-v0.56-2ea44f)](changelogs/v0.56.md)
+[![Version](https://img.shields.io/badge/version-v0.57-2ea44f)](changelogs/v0.57.md)
 [![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
 SideSeat povezuje vozače i putnike kroz objavu vožnji, rezervacije, potvrđivanje putnika, plaćanja, ocjene i obavijesti. Projekt uključuje ASP.NET Core Identity, Google prijavu, REST API, upload slika, AI asistenta za Open WebUI ili DeepSeek, SQL Server, Docker i integracijske testove.
@@ -90,13 +90,13 @@ Aplikacija je dostupna na `http://localhost:8080`.
 Objavljeni image:
 
 ```text
-nikolica/sideseat:v0.56
+nikolica/sideseat:v0.57
 ```
 
 Tag `latest` pokazuje na isto izdanje. Image je namijenjen platformi `linux/amd64`.
 
 ```bash
-docker pull nikolica/sideseat:v0.56
+docker pull nikolica/sideseat:v0.57
 ```
 
 Digest izdanja:
@@ -405,6 +405,7 @@ Povijest izdanja organizirana je kao mala wiki baza. Klik na verziju otvara potp
 | [v0.54](changelogs/v0.54.md) | 2026-06-29 | Pouzdanije geolociranje pri check-inu (mrežna lokacija, 12 s timeout, gumb pokazuje napredak) | `nikolica/sideseat:v0.54` |
 | [v0.55](changelogs/v0.55.md) | 2026-06-29 | Prekidač teme u navigaciji prikazuje samo ikonu (bez teksta Light/Dark) | `nikolica/sideseat:v0.55` |
 | [v0.56](changelogs/v0.56.md) | 2026-06-29 | Dvokoračni check-in: „Pronađi lokaciju" prikaže koordinate na stranici, pa „Pošalji lokaciju" šalje | `nikolica/sideseat:v0.56` |
+| [v0.57](changelogs/v0.57.md) | 2026-06-29 | Geolociranje: konkretna poruka o grešci (dozvola/nedostupno/istek/HTTPS) + GPS fallback | `nikolica/sideseat:v0.57` |
 | [v0.51](changelogs/v0.51.md) | 2026-06-28 | Završene vožnje javne (popis, detalji, pozadina); brisanje završenih samo admin | `nikolica/sideseat:v0.51` |
 | [v0.50](changelogs/v0.50.md) | 2026-06-28 | AI više ne traži potvrdu putem poveznice — samo gumb „Otvori i dovrši" | `nikolica/sideseat:v0.50` |
 | [v0.49](changelogs/v0.49.md) | 2026-06-28 | Saldo vraćen u sekundarnu navigaciju | `nikolica/sideseat:v0.49` |
