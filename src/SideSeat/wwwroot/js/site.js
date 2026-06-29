@@ -2003,6 +2003,8 @@
       // na ovoj stranici, koordinate se prikažu), pa tek onda "Pošalji lokaciju"
       // koji submita formu. Submit više ne pokreće geolociranje sam.
       const locateButton = form.querySelector("[data-checkin-locate]");
+      const mapToggle = form.querySelector("[data-checkin-map-toggle]");
+      const mapContainer = form.querySelector("[data-checkin-map]");
       const status = form.querySelector("[data-checkin-status]");
       const latField = form.querySelector("[data-checkin-lat]");
       const lngField = form.querySelector("[data-checkin-lng]");
@@ -2013,13 +2015,76 @@
         }
       };
 
+      const setCoordinates = (lat, lng) => {
+        if (latField) {
+          latField.value = lat;
+        }
+        if (lngField) {
+          lngField.value = lng;
+        }
+      };
+
+      // --- Ručni odabir lokacije na karti (Leaflet) kao zamjena za geolociranje ---
+      let checkinMap = null;
+      let checkinMarker = null;
+      const parseCoord = (value) => {
+        const parsed = parseFloat(value);
+        return Number.isFinite(parsed) ? parsed : null;
+      };
+      const ensureCheckinMap = () => {
+        if (checkinMap || !mapContainer || typeof L === "undefined") {
+          return;
+        }
+        const startLat = parseCoord(mapContainer.dataset.mapLat);
+        const startLng = parseCoord(mapContainer.dataset.mapLng);
+        const hasStart = startLat !== null && startLng !== null;
+        checkinMap = L.map(mapContainer).setView(hasStart ? [startLat, startLng] : [45.1, 15.2], hasStart ? 12 : 7);
+        L.tileLayer(
+          document.body.dataset.mapTileUrl || "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+          { attribution: document.body.dataset.mapAttribution || "© OpenStreetMap", maxZoom: 19 }
+        ).addTo(checkinMap);
+        checkinMap.on("click", (event) => {
+          const lat = event.latlng.lat.toFixed(6);
+          const lng = event.latlng.lng.toFixed(6);
+          setCoordinates(lat, lng);
+          if (checkinMarker) {
+            checkinMarker.setLatLng(event.latlng);
+          } else {
+            checkinMarker = L.marker(event.latlng).addTo(checkinMap);
+          }
+          setStatus(`Lokacija označena na karti: ${lat}, ${lng}. Sada klikni „Pošalji lokaciju".`);
+        });
+      };
+      const showCheckinMap = () => {
+        if (!mapContainer) {
+          return;
+        }
+        mapContainer.hidden = false;
+        ensureCheckinMap();
+        if (checkinMap) {
+          // Leaflet mora preračunati veličinu kad se kontejner tek prikaže.
+          setTimeout(() => checkinMap.invalidateSize(), 0);
+        }
+      };
+      if (mapToggle) {
+        mapToggle.addEventListener("click", () => {
+          if (mapContainer && mapContainer.hidden) {
+            showCheckinMap();
+            setStatus("Klikni na kartu da označiš svoju lokaciju.");
+          } else if (mapContainer) {
+            mapContainer.hidden = true;
+          }
+        });
+      }
+
       if (!locateButton) {
         return;
       }
 
       if (!navigator.geolocation) {
         locateButton.disabled = true;
-        setStatus("Preglednik ne podržava geolokaciju.");
+        setStatus("Preglednik ne podržava geolokaciju. Označi lokaciju na karti.");
+        showCheckinMap();
         return;
       }
 
@@ -2073,7 +2138,8 @@
           navigator.geolocation.getCurrentPosition(
             onSuccess,
             (error) => {
-              setStatus(`Nije moguće dohvatiti lokaciju: ${describeGeoError(error || firstError)}`);
+              setStatus(`Automatsko lociranje nije uspjelo (${describeGeoError(error || firstError)}). Označi lokaciju ručno na karti.`);
+              showCheckinMap();
               restore();
             },
             { enableHighAccuracy: true, maximumAge: 60000, timeout: 15000 });
@@ -2084,7 +2150,8 @@
           (error) => {
             // Odbijena dozvola (code 1) — nema smisla ponavljati.
             if (error && error.code === 1) {
-              setStatus(`Nije moguće dohvatiti lokaciju: ${describeGeoError(error)}`);
+              setStatus(`Nije moguće dohvatiti lokaciju: ${describeGeoError(error)} Možeš je ručno označiti na karti.`);
+              showCheckinMap();
               restore();
               return;
             }
@@ -2093,6 +2160,31 @@
           },
           { enableHighAccuracy: false, maximumAge: 60000, timeout: 8000 });
       });
+    });
+  };
+
+  // Vozač: prikaži lokaciju svakog putnika na zasebnoj maloj karti.
+  const initializePassengerMaps = () => {
+    if (typeof L === "undefined") {
+      return;
+    }
+    document.querySelectorAll("[data-passenger-map]").forEach((container) => {
+      if (container.dataset.ssBound === "true") {
+        return;
+      }
+      const lat = parseFloat(container.dataset.lat);
+      const lng = parseFloat(container.dataset.lng);
+      if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+        return;
+      }
+      container.dataset.ssBound = "true";
+      const map = L.map(container, { attributionControl: false }).setView([lat, lng], 14);
+      L.tileLayer(
+        document.body.dataset.mapTileUrl || "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+        { attribution: document.body.dataset.mapAttribution || "© OpenStreetMap", maxZoom: 19 }
+      ).addTo(map);
+      L.marker([lat, lng]).addTo(map);
+      setTimeout(() => map.invalidateSize(), 0);
     });
   };
 
@@ -2264,6 +2356,7 @@
   initializeEnhancedUi();
   initializeLiveRides();
   initializeCheckInForms();
+  initializePassengerMaps();
   initializeRideChatDock();
   prefillFromQuery();
 })();

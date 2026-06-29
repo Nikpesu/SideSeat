@@ -82,9 +82,18 @@
                                         </div>
                                         @if (passenger.LastLatitude.HasValue && passenger.LastLongitude.HasValue)
                                         {
+                                            var pLat = passenger.LastLatitude.Value.ToString(System.Globalization.CultureInfo.InvariantCulture);
+                                            var pLng = passenger.LastLongitude.Value.ToString(System.Globalization.CultureInfo.InvariantCulture);
                                             <small data-location-state>
                                                 Lokacija: @passenger.LastLatitude.Value.ToString("0.000000"), @passenger.LastLongitude.Value.ToString("0.000000")
                                             </small>
+                                            <div class="ss-passenger-map" data-passenger-map data-lat="@pLat" data-lng="@pLng"></div>
+                                            <div class="ss-nav-links">
+                                                <a class="ss-btn ss-btn-secondary" target="_blank" rel="noopener"
+                                                   href="https://www.google.com/maps/dir/?api=1&amp;destination=@pLat,@pLng">Navigacija (Google Maps)</a>
+                                                <a class="ss-btn ss-btn-secondary" target="_blank" rel="noopener"
+                                                   href="https://waze.com/ul?ll=@pLat,@pLng&amp;navigate=yes">Navigacija (Waze)</a>
+                                            </div>
                                         }
                                         else
                                         {
@@ -179,12 +188,16 @@
                                     <input type="hidden" name="latitude" data-checkin-lat />
                                     <input type="hidden" name="longitude" data-checkin-lng />
                                     <h2 class="h5">Potvrdi da si u autu</h2>
-                                    <p>Prvo pronađi lokaciju na ovoj stranici, zatim je pošalji vozaču.</p>
+                                    <p>Pronađi lokaciju ili je označi na karti, zatim je pošalji vozaču.</p>
                                     <p class="ss-checkin-status" data-checkin-status aria-live="polite">Lokacija još nije pronađena.</p>
                                     <div class="ss-checkin-actions">
                                         <button type="button" class="ss-btn ss-btn-secondary" data-checkin-locate>Pronađi lokaciju</button>
+                                        <button type="button" class="ss-btn ss-btn-secondary" data-checkin-map-toggle>Označi na karti</button>
                                         <button type="submit" class="ss-btn">Pošalji lokaciju</button>
                                     </div>
+                                    <div class="ss-checkin-map" data-checkin-map
+                                         data-map-lat="@(ride.Voznja.PolazniGrad?.Latitude?.ToString(System.Globalization.CultureInfo.InvariantCulture))"
+                                         data-map-lng="@(ride.Voznja.PolazniGrad?.Longitude?.ToString(System.Globalization.CultureInfo.InvariantCulture))" hidden></div>
                                 </form>
                             }
                             else if (!checkedIn && res?.Status == SideSeat.Models.StatusRezervacije.Potvrdena)
