@@ -4,7 +4,7 @@
     var db = Context.RequestServices.GetService(typeof(SideSeat.Data.SideSeatDbContext)) as SideSeat.Data.SideSeatDbContext;
     var configuration = Context.RequestServices.GetService(typeof(IConfiguration)) as IConfiguration;
     var useDummyData = configuration?.GetValue<bool>("DUMMY_DATA") == true;
-    var appVersion = configuration?["SIDESEAT_VERSION"] ?? "v0.54";
+    var appVersion = configuration?["SIDESEAT_VERSION"] ?? "v0.55";
     var googleLoginEnabled =
         !string.IsNullOrWhiteSpace(configuration?["Authentication:Google:ClientId"]) &&
         !string.IsNullOrWhiteSpace(configuration?["Authentication:Google:ClientSecret"]);
@@ -125,7 +125,6 @@
                     <button id="ss-theme-toggle" class="ss-theme-toggle ss-theme-toggle-compact" type="button"
                             aria-label="Promijeni temu" aria-pressed="false">
                         <span class="ss-theme-toggle-icon" aria-hidden="true">☀</span>
-                        <span class="ss-theme-toggle-label">Light</span>
                     </button>
                     @if (isAuthenticated)
                     {
