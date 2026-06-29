@@ -1997,44 +1997,60 @@
       if (form.dataset.ssBound === "true") {
         return;
       }
-
-      const submitButton = form.querySelector("button[type='submit']");
-
       form.dataset.ssBound = "true";
-      form.addEventListener("submit", (event) => {
-        if (form.dataset.locationResolved === "true" || !navigator.geolocation) {
-          return;
-        }
 
-        event.preventDefault();
-        // Ne šaljemo check-in dok ne dobijemo lokaciju ili dok geolociranje
-        // ne padne. Mrežna lokacija (enableHighAccuracy:false) je brža i puno
-        // pouzdanija na desktopu od GPS-a, a 12 s daje pregledniku vremena.
-        const originalLabel = submitButton ? submitButton.textContent : null;
-        if (submitButton) {
-          submitButton.disabled = true;
-          submitButton.textContent = "Dohvaćam lokaciju…";
-        }
+      // Dvokoračni tok: korisnik prvo klikne "Pronađi lokaciju" (geolociranje
+      // na ovoj stranici, koordinate se prikažu), pa tek onda "Pošalji lokaciju"
+      // koji submita formu. Submit više ne pokreće geolociranje sam.
+      const locateButton = form.querySelector("[data-checkin-locate]");
+      const status = form.querySelector("[data-checkin-status]");
+      const latField = form.querySelector("[data-checkin-lat]");
+      const lngField = form.querySelector("[data-checkin-lng]");
 
-        const finish = () => {
-          form.dataset.locationResolved = "true";
-          if (submitButton) {
-            submitButton.disabled = false;
-            if (originalLabel !== null) {
-              submitButton.textContent = originalLabel;
-            }
-          }
-          form.requestSubmit();
+      const setStatus = (message) => {
+        if (status) {
+          status.textContent = message;
+        }
+      };
+
+      if (!locateButton) {
+        return;
+      }
+
+      if (!navigator.geolocation) {
+        locateButton.disabled = true;
+        setStatus("Preglednik ne podržava geolokaciju.");
+        return;
+      }
+
+      locateButton.addEventListener("click", () => {
+        const originalLabel = locateButton.textContent;
+        locateButton.disabled = true;
+        locateButton.textContent = "Dohvaćam…";
+        setStatus("Dohvaćam lokaciju…");
+
+        const restore = () => {
+          locateButton.disabled = false;
+          locateButton.textContent = originalLabel;
         };
 
+        // Mrežna lokacija je brža i pouzdanija na desktopu od GPS-a, 12 s timeout.
         navigator.geolocation.getCurrentPosition(
           (position) => {
-            form.querySelector("[data-checkin-lat]").value = position.coords.latitude.toFixed(6);
-            form.querySelector("[data-checkin-lng]").value = position.coords.longitude.toFixed(6);
-            finish();
+            const lat = position.coords.latitude.toFixed(6);
+            const lng = position.coords.longitude.toFixed(6);
+            if (latField) {
+              latField.value = lat;
+            }
+            if (lngField) {
+              lngField.value = lng;
+            }
+            setStatus(`Lokacija pronađena: ${lat}, ${lng}. Sada klikni „Pošalji lokaciju".`);
+            restore();
           },
           () => {
-            finish();
+            setStatus("Nije moguće dohvatiti lokaciju. Provjeri dozvolu za lokaciju u pregledniku i pokušaj ponovno.");
+            restore();
           },
           { enableHighAccuracy: false, maximumAge: 60000, timeout: 12000 });
       });

@@ -141,7 +141,11 @@
 				<input type="hidden" name="longitude" data-checkin-lng />
 				<h2 class="h5">Potvrdi da si u autu</h2>
 				<p>Lokacija se šalje samo ako je dopustiš u pregledniku i vidljiva je vozaču ove vožnje.</p>
-				<button type="submit" class="ss-btn">Spreman sam / u autu</button>
+				<p class="ss-checkin-status" data-checkin-status aria-live="polite">Lokacija još nije pronađena.</p>
+					<div class="ss-checkin-actions">
+						<button type="button" class="ss-btn ss-btn-secondary" data-checkin-locate>Pronađi lokaciju</button>
+						<button type="submit" class="ss-btn">Pošalji lokaciju</button>
+					</div>
 			</form>
 		}
 
