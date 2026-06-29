@@ -4,7 +4,7 @@
     var db = Context.RequestServices.GetService(typeof(SideSeat.Data.SideSeatDbContext)) as SideSeat.Data.SideSeatDbContext;
     var configuration = Context.RequestServices.GetService(typeof(IConfiguration)) as IConfiguration;
     var useDummyData = configuration?.GetValue<bool>("DUMMY_DATA") == true;
-    var appVersion = configuration?["SIDESEAT_VERSION"] ?? "v0.57";
+    var appVersion = configuration?["SIDESEAT_VERSION"] ?? "v0.58";
     var googleLoginEnabled =
         !string.IsNullOrWhiteSpace(configuration?["Authentication:Google:ClientId"]) &&
         !string.IsNullOrWhiteSpace(configuration?["Authentication:Google:ClientSecret"]);

@@ -2654,6 +2654,29 @@ html[data-theme="dark"] .ss-notification-item strong {
   gap: .5rem;
 }
 
+.ss-checkin-map {
+  height: 260px;
+  margin-top: .6rem;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid var(--ss-border);
+}
+
+.ss-passenger-map {
+  height: 180px;
+  margin-top: .5rem;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid var(--ss-border);
+}
+
+.ss-nav-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .5rem;
+  margin-top: .5rem;
+}
+
 .ss-account-link {
   display: flex;
   align-items: center;

@@ -141,9 +141,11 @@
 				<input type="hidden" name="longitude" data-checkin-lng />
 				<h2 class="h5">Potvrdi da si u autu</h2>
 				<p>Lokacija se šalje samo ako je dopustiš u pregledniku i vidljiva je vozaču ove vožnje.</p>
-				<p class="ss-checkin-status" data-checkin-status aria-live="polite">Lokacija još nije pronađena.</p>
+				<div class="ss-checkin-map" data-checkin-map data-map-lat="@(Model.Voznja?.PolazniGrad?.Latitude?.ToString(System.Globalization.CultureInfo.InvariantCulture))" data-map-lng="@(Model.Voznja?.PolazniGrad?.Longitude?.ToString(System.Globalization.CultureInfo.InvariantCulture))" hidden></div>
+					<p class="ss-checkin-status" data-checkin-status aria-live="polite">Lokacija još nije pronađena.</p>
 					<div class="ss-checkin-actions">
-						<button type="button" class="ss-btn ss-btn-secondary" data-checkin-locate>Pronađi lokaciju</button>
+						<button type="button" class="ss-btn ss-btn-secondary" data-checkin-map-toggle>Označi na karti</button>
+							<button type="button" class="ss-btn ss-btn-secondary" data-checkin-locate>Pronađi lokaciju</button>
 						<button type="submit" class="ss-btn">Pošalji lokaciju</button>
 					</div>
 			</form>
