@@ -416,6 +416,8 @@ public class KorisnikController : Controller
 
         var model = new UserSettingsViewModel
         {
+            FirstName = korisnik.Ime,
+            LastName = korisnik.Prezime,
             Address = korisnik.Adresa,
             PhoneNumber = korisnik.BrojMobitela,
             IsDriver = korisnik.Tip is TipKorisnika.Vozac or TipKorisnika.VozacIPutnik,
@@ -455,6 +457,8 @@ public class KorisnikController : Controller
 
         var hadDriverRole = korisnik.Tip is TipKorisnika.Vozac or TipKorisnika.VozacIPutnik;
         var hadRiderRole = korisnik.Tip is TipKorisnika.Putnik or TipKorisnika.VozacIPutnik;
+        korisnik.Ime = model.FirstName.Trim();
+        korisnik.Prezime = model.LastName.Trim();
         korisnik.Adresa = model.Address.Trim();
         korisnik.BrojMobitela = model.PhoneNumber.Trim();
 

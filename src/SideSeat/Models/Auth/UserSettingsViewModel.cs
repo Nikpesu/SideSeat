@@ -5,6 +5,16 @@ namespace SideSeat.Models.Auth;
 
 public class UserSettingsViewModel
 {
+    [Required(ErrorMessage = "Ime je obavezno.")]
+    [StringLength(100)]
+    [Display(Name = "Ime")]
+    public string FirstName { get; set; } = string.Empty;
+
+    [Required(ErrorMessage = "Prezime je obavezno.")]
+    [StringLength(100)]
+    [Display(Name = "Prezime")]
+    public string LastName { get; set; } = string.Empty;
+
     [Required]
     [Display(Name = "Adresa")]
     public string Address { get; set; } = string.Empty;

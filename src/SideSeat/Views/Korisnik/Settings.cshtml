@@ -38,9 +38,25 @@
                     <img class="ss-profile-avatar" src="@Model.CurrentProfileImagePath" alt="Trenutna profilna slika" />
                 </div>
             }
-            <input asp-for="ProfileImage" class="form-control" type="file" accept="image/jpeg,image/png,image/gif,image/webp" />
+            <div class="ss-file-picker">
+                <input asp-for="ProfileImage" type="file" class="ss-file-picker-input" accept="image/jpeg,image/png,image/gif,image/webp" data-ss-file-picker />
+                <label for="ProfileImage" class="ss-file-picker-button">Odaberi sliku</label>
+                <span class="ss-file-picker-status" data-ss-file-picker-status>Nijedna slika nije odabrana.</span>
+            </div>
             <span asp-validation-for="ProfileImage" class="text-danger"></span>
-            <small class="text-muted">JPG, PNG, GIF ili WEBP, najviše 5 MB.</small>
+            <small class="text-muted d-block mt-2">JPG, PNG, GIF ili WEBP, najviše 5 MB.</small>
+        </div>
+
+        <div class="mb-3">
+            <label asp-for="FirstName" class="form-label"></label>
+            <input asp-for="FirstName" class="form-control" />
+            <span asp-validation-for="FirstName" class="text-danger"></span>
+        </div>
+
+        <div class="mb-3">
+            <label asp-for="LastName" class="form-label"></label>
+            <input asp-for="LastName" class="form-control" />
+            <span asp-validation-for="LastName" class="text-danger"></span>
         </div>
 
         <div class="mb-3">
