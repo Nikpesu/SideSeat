@@ -1998,6 +1998,8 @@
         return;
       }
 
+      const submitButton = form.querySelector("button[type='submit']");
+
       form.dataset.ssBound = "true";
       form.addEventListener("submit", (event) => {
         if (form.dataset.locationResolved === "true" || !navigator.geolocation) {
@@ -2005,18 +2007,36 @@
         }
 
         event.preventDefault();
+        // Ne šaljemo check-in dok ne dobijemo lokaciju ili dok geolociranje
+        // ne padne. Mrežna lokacija (enableHighAccuracy:false) je brža i puno
+        // pouzdanija na desktopu od GPS-a, a 12 s daje pregledniku vremena.
+        const originalLabel = submitButton ? submitButton.textContent : null;
+        if (submitButton) {
+          submitButton.disabled = true;
+          submitButton.textContent = "Dohvaćam lokaciju…";
+        }
+
+        const finish = () => {
+          form.dataset.locationResolved = "true";
+          if (submitButton) {
+            submitButton.disabled = false;
+            if (originalLabel !== null) {
+              submitButton.textContent = originalLabel;
+            }
+          }
+          form.requestSubmit();
+        };
+
         navigator.geolocation.getCurrentPosition(
           (position) => {
             form.querySelector("[data-checkin-lat]").value = position.coords.latitude.toFixed(6);
             form.querySelector("[data-checkin-lng]").value = position.coords.longitude.toFixed(6);
-            form.dataset.locationResolved = "true";
-            form.requestSubmit();
+            finish();
           },
           () => {
-            form.dataset.locationResolved = "true";
-            form.requestSubmit();
+            finish();
           },
-          { enableHighAccuracy: true, maximumAge: 30000, timeout: 4000 });
+          { enableHighAccuracy: false, maximumAge: 60000, timeout: 12000 });
       });
     });
   };
