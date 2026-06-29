@@ -126,13 +126,17 @@ public sealed class SeminarFeatureTests : IClassFixture<SideSeatTestFactory>
             CancellationToken.None);
 
         using var document = JsonDocument.Parse(json);
-        Assert.True(document.RootElement.GetProperty("requiresConfirmation").GetBoolean());
+        // AI vise ne trazi potvrdu u chatu, nego otvara predpopunjenu stranicu (v0.48/v0.50).
+        Assert.False(document.RootElement.GetProperty("requiresConfirmation").GetBoolean());
+        Assert.True(document.RootElement.GetProperty("opensPage").GetBoolean());
         Assert.False(await db.Gradovi.AnyAsync(city => city.Naziv == "Dubrovnik"));
         var pendingAction = document.RootElement.GetProperty("pendingAction");
         Assert.True(pendingAction.TryGetProperty("token", out var token), json);
         Assert.False(string.IsNullOrWhiteSpace(token.GetString()));
         Assert.True(pendingAction.TryGetProperty("form", out var form), json);
-        Assert.Contains(token.GetString()!, form.GetProperty("reviewUrl").GetString());
+        var reviewUrl = form.GetProperty("reviewUrl").GetString();
+        Assert.StartsWith("/Grad/Create", reviewUrl);
+        Assert.Contains("Naziv=Dubrovnik", reviewUrl);
     }
 
     [Fact]

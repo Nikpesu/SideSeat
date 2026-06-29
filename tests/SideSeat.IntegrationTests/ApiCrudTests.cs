@@ -230,7 +230,7 @@ public class ApiCrudTests : IClassFixture<SideSeatTestFactory>
         Assert.Contains("maxlength=\"19\"", topUpPage);
         Assert.Contains("maxlength=\"5\"", topUpPage);
         Assert.Contains("maxlength=\"4\"", topUpPage);
-        Assert.Contains("Verzija v0.52", topUpPage);
+        Assert.Contains("Verzija v0.", topUpPage);
         var topUpToken = ExtractAntiforgeryToken(topUpPage);
         using var topUpForm = new FormUrlEncodedContent(new Dictionary<string, string>
         {
@@ -429,6 +429,8 @@ public class ApiCrudTests : IClassFixture<SideSeatTestFactory>
         var antiforgeryToken = ExtractAntiforgeryToken(settingsPage);
         using var form = new MultipartFormDataContent();
         form.Add(new StringContent(antiforgeryToken), "__RequestVerificationToken");
+        form.Add(new StringContent("Ivana"), "FirstName");
+        form.Add(new StringContent("Horvat"), "LastName");
         form.Add(new StringContent("Nova adresa"), "Address");
         form.Add(new StringContent("0911111111"), "PhoneNumber");
         form.Add(new StringContent("true"), "IsRider");

@@ -43,7 +43,9 @@ public sealed class RideWorkflowFeatureTests : IClassFixture<SideSeatTestFactory
                 "AI forma"));
 
         Assert.NotNull(action.Form);
-        Assert.Contains(action.Token, action.Form!.ReviewUrl);
+        // ReviewUrl sada vodi na predpopunjenu stranicu forme umjesto na token-potvrdu (v0.48).
+        Assert.StartsWith("/Voznja/Create", action.Form!.ReviewUrl);
+        Assert.Contains("PolazniGradId=1", action.Form.ReviewUrl);
         Assert.Contains(
             action.Form.Sections.SelectMany(section => section.Fields),
             field => field.Name == nameof(CreateRideCommand.PolazniGradId) && field.Value == "1");
